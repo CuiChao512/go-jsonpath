@@ -33,3 +33,6 @@ const (
 	PATTERN     = "/"
 	IGNORE_CASE = "i"
 )
+
+type Compiler struct {
+}
