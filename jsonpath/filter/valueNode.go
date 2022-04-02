@@ -5,6 +5,7 @@ import (
 )
 
 type ValueNode interface {
+	TypeOf(ctx jsonpath.PredicateContext) string
 	IsPatternNode() bool
 	AsPatternNode() (*PatternNode, *jsonpath.InvalidPathError)
 	IsPathNode() bool
@@ -30,6 +31,10 @@ type ValueNode interface {
 }
 
 type valueNodeDefault struct {
+}
+
+func (n *valueNodeDefault) TypeOf(ctx jsonpath.PredicateContext) string {
+	return "void"
 }
 
 func (n *valueNodeDefault) IsPatternNode() bool {
