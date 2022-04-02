@@ -43,38 +43,47 @@ type PathNode struct {
 	valueNodeDefault
 }
 
+// NumberNode -----------
 type NumberNode struct {
 	valueNodeDefault
 }
 
+// StringNode -----------
 type StringNode struct {
 	valueNodeDefault
 }
 
+// BooleanNode -----------
 type BooleanNode struct {
 	valueNodeDefault
 }
 
+// PredicateNode -----------
 type PredicateNode struct {
 	valueNodeDefault
 }
 
+// ValueListNode -----------
 type ValueListNode struct {
 	valueNodeDefault
 }
 
+// NullNode -----------
 type NullNode struct {
 	valueNodeDefault
 }
 
+// UndefinedNode -----------
 type UndefinedNode struct {
 	valueNodeDefault
 }
 
+// ClassNode -----------
 type ClassNode struct {
 	valueNodeDefault
 }
 
+// OffsetDateTimeNode -----------
 type OffsetDateTimeNode struct {
 	valueNodeDefault
 }

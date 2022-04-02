@@ -82,7 +82,7 @@ func (n *valueNodeDefault) IsPredicateNode() bool {
 }
 
 func (_ *valueNodeDefault) AsPredicateNode() (*PredicateNode, *jsonpath.InvalidPathError) {
-	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected predicate node"}
 }
 
 func (n *valueNodeDefault) IsValueListNode() bool {
@@ -90,7 +90,7 @@ func (n *valueNodeDefault) IsValueListNode() bool {
 }
 
 func (_ *valueNodeDefault) AsValueListNode() (*ValueListNode, *jsonpath.InvalidPathError) {
-	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected value list node"}
 }
 
 func (n *valueNodeDefault) IsNullNode() bool {
@@ -98,7 +98,7 @@ func (n *valueNodeDefault) IsNullNode() bool {
 }
 
 func (_ *valueNodeDefault) AsNullNode() (*NullNode, *jsonpath.InvalidPathError) {
-	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected null node"}
 }
 
 func (n *valueNodeDefault) IsUndefinedNode() bool {
@@ -106,7 +106,7 @@ func (n *valueNodeDefault) IsUndefinedNode() bool {
 }
 
 func (_ *valueNodeDefault) AsUndefinedNode() (*UndefinedNode, *jsonpath.InvalidPathError) {
-	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected undefined node"}
 }
 
 func (n *valueNodeDefault) IsClassNode() bool {
@@ -114,7 +114,7 @@ func (n *valueNodeDefault) IsClassNode() bool {
 }
 
 func (_ *valueNodeDefault) AsClassNode() (*ClassNode, *jsonpath.InvalidPathError) {
-	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected class node"}
 }
 
 func (n *valueNodeDefault) IsOffsetDateTimeNode() bool {
@@ -122,5 +122,5 @@ func (n *valueNodeDefault) IsOffsetDateTimeNode() bool {
 }
 
 func (_ *valueNodeDefault) AsOffsetDateTimeNode() (*OffsetDateTimeNode, *jsonpath.InvalidPathError) {
-	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected offset date time node"}
 }
