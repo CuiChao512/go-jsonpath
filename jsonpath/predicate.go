@@ -5,9 +5,9 @@ type Predicate interface {
 }
 
 type PredicateContext interface {
-	Item() interface{}
+	Item() *interface{}
 
-	Root() interface{}
+	Root() *interface{}
 
-	Configures() Configuration
+	Configures() *Configuration
 }

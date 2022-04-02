@@ -5,6 +5,6 @@ import (
 )
 
 type Path interface {
-	Evaluate(document interface{}, rootDocument interface{}, configuration jsonpath.Configuration) jsonpath.EvaluationContext
-	EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration jsonpath.Configuration, forUpdate bool) jsonpath.EvaluationContext
+	Evaluate(document *interface{}, rootDocument *interface{}, configuration *jsonpath.Configuration) *jsonpath.EvaluationContext
+	EvaluateForUpdate(document *interface{}, rootDocument *interface{}, configuration *jsonpath.Configuration, forUpdate bool) *jsonpath.EvaluationContext
 }
