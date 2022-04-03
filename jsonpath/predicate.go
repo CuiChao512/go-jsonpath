@@ -1,7 +1,8 @@
 package jsonpath
 
 type Predicate interface {
-	Apply(ctx *PredicateContext)
+	Apply(ctx *PredicateContext) bool
+	String() string
 }
 
 type PredicateContext interface {

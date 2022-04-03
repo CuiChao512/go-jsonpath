@@ -34,5 +34,9 @@ const (
 	IGNORE_CASE = "i"
 )
 
-type Compiler struct {
+func FilterCompile(filterString string) CompiledFilter {
+	return CompiledFilter{}
+}
+
+type CompiledFilter struct {
 }

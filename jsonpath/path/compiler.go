@@ -2,9 +2,6 @@ package path
 
 import "cuichao.com/go-jsonpath/jsonpath"
 
-type Compiler struct {
-}
-
 type CompiledPath struct {
 }
 
@@ -18,6 +15,18 @@ func (cp *CompiledPath) EvaluateForUpdate(document *interface{}, rootDocument *i
 
 func (cp *CompiledPath) ToString() string {
 	return ""
+}
+
+func (cp *CompiledPath) IsDefinite() bool {
+	return false
+}
+
+func (cp *CompiledPath) IsFunctionPath() bool {
+	return false
+}
+
+func (cp *CompiledPath) IsRootPath() bool {
+	return false
 }
 
 func Compile(pathString string) Path {

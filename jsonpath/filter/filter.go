@@ -1,9 +1,61 @@
 package filter
 
-import "cuichao.com/go-jsonpath/jsonpath"
+import (
+	"cuichao.com/go-jsonpath/jsonpath"
+	"strings"
+)
 
 type Evaluator interface {
 	Evaluate(left ValueNode, right ValueNode, ctx jsonpath.PredicateContext) bool
+}
+
+type Filter interface {
+	jsonpath.Predicate
+	Or(other *jsonpath.Predicate) *OrFilter
+	And(other *jsonpath.Predicate) *AndFilter
+}
+
+type FilterImpl struct {
+}
+
+func (filter *FilterImpl) String() string {
+	return ""
+}
+
+func (filter *FilterImpl) Apply(ctx *jsonpath.PredicateContext) bool {
+	return false
+}
+
+func (filter *FilterImpl) And(other *jsonpath.Predicate) *AndFilter {
+	return nil
+}
+
+func (filter *FilterImpl) Or(other *jsonpath.Predicate) *OrFilter {
+	return nil
+}
+
+type SingleFilter struct {
+	predicate jsonpath.Predicate
+}
+
+func (filter *SingleFilter) Apply(ctx *jsonpath.PredicateContext) bool {
+	return filter.predicate.Apply(ctx)
+}
+
+func (filter *SingleFilter) String() string {
+	predicateString := filter.predicate.String()
+	if strings.HasPrefix(predicateString, "(") {
+		return "[?" + predicateString + "]"
+	} else {
+		return "[?(" + predicateString + ")]"
+	}
+}
+
+type AndFilter struct {
+	predicates []*jsonpath.Predicate
+}
+
+type OrFilter struct {
 }
 
 // RelationalOperator
