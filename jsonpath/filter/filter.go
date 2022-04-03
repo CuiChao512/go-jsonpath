@@ -51,8 +51,29 @@ func (filter *SingleFilter) String() string {
 	}
 }
 
+func NewAndFilterByPredicates(predicates []*jsonpath.Predicate) *AndFilter {
+	return &AndFilter{predicates: predicates}
+}
+
+func NewAndFilter(left *jsonpath.Predicate, right *jsonpath.Predicate) *AndFilter {
+	predicates := []*jsonpath.Predicate{
+		left, right,
+	}
+	return &AndFilter{predicates: predicates}
+}
+
 type AndFilter struct {
+	FilterImpl
 	predicates []*jsonpath.Predicate
+}
+
+func (filter *AndFilter) Apply(ctx *jsonpath.PredicateContext) bool {
+	for _, predicate := range filter.predicates {
+		if !predicate.Apply(ctx) {
+			return false
+		}
+	}
+	return true
 }
 
 type OrFilter struct {
