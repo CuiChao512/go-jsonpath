@@ -28,6 +28,7 @@ type ValueNode interface {
 	AsClassNode() (*ClassNode, *jsonpath.InvalidPathError)
 	IsOffsetDateTimeNode() bool
 	AsOffsetDateTimeNode() (*OffsetDateTimeNode, *jsonpath.InvalidPathError)
+	ToString() string
 }
 
 type valueNodeDefault struct {
@@ -123,4 +124,8 @@ func (n *valueNodeDefault) IsOffsetDateTimeNode() bool {
 
 func (_ *valueNodeDefault) AsOffsetDateTimeNode() (*OffsetDateTimeNode, *jsonpath.InvalidPathError) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected offset date time node"}
+}
+
+func (n *valueNodeDefault) ToString() string {
+	return ""
 }
