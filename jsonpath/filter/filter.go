@@ -76,6 +76,23 @@ func (filter *AndFilter) Apply(ctx *jsonpath.PredicateContext) bool {
 	return true
 }
 
+func (filter *AndFilter) String() string {
+	string_ := ""
+	lenPredicates := len(filter.predicates)
+	for i := 0; i < lenPredicates; i++ {
+		p := filter.predicates[i]
+		pString := p.String()
+		if strings.HasPrefix(pString, "[?(") {
+			pString = pString[3]
+		}
+		string_ = string_ + pString
+		if i < lenPredicates {
+			string_ = string_ + "&&"
+		}
+	}
+	return string_
+}
+
 type OrFilter struct {
 }
 
