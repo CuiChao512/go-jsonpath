@@ -13,7 +13,7 @@ func (cp *CompiledPath) EvaluateForUpdate(document *interface{}, rootDocument *i
 	return nil
 }
 
-func (cp *CompiledPath) ToString() string {
+func (cp *CompiledPath) String() string {
 	return ""
 }
 

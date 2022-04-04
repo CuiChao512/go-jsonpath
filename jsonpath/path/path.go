@@ -7,7 +7,7 @@ import (
 type Path interface {
 	Evaluate(document *interface{}, rootDocument *interface{}, configuration *jsonpath.Configuration) *jsonpath.EvaluationContext
 	EvaluateForUpdate(document *interface{}, rootDocument *interface{}, configuration *jsonpath.Configuration, forUpdate bool) *jsonpath.EvaluationContext
-	ToString() string
+	String() string
 	IsDefinite() bool
 	IsFunctionPath() bool
 	IsRootPath() bool

@@ -89,11 +89,11 @@ func (pn *PathNode) AsExistsCheck(shouldExist bool) *PathNode {
 	}
 }
 
-func (pn *PathNode) ToString() string {
+func (pn *PathNode) String() string {
 	if pn.existsCheck && !pn.shouldExist {
-		return "pn.path.String()"
+		return "!" + (*pn.path).String()
 	} else {
-		return "pn.path.String()"
+		return (*pn.path).String()
 	}
 }
 

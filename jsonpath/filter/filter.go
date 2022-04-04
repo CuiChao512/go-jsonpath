@@ -69,7 +69,7 @@ type AndFilter struct {
 
 func (filter *AndFilter) Apply(ctx *jsonpath.PredicateContext) bool {
 	for _, predicate := range filter.predicates {
-		if !predicate.Apply(ctx) {
+		if !(*predicate).Apply(ctx) {
 			return false
 		}
 	}
@@ -81,9 +81,9 @@ func (filter *AndFilter) String() string {
 	lenPredicates := len(filter.predicates)
 	for i := 0; i < lenPredicates; i++ {
 		p := filter.predicates[i]
-		pString := p.String()
+		pString := (*p).String()
 		if strings.HasPrefix(pString, "[?(") {
-			pString = pString[3]
+			pString = pString[3:]
 		}
 		string_ = string_ + pString
 		if i < lenPredicates {
