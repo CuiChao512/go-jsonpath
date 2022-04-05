@@ -124,24 +124,24 @@ func (ci *CharacterIndex) IndexOfNextSignificantChar(c rune) int {
 
 func (ci *CharacterIndex) IndexOfNextSignificantCharFromStartPosition(startPosition int, c rune) int {
 	readPosition := startPosition + 1
-	for ;!ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE{
+	for !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE {
 		readPosition++
 	}
 
-	if ci.CharAt(readPosition) == c{
+	if ci.CharAt(readPosition) == c {
 		return readPosition
-	}else{
+	} else {
 		return -1
 	}
 }
 
-func (ci *CharacterIndex) NextIndexOf(c rune) int{
-	return ci.NextIndexOfFromStartPosition(ci.position + 1,c)
+func (ci *CharacterIndex) NextIndexOf(c rune) int {
+	return ci.NextIndexOfFromStartPosition(ci.position+1, c)
 }
 
-func (ci *CharacterIndex) NextIndexOfFromStartPosition(startPosition int, c rune) int{
+func (ci *CharacterIndex) NextIndexOfFromStartPosition(startPosition int, c rune) int {
 	readPosition := startPosition
-	for ;ci.IsOutOfBounds(readPosition);{
+	for ci.IsOutOfBounds(readPosition) {
 		if ci.CharAt(readPosition) == c {
 			return readPosition
 		}
@@ -150,20 +150,20 @@ func (ci *CharacterIndex) NextIndexOfFromStartPosition(startPosition int, c rune
 	return -1
 }
 
-func (ci *CharacterIndex) NextIndexOfUnescaped(c rune) int{
-	return ci.NextIndexOfUnescapedFromStartPosition(ci.position,c)
+func (ci *CharacterIndex) NextIndexOfUnescaped(c rune) int {
+	return ci.NextIndexOfUnescapedFromStartPosition(ci.position, c)
 }
 
-func (ci *CharacterIndex) NextIndexOfUnescapedFromStartPosition(startPosition int, c rune) int{
+func (ci *CharacterIndex) NextIndexOfUnescapedFromStartPosition(startPosition int, c rune) int {
 	readPosition := startPosition + 1
 	inEscape := false
 
-	for ;ci.IsOutOfBounds(readPosition);{
-		if inEscape{
+	for ci.IsOutOfBounds(readPosition) {
+		if inEscape {
 			inEscape = false
 		} else if '\\' == ci.CharAt(readPosition) {
 			inEscape = true
-		}else if c == ci.CharAt(readPosition) {
+		} else if c == ci.CharAt(readPosition) {
 			return readPosition
 		}
 		readPosition++
@@ -171,7 +171,7 @@ func (ci *CharacterIndex) NextIndexOfUnescapedFromStartPosition(startPosition in
 	return -1
 }
 
-func (ci *CharacterIndex) CharAtOr(position int, defaultChar rune) rune{
+func (ci *CharacterIndex) CharAtOr(position int, defaultChar rune) rune {
 	if !ci.InBoundsByPosition(position) {
 		return defaultChar
 	} else {
@@ -179,58 +179,58 @@ func (ci *CharacterIndex) CharAtOr(position int, defaultChar rune) rune{
 	}
 }
 
-func (ci *CharacterIndex) NextSignificantCharIs( c rune) bool{
+func (ci *CharacterIndex) NextSignificantCharIs(c rune) bool {
 	return ci.NextSignificantCharIsFromStartPosition(ci.position, c)
 }
 
-func (ci *CharacterIndex) NextSignificantCharIsFromStartPosition(startPosition int, c rune) bool{
+func (ci *CharacterIndex) NextSignificantCharIsFromStartPosition(startPosition int, c rune) bool {
 	readPosition := startPosition + 1
-	for ; ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE; {
+	for ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE {
 		readPosition++
 	}
 	return !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == c
 }
 
-func (ci *CharacterIndex) NextSignificantChar() rune{
+func (ci *CharacterIndex) NextSignificantChar() rune {
 	return ci.NextSignificantCharFromStartPosition(ci.position)
 }
-func (ci *CharacterIndex) NextSignificantCharFromStartPosition(startPosition int) rune{
+func (ci *CharacterIndex) NextSignificantCharFromStartPosition(startPosition int) rune {
 	readPosition := startPosition + 1
-	for ; !ci.IsOutOfBounds(readPosition) && ci.CharAt(startPosition) == SPACE;{
-		readPosition ++
+	for !ci.IsOutOfBounds(readPosition) && ci.CharAt(startPosition) == SPACE {
+		readPosition++
 	}
-	if !ci.IsOutOfBounds(readPosition){
+	if !ci.IsOutOfBounds(readPosition) {
 		return ci.CharAt(readPosition)
 	} else {
 		return ' '
 	}
 }
 
-func (ci *CharacterIndex) ReadSignificantChar(c rune){
+func (ci *CharacterIndex) ReadSignificantChar(c rune) {
 	if ci.SkipBlanks().CurrentChar() != c {
 		// TODO:throw new InvalidPathException(String.format("Expected character: %c", c));
 	}
 	ci.IncrementPosition(1)
 }
 
-func (ci *CharacterIndex) HasSignificantSubSequence(s string) bool{
+func (ci *CharacterIndex) HasSignificantSubSequence(s string) bool {
 	ci.SkipBlanks()
 
-	if !ci.InBoundsByPosition(ci.position + len(s) - 1){
+	if !ci.InBoundsByPosition(ci.position + len(s) - 1) {
 		return false
 	}
-	if ci.SubSequence(ci.position, ci.position +len(s)) != s{
+	if ci.SubSequence(ci.position, ci.position+len(s)) != s {
 		return false
 	}
 	ci.IncrementPosition(len(s))
 	return true
 }
 
-func (ci *CharacterIndex) IndexOfPreviousSignificantCharFromStartPosition(startPosition int) int{
+func (ci *CharacterIndex) IndexOfPreviousSignificantCharFromStartPosition(startPosition int) int {
 	readPosition := startPosition - 1
 
-	for ; !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE;{
-		readPosition --
+	for !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE {
+		readPosition--
 	}
 
 	if !ci.IsOutOfBounds(readPosition) {
@@ -240,15 +240,15 @@ func (ci *CharacterIndex) IndexOfPreviousSignificantCharFromStartPosition(startP
 	}
 }
 
-func (ci *CharacterIndex) IndexOfPreviousSignificantChar() int{
+func (ci *CharacterIndex) IndexOfPreviousSignificantChar() int {
 	return ci.IndexOfPreviousSignificantCharFromStartPosition(ci.position)
 }
 
-func (ci *CharacterIndex) PreviousSignificantChar() rune{
+func (ci *CharacterIndex) PreviousSignificantChar() rune {
 	return ci.PreviousSignificantCharFromStartPosition(ci.position)
 }
 
-func (ci *CharacterIndex) PreviousSignificantCharFromStartPosition(startPosition int) rune{
+func (ci *CharacterIndex) PreviousSignificantCharFromStartPosition(startPosition int) rune {
 	previousSignificantCharIndex := ci.IndexOfPreviousSignificantCharFromStartPosition(startPosition)
 
 	if previousSignificantCharIndex == -1 {
@@ -258,57 +258,57 @@ func (ci *CharacterIndex) PreviousSignificantCharFromStartPosition(startPosition
 	}
 }
 
-func (ci *CharacterIndex) CurrentIsTail() bool{
+func (ci *CharacterIndex) CurrentIsTail() bool {
 	return ci.position >= ci.endPosition
 }
 
-func (ci *CharacterIndex) HasMoreCharacters() bool{
+func (ci *CharacterIndex) HasMoreCharacters() bool {
 	return ci.InBoundsByPosition(ci.position + 1)
 }
 
-func (ci *CharacterIndex) InBounds() bool{
+func (ci *CharacterIndex) InBounds() bool {
 	return ci.InBoundsByPosition(ci.position)
 }
 
-func (ci *CharacterIndex) IsOutOfBounds(idx int) bool{
+func (ci *CharacterIndex) IsOutOfBounds(idx int) bool {
 	return !ci.InBoundsByPosition(idx)
 }
 
-func (ci *CharacterIndex) SubSequence(start int, end int) string{
+func (ci *CharacterIndex) SubSequence(start int, end int) string {
 	return ci.charSequence[start:end]
 }
 
-func (ci *CharacterIndex) CharSequence() string{
+func (ci *CharacterIndex) CharSequence() string {
 	return ci.charSequence
 }
 
-func (ci *CharacterIndex) String() string{
+func (ci *CharacterIndex) String() string {
 	return ci.charSequence
 }
 
-func (ci *CharacterIndex) IsNumberCharacter(readPosition int) bool{
+func (ci *CharacterIndex) IsNumberCharacter(readPosition int) bool {
 	c := ci.CharAt(readPosition)
 
-	return c == '0' || c == '1'|| c == '2'|| c == '3'|| c == '4'||
-		c == '5'|| c == '6'|| c == '7'|| c == '8'|| c == '9' ||
+	return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
+		c == '5' || c == '6' || c == '7' || c == '8' || c == '9' ||
 		c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
 }
 
-func (ci *CharacterIndex) SkipBlanks() *CharacterIndex{
-	for ;ci.InBounds() && ci.position < ci.endPosition && ci.CurrentChar() == SPACE;{
+func (ci *CharacterIndex) SkipBlanks() *CharacterIndex {
+	for ci.InBounds() && ci.position < ci.endPosition && ci.CurrentChar() == SPACE {
 		ci.IncrementPosition(1)
 	}
 	return ci
 }
 
-func (ci *CharacterIndex) SkipBlanksAtEnd() *CharacterIndex{
-	for ; ci.InBounds() && ci.position < ci.endPosition && ci.LastCharIs(SPACE); {
+func (ci *CharacterIndex) SkipBlanksAtEnd() *CharacterIndex {
+	for ci.InBounds() && ci.position < ci.endPosition && ci.LastCharIs(SPACE) {
 		ci.DecrementEndPosition(1)
 	}
 	return ci
 }
 
-func (ci *CharacterIndex) trim() *CharacterIndex{
+func (ci *CharacterIndex) trim() *CharacterIndex {
 	ci.SkipBlanks()
 	ci.SkipBlanksAtEnd()
 	return ci
