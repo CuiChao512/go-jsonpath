@@ -127,3 +127,37 @@ const (
 	LogicalOperator_NOT = "!"
 	LogicalOperator_OR  = "||"
 )
+
+type ExpressionNode interface {
+	jsonpath.Predicate
+	ExpressionNodeLabel()
+}
+
+//LogicalExpressionNode ----
+type LogicalExpressionNode struct {
+}
+
+func (e *LogicalExpressionNode) ExpressionNodeLabel() {
+	return
+}
+func (e *LogicalExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
+	return false
+}
+func (e *LogicalExpressionNode) String() string {
+	return "nil"
+}
+
+//RelationExpressionNode -----
+
+type RelationExpressionNode struct {
+}
+
+func (e *RelationExpressionNode) ExpressionNodeLabel() {
+	return
+}
+func (e *RelationExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
+	return false
+}
+func (e *RelationExpressionNode) String() string {
+	return "nil"
+}
