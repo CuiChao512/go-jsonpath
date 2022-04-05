@@ -71,6 +71,17 @@ func (ci *CharacterIndex) Position() int {
 	return ci.position
 }
 
+func (ci *CharacterIndex) IndexOfClosingSquareBracket(startPosition int) int {
+	readPosition := startPosition
+	for ci.InBoundsByPosition(readPosition) {
+		if ci.CharAt(readPosition) == CLOSE_SQUARE_BRACKET {
+			return readPosition
+		}
+		readPosition++
+	}
+	return -1
+}
+
 func (ci *CharacterIndex) IndexOfMatchingCloseChar(startPosition int, openChar rune,
 	closeChar rune, skipStrings bool, skipRegex bool) (int, *InvalidPathError) {
 	if ci.CharAt(startPosition) != openChar {
