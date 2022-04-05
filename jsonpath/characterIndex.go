@@ -1,7 +1,5 @@
 package jsonpath
 
-import "strings"
-
 const (
 	OPEN_PARENTHESIS     rune = '('
 	CLOSE_PARENTHESIS    rune = ')'
@@ -27,23 +25,27 @@ func (ci *CharacterIndex) Length() int64 {
 	return ci.endPosition + 1
 }
 func (ci *CharacterIndex) CharAt(idx int64) rune {
-	return strings.IndexRune(ci.charSequence).charAt(idx)
+	return []rune(ci.charSequence)[idx]
 }
 
-func (ci *CharacterIndex) CurrentChar() {
-	return charSequence.charAt(position)
+func (ci *CharacterIndex) CurrentChar() rune {
+	return []rune(ci.charSequence)[ci.position]
 }
 
 func (ci *CharacterIndex) CurrentCharIs(c rune) bool {
-	return (charSequence.charAt(position) == c)
+	return []rune(ci.charSequence)[ci.position] == c
 }
 
-func (ci *CharacterIndex) LastCharIs(char c) bool {
-	return charSequence.charAt(endPosition) == c
+func (ci *CharacterIndex) LastCharIs(c rune) bool {
+	return []rune(ci.charSequence)[ci.endPosition] == c
 }
 
-func (ci *CharacterIndex) NextCharIs(char c) bool {
-	return inBounds(position+1) && (charSequence.charAt(position+1) == c)
+func (ci *CharacterIndex) InBounds(idx int64) bool {
+	return (idx >= 0) && (idx <= ci.endPosition)
+}
+
+func (ci *CharacterIndex) NextCharIs(c rune) bool {
+	return ci.InBounds(ci.position+1) && ([]rune(ci.charSequence)[ci.position+1] == c)
 }
 
 func (ci *CharacterIndex) IncrementPosition(charCount int64) int64 {
