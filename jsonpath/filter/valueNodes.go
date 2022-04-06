@@ -110,9 +110,17 @@ type NumberNode struct {
 	*valueNodeDefault
 }
 
+func NewNumberNode(str string) *NumberNode {
+	return &NumberNode{}
+}
+
 // StringNode -----------
 type StringNode struct {
 	*valueNodeDefault
+}
+
+func NewStringNode(str string, escape bool) *StringNode {
+	return &StringNode{}
 }
 
 // BooleanNode -----------

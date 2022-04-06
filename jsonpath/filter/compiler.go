@@ -130,11 +130,11 @@ func (c *Compiler) readValueNode() (ValueNode, *jsonpath.InvalidPathError) {
 			return nil, &jsonpath.InvalidPathError{Message: fmt.Sprintf("Unexpected character: %c", NOT)}
 		}
 	default:
-		return c.readLiteral(),nil
+		return c.readLiteral()
 	}
 }
 
-func (c *Compiler) readLiteral() (ValueNode,*jsonpath.InvalidPathError){
+func (c *Compiler) readLiteral() (ValueNode, *jsonpath.InvalidPathError) {
 	switch c.filter.SkipBlanks().CurrentChar() {
 	case SINGLE_QUOTE:
 		return c.readStringLiteral(SINGLE_QUOTE)
@@ -145,17 +145,17 @@ func (c *Compiler) readLiteral() (ValueNode,*jsonpath.InvalidPathError){
 	case FALSE:
 		return c.readBooleanLiteral()
 	case MINUS:
-		return c.readNumberLiteral()
+		return c.readNumberLiteral(), nil
 	case NULL:
 		return c.readNullLiteral()
 	case OPEN_OBJECT:
-		return readJsonLiteral()
+		return c.readJsonLiteral()
 	case OPEN_ARRAY:
-		return readJsonLiteral()
+		return c.readJsonLiteral()
 	case PATTERN:
-		return readPattern()
+		return c.readPattern()
 	default:
-		return readNumberLiteral()
+		return c.readNumberLiteral(), nil
 	}
 }
 
@@ -165,7 +165,7 @@ func (c *Compiler) readExpression() jsonpath.Predicate {
 	savepoint := filter.Position()
 	operator := c.readRelationalOperator()
 	right, err1 := c.readValueNode()
-	if err0 == nil && err1 == nil{
+	if err0 == nil && err1 == nil {
 		return NewRelationExpressionNode(left, operator, right)
 	} else {
 		filter.SetPosition(savepoint)
@@ -181,40 +181,40 @@ func (c *Compiler) readExpression() jsonpath.Predicate {
 	}
 }
 
-func (c *Compiler) readRelationalOperator() string{
+func (c *Compiler) readRelationalOperator() string {
 	filter := c.filter
 	begin := filter.SkipBlanks().Position()
 
-	if c.isRelationalOperatorChar(filter.CurrentChar()){
-		for ;filter.InBounds() && c.isRelationalOperatorChar(filter.CurrentChar());{
+	if c.isRelationalOperatorChar(filter.CurrentChar()) {
+		for filter.InBounds() && c.isRelationalOperatorChar(filter.CurrentChar()) {
 			filter.IncrementPosition(1)
 		}
 	} else {
-		for ;filter.InBounds() && filter.CurrentChar() != SPACE;{
+		for filter.InBounds() && filter.CurrentChar() != SPACE {
 			filter.IncrementPosition(1)
 		}
 	}
 	return filter.SubSequence(begin, filter.Position())
 }
 
-func (c *Compiler) readNullLiteral() (*NullNode,*jsonpath.InvalidPathError){
+func (c *Compiler) readNullLiteral() (*NullNode, *jsonpath.InvalidPathError) {
 	filter := c.filter
 
 	begin := filter.Position()
 
-	if filter.CurrentChar() == NULL && filter.InBoundsByPosition(filter.Position() + 3){
-		nullValue := filter.SubSequence(filter.Position(), filter.Position() + 4)
-		if "null" == nullValue{
+	if filter.CurrentChar() == NULL && filter.InBoundsByPosition(filter.Position()+3) {
+		nullValue := filter.SubSequence(filter.Position(), filter.Position()+4)
+		if "null" == nullValue {
 			log.Printf("NullLiteral from %d to %d -> [%s]", begin, filter.Position()+3, nullValue)
 			filter.IncrementPosition(len(nullValue))
-			return NewNullNode(),nil
+			return NewNullNode(), nil
 		}
 	}
 
-	return nil,&jsonpath.InvalidPathError{Message: "Expected <null> value"}
+	return nil, &jsonpath.InvalidPathError{Message: "Expected <null> value"}
 }
 
-func (c *Compiler) readJsonLiteral() (*JsonNode,*jsonpath.InvalidPathError){
+func (c *Compiler) readJsonLiteral() (*JsonNode, *jsonpath.InvalidPathError) {
 	filter := c.filter
 
 	begin := filter.Position()
@@ -224,14 +224,14 @@ func (c *Compiler) readJsonLiteral() (*JsonNode,*jsonpath.InvalidPathError){
 	//TODO: assert openChar == OPEN_ARRAY || openChar == OPEN_OBJECT;
 
 	closeChar := CLOSE_OBJECT
-	if openChar == OPEN_ARRAY{
+	if openChar == OPEN_ARRAY {
 		closeChar = CLOSE_ARRAY
 	}
 
-	closingIndex,err := filter.IndexOfMatchingCloseChar(filter.Position(),openChar,closeChar,true,false)
-	if err != nil{
+	closingIndex, err := filter.IndexOfMatchingCloseChar(filter.Position(), openChar, closeChar, true, false)
+	if err != nil {
 		return nil, err
-	} else if closingIndex == - 1{
+	} else if closingIndex == -1 {
 		return nil, &jsonpath.InvalidPathError{
 			Message: "String not closed. Expected " + string(SINGLE_QUOTE) + " in " + filter.String(),
 		}
@@ -240,7 +240,94 @@ func (c *Compiler) readJsonLiteral() (*JsonNode,*jsonpath.InvalidPathError){
 	}
 
 	json := filter.SubSequence(begin, filter.Position())
-	return NewJsonNode(json),err
+	return NewJsonNode(json), err
+}
+
+func (c *Compiler) endOfFlags(position int) int {
+	endIndex := position
+	var currentChar [1]rune
+	for c.filter.InBoundsByPosition(endIndex) {
+		currentChar[0] = c.filter.CharAt(endIndex)
+		if PatternFlag.parseFlags(currentChar) > 0 {
+			endIndex++
+			continue
+		}
+		break
+	}
+	return endIndex
+}
+
+func (c *Compiler) readPattern() (*PatternNode, *jsonpath.InvalidPathError) {
+	filter := c.filter
+	begin := filter.Position()
+	closingIndex := filter.NextIndexOfUnescaped(PATTERN)
+
+	if closingIndex == -1 {
+		return nil, &jsonpath.InvalidPathError{Message: "Pattern not closed. Expected " + string(PATTERN) + " in " + filter.String()}
+	} else {
+		if filter.InBoundsByPosition(closingIndex + 1) {
+			endFlagsIndex := c.endOfFlags(closingIndex + 1)
+			if endFlagsIndex > closingIndex {
+				flags := filter.SubSequence(closingIndex+1, endFlagsIndex)
+				closingIndex += len(flags)
+			}
+		}
+		filter.SetPosition(closingIndex + 1)
+	}
+	pattern := filter.SubSequence(begin, filter.Position())
+	log.Printf("PatternNode from %d to %d -> [%s]", begin, filter.Position(), pattern)
+	return NewPatternNode(pattern), nil
+}
+
+func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, *jsonpath.InvalidPathError) {
+	filter := c.filter
+	begin := filter.Position()
+
+	closingSingleQuoteIndex := filter.NextIndexOfUnescaped(endChar)
+	if closingSingleQuoteIndex == -1 {
+		return nil, &jsonpath.InvalidPathError{Message: "String literal does not have matching quotes. Expected " + string(endChar) + " in " + filter.String()}
+	} else {
+		filter.SetPosition(closingSingleQuoteIndex + 1)
+	}
+	stringLiteral := filter.SubSequence(begin, filter.Position())
+	log.Printf("StringLiteral from %d to %d -> [%s]", begin, filter.Position(), stringLiteral)
+	return NewStringNode(stringLiteral, true), nil
+}
+
+func (c *Compiler) readNumberLiteral() *NumberNode {
+	filter := c.filter
+	begin := filter.Position()
+
+	for filter.InBounds() && filter.IsNumberCharacter(filter.Position()) {
+		filter.IncrementPosition(1)
+	}
+	numberLiteral := filter.SubSequence(begin, filter.Position())
+	log.Printf("NumberLiteral from %d to %d -> [%s]", begin, filter.Position(), numberLiteral)
+	return NewNumberNode(numberLiteral)
+}
+
+func (c *Compiler) readBooleanLiteral() (*BooleanNode, *jsonpath.InvalidPathError) {
+	filter := c.filter
+	begin := filter.Position()
+	end := filter.Position() + 4
+	if filter.CurrentChar() == TRUE {
+		end = filter.Position() + 3
+	}
+
+	if !filter.InBoundsByPosition(end) {
+		return nil, &jsonpath.InvalidPathError{Message: "Expected boolean literal"}
+	}
+	boolString := filter.SubSequence(begin, end+1)
+	if boolString != "true" && boolString != "false" {
+		return nil, &jsonpath.InvalidPathError{Message: "Expected boolean literal"}
+	}
+	filter.IncrementPosition(len(boolString))
+	log.Printf("BooleanLiteral from %d to %d -> [%s]", begin, end, boolString)
+	boolValue := false
+	if boolString == "true" {
+		boolValue = true
+	}
+	return NewBooleanNode(boolValue), nil
 }
 
 func (c *Compiler) readPath() (*PathNode, *jsonpath.InvalidPathError) {
@@ -278,18 +365,18 @@ func (c *Compiler) readPath() (*PathNode, *jsonpath.InvalidPathError) {
 
 func (c *Compiler) currentCharIsClosingFunctionBracket(lowerBound int) bool {
 	filter := c.filter
-	if filter.CurrentChar() != CLOSE_PARENTHESIS{
+	if filter.CurrentChar() != CLOSE_PARENTHESIS {
 		return false
 	}
 
 	idx := filter.IndexOfPreviousSignificantChar()
-	if idx == -1 || filter.CharAt(idx) != OPEN_PARENTHESIS{
+	if idx == -1 || filter.CharAt(idx) != OPEN_PARENTHESIS {
 		return false
 	}
 
 	idx--
 
-	for ;filter.InBoundsByPosition(idx) && idx > lowerBound{
+	for filter.InBoundsByPosition(idx) && idx > lowerBound {
 		if filter.CharAt(idx) == PERIOD {
 			return true
 		}
