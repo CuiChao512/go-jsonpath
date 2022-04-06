@@ -164,3 +164,11 @@ type ClassNode struct {
 type OffsetDateTimeNode struct {
 	*valueNodeDefault
 }
+
+type JsonNode struct {
+	*valueNodeDefault
+}
+
+func NewJsonNode(json string) *JsonNode {
+	return &JsonNode{}
+}
