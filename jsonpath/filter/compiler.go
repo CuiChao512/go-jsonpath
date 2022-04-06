@@ -44,8 +44,8 @@ type Compiler struct {
 	filter *jsonpath.CharacterIndex
 }
 
-func (c *Compiler) readLogicalOR() jsonpath.Predicate {
-	var ops []jsonpath.Predicate
+func (c *Compiler) readLogicalOR() ExpressionNode {
+	var ops []ExpressionNode
 	ops = append(ops, c.readLogicalAND())
 	filter := c.filter
 	for {
@@ -61,12 +61,12 @@ func (c *Compiler) readLogicalOR() jsonpath.Predicate {
 	if len(ops) == 1 {
 		return ops[0]
 	} else {
-		return CreateLogicalExpressionOr(ops)
+		return NewLogicalOrByList(ops)
 	}
 }
 
-func (c *Compiler) readLogicalAND() jsonpath.Predicate {
-	var ops []jsonpath.Predicate
+func (c *Compiler) readLogicalAND() ExpressionNode {
+	var ops []ExpressionNode
 	ops = append(ops, c.readLogicalANDOperand())
 	filter := *c.filter
 	for {
@@ -82,11 +82,11 @@ func (c *Compiler) readLogicalAND() jsonpath.Predicate {
 	if len(ops) == 1 {
 		return ops[0]
 	} else {
-		return CreateLogicalExpressionAnd(ops)
+		return NewLogicalAndByList(ops)
 	}
 }
 
-func (c *Compiler) readLogicalANDOperand() jsonpath.Predicate {
+func (c *Compiler) readLogicalANDOperand() ExpressionNode {
 	filter := c.filter
 	savepoint := filter.SkipBlanks().Position()
 	if filter.SkipBlanks().CurrentCharIs(NOT) {
@@ -98,7 +98,7 @@ func (c *Compiler) readLogicalANDOperand() jsonpath.Predicate {
 			filter.SetPosition(savepoint)
 			break
 		default:
-			return CreateLogicalExpressionNot(c.readLogicalANDOperand())
+			return NewLogicalNot(c.readLogicalANDOperand())
 		}
 	}
 
@@ -159,7 +159,7 @@ func (c *Compiler) readLiteral() (ValueNode, *jsonpath.InvalidPathError) {
 	}
 }
 
-func (c *Compiler) readExpression() jsonpath.Predicate {
+func (c *Compiler) readExpression() *RelationExpressionNode {
 	left, err0 := c.readValueNode()
 	filter := c.filter
 	savepoint := filter.Position()
@@ -177,7 +177,7 @@ func (c *Compiler) readExpression() jsonpath.Predicate {
 		} else {
 			right = FALSE_NODE
 		}
-		return NewRelationalExpressionNode(left, RelationalOperator_EXISTS, right)
+		return NewRelationExpressionNode(left, RelationalOperator_EXISTS, right)
 	}
 }
 

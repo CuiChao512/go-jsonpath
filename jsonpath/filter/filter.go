@@ -147,6 +147,26 @@ func (e *LogicalExpressionNode) String() string {
 	return "nil"
 }
 
+func NewLogicalOr(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
+	return &LogicalExpressionNode{}
+}
+
+func NewLogicalOrByList(operands []ExpressionNode) *LogicalExpressionNode {
+	return &LogicalExpressionNode{}
+}
+
+func NewLogicalAnd(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
+	return &LogicalExpressionNode{}
+}
+
+func NewLogicalAndByList(operands []ExpressionNode) *LogicalExpressionNode {
+	return &LogicalExpressionNode{}
+}
+
+func NewLogicalNot(op ExpressionNode) *LogicalExpressionNode {
+	return &LogicalExpressionNode{}
+}
+
 //RelationExpressionNode -----
 
 type RelationExpressionNode struct {
@@ -160,4 +180,8 @@ func (e *RelationExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
 }
 func (e *RelationExpressionNode) String() string {
 	return "nil"
+}
+
+func NewRelationExpressionNode(valueNode1 ValueNode, operator string, valueNode2 ValueNode) *RelationExpressionNode {
+	return &RelationExpressionNode{}
 }
