@@ -142,14 +142,50 @@ type LogicalExpressionNode struct {
 func (e *LogicalExpressionNode) ExpressionNodeLabel() {
 	return
 }
-func (e *LogicalExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
-	return false
+func (e *LogicalExpressionNode) And(other *LogicalExpressionNode) *LogicalExpressionNode {
+	return NewLogicalAnd(e, other)
 }
-func (e *LogicalExpressionNode) String() string {
-	return "nil"
+func (e *LogicalExpressionNode) Or(other *LogicalExpressionNode) *LogicalExpressionNode {
+	return NewLogicalOr(e, other)
+}
+func (e *LogicalExpressionNode) Append(node ExpressionNode) *LogicalExpressionNode {
+	e.chain = append(e.chain, node)
+	return e
 }
 
-func NewLogicalExpressionNode(left ExpressionNode, operator string, right ExpressionNode) *LogicalExpressionNode {
+func (e *LogicalExpressionNode) GetOperator() string {
+	return e.operator
+}
+
+func (e *LogicalExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
+	if e.operator == LogicalOperator_OR {
+		for _, expression := range e.chain {
+			if expression.Apply(ctx) {
+				return true
+			}
+		}
+		return false
+	} else if e.operator == LogicalOperator_AND {
+		for _, expression := range e.chain {
+			if !expression.Apply(ctx) {
+				return false
+			}
+		}
+		return true
+	} else {
+		expression := e.chain[0]
+		return !expression.Apply(ctx)
+	}
+}
+func (e *LogicalExpressionNode) String() string {
+	var chainString []string
+	for _, e := range e.chain {
+		chainString = append(chainString, e.String())
+	}
+	return "(" + jsonpath.UtilsJoin(" "+e.operator+" ", "", chainString) + ")"
+}
+
+func newLogicalExpressionNode(left ExpressionNode, operator string, right ExpressionNode) *LogicalExpressionNode {
 	var chain []ExpressionNode
 	chain[0] = left
 	chain[1] = right
@@ -159,7 +195,7 @@ func NewLogicalExpressionNode(left ExpressionNode, operator string, right Expres
 	}
 }
 
-func NewLogicalExpressionNodeByOperatorAndValues(operator string, values []ExpressionNode) *LogicalExpressionNode {
+func newLogicalExpressionNodeByOperatorAndValues(operator string, values []ExpressionNode) *LogicalExpressionNode {
 	return &LogicalExpressionNode{
 		chain:    values,
 		operator: operator,
@@ -167,23 +203,23 @@ func NewLogicalExpressionNodeByOperatorAndValues(operator string, values []Expre
 }
 
 func NewLogicalOr(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
-	return NewLogicalExpressionNode(left, LogicalOperator_OR, right)
+	return newLogicalExpressionNode(left, LogicalOperator_OR, right)
 }
 
 func NewLogicalOrByList(operands []ExpressionNode) *LogicalExpressionNode {
-	return NewLogicalExpressionNodeByOperatorAndValues(LogicalOperator_OR, operands)
+	return newLogicalExpressionNodeByOperatorAndValues(LogicalOperator_OR, operands)
 }
 
 func NewLogicalAnd(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
-	return NewLogicalExpressionNode(left, LogicalOperator_AND, right)
+	return newLogicalExpressionNode(left, LogicalOperator_AND, right)
 }
 
 func NewLogicalAndByList(operands []ExpressionNode) *LogicalExpressionNode {
-	return NewLogicalExpressionNodeByOperatorAndValues(LogicalOperator_AND, operands)
+	return newLogicalExpressionNodeByOperatorAndValues(LogicalOperator_AND, operands)
 }
 
 func NewLogicalNot(op ExpressionNode) *LogicalExpressionNode {
-	return NewLogicalExpressionNode(op, LogicalOperator_NOT, nil)
+	return newLogicalExpressionNode(op, LogicalOperator_NOT, nil)
 }
 
 //RelationExpressionNode -----
