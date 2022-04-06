@@ -135,6 +135,8 @@ type ExpressionNode interface {
 
 //LogicalExpressionNode ----
 type LogicalExpressionNode struct {
+	chain    []ExpressionNode
+	operator string
 }
 
 func (e *LogicalExpressionNode) ExpressionNodeLabel() {
@@ -147,24 +149,41 @@ func (e *LogicalExpressionNode) String() string {
 	return "nil"
 }
 
+func NewLogicalExpressionNode(left ExpressionNode, operator string, right ExpressionNode) *LogicalExpressionNode {
+	var chain []ExpressionNode
+	chain[0] = left
+	chain[1] = right
+	return &LogicalExpressionNode{
+		chain:    chain,
+		operator: operator,
+	}
+}
+
+func NewLogicalExpressionNodeByOperatorAndValues(operator string, values []ExpressionNode) *LogicalExpressionNode {
+	return &LogicalExpressionNode{
+		chain:    values,
+		operator: operator,
+	}
+}
+
 func NewLogicalOr(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
-	return &LogicalExpressionNode{}
+	return NewLogicalExpressionNode(left, LogicalOperator_OR, right)
 }
 
 func NewLogicalOrByList(operands []ExpressionNode) *LogicalExpressionNode {
-	return &LogicalExpressionNode{}
+	return NewLogicalExpressionNodeByOperatorAndValues(LogicalOperator_OR, operands)
 }
 
 func NewLogicalAnd(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
-	return &LogicalExpressionNode{}
+	return NewLogicalExpressionNode(left, LogicalOperator_AND, right)
 }
 
 func NewLogicalAndByList(operands []ExpressionNode) *LogicalExpressionNode {
-	return &LogicalExpressionNode{}
+	return NewLogicalExpressionNodeByOperatorAndValues(LogicalOperator_AND, operands)
 }
 
 func NewLogicalNot(op ExpressionNode) *LogicalExpressionNode {
-	return &LogicalExpressionNode{}
+	return NewLogicalExpressionNode(op, LogicalOperator_NOT, nil)
 }
 
 //RelationExpressionNode -----
