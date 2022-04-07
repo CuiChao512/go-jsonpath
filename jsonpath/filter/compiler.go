@@ -112,7 +112,7 @@ func (c *Compiler) readLogicalANDOperand() ExpressionNode {
 	return c.readExpression()
 }
 
-func (c *Compiler) readValueNode() (ValueNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readValueNode() (ValueNode, error) {
 	filter := c.filter
 	switch filter.SkipBlanks().CurrentChar() {
 	case DOC_CONTEXT:
@@ -134,7 +134,7 @@ func (c *Compiler) readValueNode() (ValueNode, *jsonpath.InvalidPathError) {
 	}
 }
 
-func (c *Compiler) readLiteral() (ValueNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readLiteral() (ValueNode, error) {
 	switch c.filter.SkipBlanks().CurrentChar() {
 	case SINGLE_QUOTE:
 		return c.readStringLiteral(SINGLE_QUOTE)
@@ -197,7 +197,7 @@ func (c *Compiler) readRelationalOperator() string {
 	return filter.SubSequence(begin, filter.Position())
 }
 
-func (c *Compiler) readNullLiteral() (*NullNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readNullLiteral() (*NullNode, error) {
 	filter := c.filter
 
 	begin := filter.Position()
@@ -214,7 +214,7 @@ func (c *Compiler) readNullLiteral() (*NullNode, *jsonpath.InvalidPathError) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected <null> value"}
 }
 
-func (c *Compiler) readJsonLiteral() (*JsonNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readJsonLiteral() (*JsonNode, error) {
 	filter := c.filter
 
 	begin := filter.Position()
@@ -257,7 +257,7 @@ func (c *Compiler) endOfFlags(position int) int {
 	return endIndex
 }
 
-func (c *Compiler) readPattern() (*PatternNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readPattern() (*PatternNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 	closingIndex := filter.NextIndexOfUnescaped(PATTERN)
@@ -279,7 +279,7 @@ func (c *Compiler) readPattern() (*PatternNode, *jsonpath.InvalidPathError) {
 	return NewPatternNode(pattern), nil
 }
 
-func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 
@@ -306,7 +306,7 @@ func (c *Compiler) readNumberLiteral() *NumberNode {
 	return NewNumberNode(numberLiteral)
 }
 
-func (c *Compiler) readBooleanLiteral() (*BooleanNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readBooleanLiteral() (*BooleanNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 	end := filter.Position() + 4
@@ -330,7 +330,7 @@ func (c *Compiler) readBooleanLiteral() (*BooleanNode, *jsonpath.InvalidPathErro
 	return NewBooleanNode(boolValue), nil
 }
 
-func (c *Compiler) readPath() (*PathNode, *jsonpath.InvalidPathError) {
+func (c *Compiler) readPath() (*PathNode, error) {
 	filter := c.filter
 	previousSignificantChar := filter.PreviousSignificantChar()
 	begin := filter.Position()
@@ -393,7 +393,7 @@ func (*Compiler) isRelationalOperatorChar(c rune) bool {
 	return c == LT || c == GT || c == EQ || c == TILDE || c == NOT
 }
 
-func (c *Compiler) Compile() (jsonpath.Predicate, *jsonpath.InvalidPathError) {
+func (c *Compiler) Compile() (jsonpath.Predicate, error) {
 	result := c.readLogicalOR()
 	filter := c.filter
 	filter.SkipBlanks()

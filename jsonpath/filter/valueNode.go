@@ -2,47 +2,48 @@ package filter
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
+	"reflect"
 )
 
 type ValueNode interface {
-	TypeOf(ctx jsonpath.PredicateContext) string
+	TypeOf(ctx jsonpath.PredicateContext) reflect.Kind
 	IsPatternNode() bool
-	AsPatternNode() (*PatternNode, *jsonpath.InvalidPathError)
+	AsPatternNode() (*PatternNode, error)
 	IsPathNode() bool
-	AsPathNode() (*PathNode, *jsonpath.InvalidPathError)
+	AsPathNode() (*PathNode, error)
 	IsNumberNode() bool
-	AsNumberNode() (*NumberNode, *jsonpath.InvalidPathError)
+	AsNumberNode() (*NumberNode, error)
 	IsStringNode() bool
-	AsStringNode() (*StringNode, *jsonpath.InvalidPathError)
+	AsStringNode() (*StringNode, error)
 	IsBooleanNode() bool
-	AsBooleanNode() (*BooleanNode, *jsonpath.InvalidPathError)
+	AsBooleanNode() (*BooleanNode, error)
 	IsPredicateNode() bool
-	AsPredicateNode() (*PredicateNode, *jsonpath.InvalidPathError)
+	AsPredicateNode() (*PredicateNode, error)
 	IsValueListNode() bool
-	AsValueListNode() (*ValueListNode, *jsonpath.InvalidPathError)
+	AsValueListNode() (*ValueListNode, error)
 	IsNullNode() bool
-	AsNullNode() (*NullNode, *jsonpath.InvalidPathError)
+	AsNullNode() (*NullNode, error)
 	IsUndefinedNode() bool
-	AsUndefinedNode() (*UndefinedNode, *jsonpath.InvalidPathError)
+	AsUndefinedNode() (*UndefinedNode, error)
 	IsClassNode() bool
-	AsClassNode() (*ClassNode, *jsonpath.InvalidPathError)
+	AsClassNode() (*ClassNode, error)
 	IsOffsetDateTimeNode() bool
-	AsOffsetDateTimeNode() (*OffsetDateTimeNode, *jsonpath.InvalidPathError)
+	AsOffsetDateTimeNode() (*OffsetDateTimeNode, error)
 	String() string
 }
 
 type valueNodeDefault struct {
 }
 
-func (n *valueNodeDefault) TypeOf(ctx jsonpath.PredicateContext) string {
-	return "void"
+func (n *valueNodeDefault) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Invalid
 }
 
 func (n *valueNodeDefault) IsPatternNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsPatternNode() (*PatternNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsPatternNode() (*PatternNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected regexp node"}
 }
 
@@ -50,7 +51,7 @@ func (n *valueNodeDefault) IsPathNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsPathNode() (*PathNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsPathNode() (*PathNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected path node"}
 }
 
@@ -58,7 +59,7 @@ func (n *valueNodeDefault) IsNumberNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsNumberNode() (*NumberNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsNumberNode() (*NumberNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected number node"}
 }
 
@@ -66,7 +67,7 @@ func (n *valueNodeDefault) IsStringNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsStringNode() (*StringNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsStringNode() (*StringNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected string node"}
 }
 
@@ -74,7 +75,7 @@ func (n *valueNodeDefault) IsBooleanNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsBooleanNode() (*BooleanNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsBooleanNode() (*BooleanNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected boolean node"}
 }
 
@@ -82,7 +83,7 @@ func (n *valueNodeDefault) IsPredicateNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsPredicateNode() (*PredicateNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsPredicateNode() (*PredicateNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected predicate node"}
 }
 
@@ -90,7 +91,7 @@ func (n *valueNodeDefault) IsValueListNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsValueListNode() (*ValueListNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsValueListNode() (*ValueListNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected value list node"}
 }
 
@@ -98,7 +99,7 @@ func (n *valueNodeDefault) IsNullNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsNullNode() (*NullNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsNullNode() (*NullNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected null node"}
 }
 
@@ -106,7 +107,7 @@ func (n *valueNodeDefault) IsUndefinedNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsUndefinedNode() (*UndefinedNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsUndefinedNode() (*UndefinedNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected undefined node"}
 }
 
@@ -114,7 +115,7 @@ func (n *valueNodeDefault) IsClassNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsClassNode() (*ClassNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsClassNode() (*ClassNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected class node"}
 }
 
@@ -122,7 +123,7 @@ func (n *valueNodeDefault) IsOffsetDateTimeNode() bool {
 	return false
 }
 
-func (_ *valueNodeDefault) AsOffsetDateTimeNode() (*OffsetDateTimeNode, *jsonpath.InvalidPathError) {
+func (_ *valueNodeDefault) AsOffsetDateTimeNode() (*OffsetDateTimeNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected offset date time node"}
 }
 

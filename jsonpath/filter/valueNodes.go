@@ -4,6 +4,7 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -33,7 +34,7 @@ func (pn *PatternNode) IsPatternNode() bool {
 	return true
 }
 
-func (pn *PatternNode) AsPatternNode() (*PatternNode, *jsonpath.InvalidPathError) {
+func (pn *PatternNode) AsPatternNode() (*PatternNode, error) {
 	return pn, nil
 }
 
@@ -74,7 +75,7 @@ func (pn *PathNode) IsPathNode() bool {
 	return true
 }
 
-func (pn *PathNode) AsPathNode() (*PathNode, *jsonpath.InvalidPathError) {
+func (pn *PathNode) AsPathNode() (*PathNode, error) {
 	return pn, nil
 }
 
@@ -197,6 +198,32 @@ type PredicateNode struct {
 // ValueListNode -----------
 type ValueListNode struct {
 	*valueNodeDefault
+	nodes []ValueNode
+}
+
+func (v *ValueListNode) Contains(node ValueNode) bool {
+	return jsonpath.UtilsSliceContains(v.nodes, node)
+}
+
+func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
+	for _, leftNode := range v.nodes {
+		if !jsonpath.UtilsSliceContains(right, leftNode) {
+			return false
+		}
+	}
+	return true
+}
+
+func (v *ValueListNode) GetNodes() []ValueNode {
+	return v.nodes
+}
+
+func (v *ValueListNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Slice
+}
+
+func (v *ValueListNode) IsValueListNode() bool {
+	return true
 }
 
 // NullNode -----------
