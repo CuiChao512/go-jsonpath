@@ -3,6 +3,7 @@ package filter
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/path"
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -47,22 +48,18 @@ func (pn *PatternNode) String() string {
 // PathNode ------PathNode-----
 type PathNode struct {
 	*valueNodeDefault
-	path        *path.Path
+	path        path.Path
 	existsCheck bool
 	shouldExist bool
 }
 
 func NewPathNodeWithString(pathString string, existsCheck bool, shouldExist bool) *PathNode {
 	compiledPath := path.Compile(pathString)
-	return &PathNode{path: &compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}
+	return &PathNode{path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}
 }
 
-func NewPathNode(path *path.Path, existsCheck bool, shouldExist bool) *PathNode {
+func NewPathNode(path path.Path, existsCheck bool, shouldExist bool) *PathNode {
 	return &PathNode{path: path, existsCheck: existsCheck, shouldExist: shouldExist}
-}
-
-func (pn *PathNode) GetPath() *path.Path {
-	return pn.path
 }
 
 func (pn *PathNode) IsExistsCheck() bool {
@@ -91,17 +88,69 @@ func (pn *PathNode) AsExistsCheck(shouldExist bool) *PathNode {
 
 func (pn *PathNode) String() string {
 	if pn.existsCheck && !pn.shouldExist {
-		return "!" + (*pn.path).String()
+		return "!" + pn.path.String()
 	} else {
-		return (*pn.path).String()
+		return pn.path.String()
 	}
 }
 
-func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) ValueNode {
+func (pn *PathNode) GetPath() path.Path {
+	return pn.path
+}
+
+func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 	if pn.IsExistsCheck() {
-		return FALSE_NODE
+		c := &jsonpath.Configuration{} //TODO
+		result, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
+		if err == nil {
+			if result == jsonpath.JsonProviderUndefined {
+				return FALSE_NODE, nil
+			} else {
+				return TRUE_NODE, nil
+			}
+		} else {
+			return FALSE_NODE, nil
+		}
 	} else {
-		return UNDEFINED_NODE
+		var res interface{}
+		switch ctx.(type) {
+		case *jsonpath.PredicateContextImpl:
+			ctxi, _ := ctx.(*jsonpath.PredicateContextImpl)
+			res = ctxi.Evaluate(pn.path)
+		default:
+			var doc interface{}
+			if pn.path.IsRootPath() {
+				doc = ctx.Root()
+			} else {
+				doc = ctx.Item()
+			}
+
+			evaCtx, _ := pn.path.Evaluate(doc, ctx.Root(), ctx.Configuration())
+			res = evaCtx.GetValue()
+		}
+
+		res = ctx.Configuration().JsonProvider().Unwrap(res)
+		resString := ""
+		if res == nil {
+			return NULL_NODE, nil
+		} else if ctx.Configuration().JsonProvider().IsArray(res) {
+			return NewJsonNode(resString), nil
+		} else if ctx.Configuration().JsonProvider().IsMap(res) {
+			return NewJsonNode(resString), nil
+		}
+		switch res.(type) {
+		case int:
+			return NewNumberNode(resString), nil
+		case float32:
+		case float64:
+		case string:
+		case bool:
+		case *OffsetDateTimeNode:
+		default:
+			return nil, &jsonpath.JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
+		}
+
+		return UNDEFINED_NODE, nil
 	}
 }
 
