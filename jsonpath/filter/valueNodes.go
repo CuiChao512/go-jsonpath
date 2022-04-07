@@ -145,6 +145,11 @@ func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 		case float64:
 		case string:
 		case bool:
+			resBool := false
+			if resString == "true" {
+				resBool = true
+			}
+			return NewBooleanNode(resBool), nil
 		case *OffsetDateTimeNode:
 		default:
 			return nil, &jsonpath.JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
