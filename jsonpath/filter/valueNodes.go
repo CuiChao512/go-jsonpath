@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/shopspring/decimal"
 )
 
 var NULL_NODE = NewNullNode()
@@ -163,9 +165,65 @@ func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 // NumberNode -----------
 type NumberNode struct {
 	*valueNodeDefault
+	number *decimal.Decimal
 }
 
-func NewNumberNode(str string) *NumberNode {
+func (n *NumberNode) AsStringNode() (*StringNode, error) {
+	return NewStringNode(n.number.String(), false), nil
+}
+
+func (n *NumberNode) GetNumber() *decimal.Decimal {
+	return n.number
+}
+
+func (n *NumberNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Float64
+}
+
+func (n *NumberNode) IsNumberNode() bool {
+	return true
+}
+
+func (n *NumberNode) AsNumberNode() (*NumberNode, error) {
+	return n, nil
+}
+
+func (n *NumberNode) String() string {
+	return n.number.String()
+}
+
+func (n *NumberNode) Equals(o interface{}) bool {
+	if n == o {
+		return true
+	}
+	switch o.(type) {
+	case *NumberNode:
+		that, _ := o.(*NumberNode)
+		if that.number == nil {
+			return false
+		} else {
+			return n.number.Equals(*that.number)
+		}
+	case *StringNode:
+		v, _ := o.(*StringNode)
+		that, _ := v.AsNumberNode()
+		if that.number == nil {
+			return false
+		} else {
+			return n.number.Equals(*that.number)
+		}
+	default:
+		return false
+	}
+}
+
+func NewNumberNode(decimal2 *decimal.Decimal) *NumberNode {
+	return &NumberNode{
+		number: decimal2,
+	}
+}
+
+func NewNumberNodeByString(str string) *NumberNode {
 	return &NumberNode{}
 }
 
@@ -354,11 +412,67 @@ type ClassNode struct {
 	*valueNodeDefault
 }
 
+// OffsetDateTime -----
+type OffsetDateTime struct {
+}
+
+func (o *OffsetDateTime) String() string {
+	return ""
+}
+
 // OffsetDateTimeNode -----------
 type OffsetDateTimeNode struct {
 	*valueNodeDefault
+	dateTime *OffsetDateTime
 }
 
+func (n *OffsetDateTimeNode) AsStringNode() (*StringNode, error) {
+	return NewStringNode(n.dateTime.String(), false), nil
+}
+
+func (n *OffsetDateTimeNode) GetDate() *OffsetDateTime {
+	return n.dateTime
+}
+
+func (n *OffsetDateTimeNode) TypeOf(ctx *jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Interface
+}
+
+func (n *OffsetDateTimeNode) IsOffsetDateTimeNode() bool {
+	return true
+}
+
+func (n *OffsetDateTimeNode) AsOffsetDateTimeNode() (*OffsetDateTimeNode, error) {
+	return n, nil
+}
+
+func (n *OffsetDateTimeNode) String() string {
+	return n.dateTime.String()
+}
+
+func (n *OffsetDateTimeNode) Equals(o interface{}) bool {
+	if n == o {
+		return true
+	}
+	switch o.(type) {
+	case *OffsetDateTimeNode:
+		v, _ := o.(ValueNode)
+		that, _ := v.AsOffsetDateTimeNode()
+		return OffsetDateTimeCompare(n.dateTime, that.dateTime) == 0
+	case *StringNode:
+		v, _ := o.(ValueNode)
+		that, _ := v.AsOffsetDateTimeNode()
+		return OffsetDateTimeCompare(n.dateTime, that.dateTime) == 0
+	default:
+		return false
+	}
+}
+
+func OffsetDateTimeCompare(this *OffsetDateTime, that *OffsetDateTime) int {
+	return 0
+}
+
+// JsonNode --------
 type JsonNode struct {
 	*valueNodeDefault
 }
