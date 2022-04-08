@@ -184,6 +184,43 @@ type BooleanNode struct {
 	value bool
 }
 
+func (*BooleanNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Bool
+}
+
+func (*BooleanNode) IsBooleanNode() bool {
+	return true
+}
+
+func (n *BooleanNode) AsBooleanNode() (*BooleanNode, error) {
+	return n, nil
+}
+
+func (n *BooleanNode) GetBoolean() bool {
+	return n.value
+}
+
+func (n *BooleanNode) String() string {
+	if n.value {
+		return "true"
+	} else {
+		return "false"
+	}
+}
+
+func (n *BooleanNode) Equals(o interface{}) bool {
+	if n == o {
+		return true
+	}
+	switch o.(type) {
+	case *BooleanNode:
+		that, _ := o.(bool)
+		return n.value == that
+	default:
+		return false
+	}
+}
+
 func NewBooleanNode(value bool) *BooleanNode {
 	return &BooleanNode{
 		value: value,
@@ -193,6 +230,31 @@ func NewBooleanNode(value bool) *BooleanNode {
 // PredicateNode -----------
 type PredicateNode struct {
 	*valueNodeDefault
+	predicate jsonpath.Predicate
+}
+
+func (n *PredicateNode) GetPredicate() jsonpath.Predicate {
+	return n.predicate
+}
+
+func (n *PredicateNode) AsPredicateNode() (*PredicateNode, error) {
+	return n, nil
+}
+
+func (n *PredicateNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Invalid
+}
+
+func (n *PredicateNode) IsPredicateNode() bool {
+	return true
+}
+
+func (n *PredicateNode) Equals(o interface{}) bool {
+	return false
+}
+
+func (n *PredicateNode) String() string {
+	return n.predicate.String()
 }
 
 // ValueListNode -----------
@@ -231,6 +293,34 @@ type NullNode struct {
 	*valueNodeDefault
 }
 
+func (n *NullNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Invalid
+}
+
+func (n *NullNode) IsNullNode() bool {
+	return true
+}
+
+func (n *NullNode) AsNullNode() (*NullNode, error) {
+	return n, nil
+}
+
+func (n *NullNode) String() string {
+	return "null"
+}
+
+func (n *NullNode) Equals(o interface{}) bool {
+	if n == o {
+		return true
+	}
+	switch o.(type) {
+	case *NullNode:
+		return true
+	default:
+		return false
+	}
+}
+
 func NewNullNode() *NullNode {
 	return &NullNode{}
 }
@@ -240,6 +330,21 @@ type UndefinedNode struct {
 	*valueNodeDefault
 }
 
+func (n *UndefinedNode) AsUndefinedNode() (*UndefinedNode, error) {
+	return n, nil
+}
+
+func (n *UndefinedNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.Invalid
+}
+
+func (n *UndefinedNode) IsUndefinedNode() bool {
+	return true
+}
+
+func (n *UndefinedNode) Equals(o interface{}) bool {
+	return false
+}
 func NewUndefinedNode() *UndefinedNode {
 	return &UndefinedNode{}
 }

@@ -30,6 +30,7 @@ type ValueNode interface {
 	IsOffsetDateTimeNode() bool
 	AsOffsetDateTimeNode() (*OffsetDateTimeNode, error)
 	String() string
+	Equals(o interface{}) bool
 }
 
 type valueNodeDefault struct {
@@ -129,4 +130,8 @@ func (_ *valueNodeDefault) AsOffsetDateTimeNode() (*OffsetDateTimeNode, error) {
 
 func (n *valueNodeDefault) String() string {
 	return ""
+}
+
+func (n *valueNodeDefault) Equals(o interface{}) bool {
+	return false
 }
