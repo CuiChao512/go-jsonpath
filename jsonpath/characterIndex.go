@@ -319,8 +319,16 @@ func (ci *CharacterIndex) SkipBlanksAtEnd() *CharacterIndex {
 	return ci
 }
 
-func (ci *CharacterIndex) trim() *CharacterIndex {
+func (ci *CharacterIndex) Trim() *CharacterIndex {
 	ci.SkipBlanks()
 	ci.SkipBlanksAtEnd()
 	return ci
+}
+
+func NewCharacterIndex(pathString string) *CharacterIndex {
+	return &CharacterIndex{
+		charSequence: pathString,
+		position:     0,
+		endPosition:  len(pathString) - 1,
+	}
 }

@@ -73,6 +73,27 @@ func (cp *CompiledPath) IsRootPath() bool {
 	return false
 }
 
-func Compile(pathString string) Path {
+func (cp *CompiledPath) readContextToken() RootPathToken {
+
+}
+
+func fail(message string) *jsonpath.InvalidPathError {
+	return &jsonpath.InvalidPathError{Message: message}
+}
+
+func Compile(pathString string, filters ...jsonpath.Predicate) (Path, error) {
+	ci := jsonpath.NewCharacterIndex(pathString)
+
+	if ci.CharAt(0) != DOC_CONTEXT && ci.CharAt(0) != EVAL_CONTEXT {
+		ci = jsonpath.NewCharacterIndex("$." + pathString)
+	}
+	ci.Trim()
+
+	if ci.LastCharIs('.') {
+		return nil, fail("Path must not end with a '.' or '..'")
+	}
+
+	filterStack := filters[:]
+
 	return &CompiledPath{}
 }
