@@ -14,7 +14,7 @@ import (
 var NULL_NODE = NewNullNode()
 var TRUE_NODE = NewBooleanNode(true)
 var FALSE_NODE = NewBooleanNode(false)
-var UNDEFINED_NODE = UndefinedNode{}
+var UNDEFINED_NODE = &UndefinedNode{}
 
 // PatternNode -------patternNode------
 type PatternNode struct {
@@ -143,7 +143,7 @@ func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 		}
 		switch res.(type) {
 		case int:
-			return NewNumberNode(resString), nil
+			return NewNumberNodeByString(resString), nil
 		case float32:
 		case float64:
 		case string:
@@ -224,16 +224,97 @@ func NewNumberNode(decimal2 *decimal.Decimal) *NumberNode {
 }
 
 func NewNumberNodeByString(str string) *NumberNode {
-	return &NumberNode{}
+	decimal2, err := decimal.NewFromString(str)
+	if err == nil {
+		return &NumberNode{
+			number: &decimal2,
+		}
+	} else {
+		return nil
+	}
+
 }
 
 // StringNode -----------
 type StringNode struct {
 	*valueNodeDefault
+	str            string
+	useSingleQuote bool
+}
+
+func (n *StringNode) AsNumberNode() (*NumberNode, error) {
+	number, err := decimal.NewFromString(n.str)
+	if err != nil {
+		return nil, nil
+	} else {
+		return NewNumberNode(&number), nil
+	}
+}
+
+func (n *StringNode) GetString() string {
+	return n.str
+}
+
+func (n *StringNode) Length() int {
+	return len(n.str)
+}
+
+func (n *StringNode) IsEmpty() bool {
+	return len(n.str) == 0
+}
+
+func (n *StringNode) Contains(str1 string) bool {
+	return strings.Contains(n.str, str1)
+}
+
+func (n *StringNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	return reflect.String
+}
+
+func (n *StringNode) IsStringNode() bool {
+	return true
+}
+
+func (n *StringNode) AsStringNode() (*StringNode, error) {
+	return n, nil
 }
 
 func NewStringNode(str string, escape bool) *StringNode {
 	return &StringNode{}
+}
+
+func (n *StringNode) String() string {
+	quote := "\""
+	if n.useSingleQuote {
+		quote = "'"
+	}
+	//TODO: string escape
+	return quote + n.str + quote
+}
+
+func (n *StringNode) Equals(o interface{}) bool {
+	if n == o {
+		return true
+	}
+	switch o.(type) {
+	case *NumberNode:
+		v, _ := o.(*NumberNode)
+		that, _ := v.AsStringNode()
+		if len(that.str) == 0 {
+			return false
+		} else {
+			return n.str == that.str
+		}
+	case *StringNode:
+		that, _ := o.(*StringNode)
+		if len(that.str) == 0 {
+			return false
+		} else {
+			return n.str == that.str
+		}
+	default:
+		return false
+	}
 }
 
 // BooleanNode -----------
@@ -346,6 +427,10 @@ func (v *ValueListNode) IsValueListNode() bool {
 	return true
 }
 
+func NewValueListNode(list []interface{}) *ValueListNode {
+	return nil
+}
+
 // NullNode -----------
 type NullNode struct {
 	*valueNodeDefault
@@ -434,7 +519,7 @@ func (n *OffsetDateTimeNode) GetDate() *OffsetDateTime {
 	return n.dateTime
 }
 
-func (n *OffsetDateTimeNode) TypeOf(ctx *jsonpath.PredicateContext) reflect.Kind {
+func (n *OffsetDateTimeNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
 	return reflect.Interface
 }
 
@@ -475,6 +560,71 @@ func OffsetDateTimeCompare(this *OffsetDateTime, that *OffsetDateTime) int {
 // JsonNode --------
 type JsonNode struct {
 	*valueNodeDefault
+	json   interface{}
+	parsed bool
+}
+
+func (n *JsonNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+	if n.IsArray(ctx) {
+		return reflect.Slice
+	} else {
+		parsedCtx, _ := n.Parse(ctx)
+		switch parsedCtx.(type) {
+		case decimal.Decimal:
+			return reflect.Float64
+		case string:
+			return reflect.String
+		case bool:
+			return reflect.Bool
+		default:
+			return reflect.Invalid
+		}
+	}
+}
+
+func (*JsonNode) IsJsonNode() bool {
+	return true
+}
+
+func (n *JsonNode) AsJsonNode() (*JsonNode, error) {
+	return n, nil
+}
+
+func (n *JsonNode) IsParsed() bool {
+	return n.parsed
+}
+
+func (n *JsonNode) GetJson() interface{} {
+	return n.json
+}
+
+func (n *JsonNode) IsArray(ctx jsonpath.PredicateContext) bool {
+	parsedObj, _ := n.Parse(ctx)
+	return jsonpath.UtilsIsSlice(parsedObj)
+}
+
+func (n *JsonNode) IsMap(ctx jsonpath.PredicateContext) bool {
+	parsedObj, _ := n.Parse(ctx)
+	return jsonpath.UtilsIsMap(parsedObj)
+}
+
+func (n *JsonNode) Parse(ctx jsonpath.PredicateContext) (interface{}, error) {
+	if n.parsed {
+		return n.json, nil
+	} else {
+		//TODO:new JSONParser(JSONParser.MODE_PERMISSIVE).parse(json.toString());
+		return nil, nil
+	}
+}
+
+func (n *JsonNode) AsValueListNodeByPredicateContext(ctx jsonpath.PredicateContext) (ValueNode, error) {
+	if !n.IsArray(ctx) {
+		return UNDEFINED_NODE, nil
+	} else {
+		parsedObj, _ := n.Parse(ctx)
+		list, _ := parsedObj.([]interface{})
+		return NewValueListNode(list), nil
+	}
 }
 
 func NewJsonNode(json string) *JsonNode {

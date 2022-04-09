@@ -112,6 +112,14 @@ func (_ *valueNodeDefault) AsUndefinedNode() (*UndefinedNode, error) {
 	return nil, &jsonpath.InvalidPathError{Message: "Expected undefined node"}
 }
 
+func (n *valueNodeDefault) IsJsonNode() bool {
+	return false
+}
+
+func (_ *valueNodeDefault) AsJsonNode() (*JsonNode, error) {
+	return nil, &jsonpath.InvalidPathError{Message: "Expected json node"}
+}
+
 func (n *valueNodeDefault) IsClassNode() bool {
 	return false
 }

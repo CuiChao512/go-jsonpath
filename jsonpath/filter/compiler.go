@@ -303,7 +303,7 @@ func (c *Compiler) readNumberLiteral() *NumberNode {
 	}
 	numberLiteral := filter.SubSequence(begin, filter.Position())
 	log.Printf("NumberLiteral from %d to %d -> [%s]", begin, filter.Position(), numberLiteral)
-	return NewNumberNode(numberLiteral)
+	return NewNumberNodeByString(numberLiteral)
 }
 
 func (c *Compiler) readBooleanLiteral() (*BooleanNode, error) {

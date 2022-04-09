@@ -24,3 +24,19 @@ func UtilsSliceContains(slice interface{}, item interface{}) bool {
 	}
 	return false
 }
+
+func UtilsIsSlice(slice interface{}) bool {
+	s := reflect.ValueOf(slice)
+	if s.Kind() == reflect.Slice {
+		return true
+	}
+	return false
+}
+
+func UtilsIsMap(mapObj interface{}) bool {
+	s := reflect.ValueOf(mapObj)
+	if s.Kind() == reflect.Map {
+		return true
+	}
+	return false
+}
