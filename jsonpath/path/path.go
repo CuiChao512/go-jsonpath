@@ -14,4 +14,11 @@ type Path interface {
 }
 
 type Ref interface {
+	GetAccessor() interface{}
+	Set(newVal interface{}, configuration *jsonpath.Configuration)
+	Convert(mapFunction jsonpath.MapFunction, configuration *jsonpath.Configuration)
+	Delete(configuration *jsonpath.Configuration)
+	Add(newVal interface{}, configuration *jsonpath.Configuration)
+	Put(key string, newVal interface{}, configuration *jsonpath.Configuration)
+	RenameKey(oldKeyName string, newKeyName string, configuration *jsonpath.Configuration)
 }

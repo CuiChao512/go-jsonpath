@@ -6,5 +6,5 @@ import (
 )
 
 type PathFunction interface {
-	Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters []*Parameter)
+	Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters []*Parameter) interface{}
 }

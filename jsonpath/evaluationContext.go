@@ -1,5 +1,7 @@
 package jsonpath
 
+import "cuichao.com/go-jsonpath/jsonpath/path"
+
 type EvaluationContext interface {
 	Configuration() *Configuration
 	RootDocument() interface{}
@@ -23,4 +25,12 @@ func (e *EvaluationContextImpl) GetValue() interface{} {
 
 func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) interface{} {
 	return nil
+}
+
+func (e *EvaluationContextImpl) ForUpdate() bool {
+	return false
+}
+
+func (e *EvaluationContextImpl) AddResult(pathString string, operation path.Ref, model interface{}) {
+
 }

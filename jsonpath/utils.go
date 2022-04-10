@@ -40,3 +40,8 @@ func UtilsIsMap(mapObj interface{}) bool {
 	}
 	return false
 }
+
+func UtilsConcat(string ...string) string {
+	//TODO: Utils.concat
+	return ""
+}
