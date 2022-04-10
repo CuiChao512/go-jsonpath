@@ -63,3 +63,11 @@ type JsonPathError struct {
 func (e *JsonPathError) Error() string {
 	return e.Message
 }
+
+type IllegalStateException struct {
+	Message string
+}
+
+func (e *IllegalStateException) Error() string {
+	return e.Message
+}

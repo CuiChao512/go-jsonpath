@@ -1,7 +1,6 @@
 package function
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
@@ -59,5 +58,3 @@ func (p *Parameter) GetJson() string {
 func (p *Parameter) GetLateBindingValue() LateBindingValue {
 	return p.lateBinding
 }
-
-func ParametersToList(ctx jsonpath.EvaluationContext, []*Parameter)

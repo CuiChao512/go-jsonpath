@@ -12,3 +12,6 @@ type Path interface {
 	IsFunctionPath() bool
 	IsRootPath() bool
 }
+
+type Ref interface {
+}

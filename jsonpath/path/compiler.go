@@ -3,6 +3,7 @@ package path
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/filter"
+	"strconv"
 )
 
 const (
@@ -73,8 +74,28 @@ func (cp *CompiledPath) IsRootPath() bool {
 	return false
 }
 
-func (cp *CompiledPath) readContextToken() RootPathToken {
+func (cp *CompiledPath) readContextToken() (*RootPathToken, error) {
+	cp.readWhitespace()
 
+	if !cp.isPathContext(cp.path.CurrentChar()) {
+		return nil, fail("Path must start with '$' or '@'")
+	}
+
+	pathToken := CreateRootPathToken(cp.path.CurrentChar())
+
+	if cp.path.CurrentIsTail() {
+		return pathToken, nil
+	}
+
+	cp.path.IncrementPosition(1)
+
+	if cp.path.CurrentChar() != PERIOD && cp.path.CurrentChar() != OPEN_SQUARE_BRACKET {
+		return nil, fail("Illegal character at position " + strconv.FormatInt(int64(cp.path.Position()), 10) + " expected '.' or '['")
+	}
+
+	appender := pathToken.GetPathTokenAppender()
+	cp.readNextToken(appender)
+	return pathToken, nil
 }
 
 func fail(message string) *jsonpath.InvalidPathError {
