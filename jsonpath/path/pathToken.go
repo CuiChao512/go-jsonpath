@@ -42,9 +42,9 @@ func (t *defaultToken) handleArrayIndex(index int, currentPath string, model int
 	evalPath := jsonpath.UtilsConcat(currentPath, "[", strconv.FormatInt(int64(index), 10), "]")
 	var pathRef Ref
 	if ctx.ForUpdate() {
-		pathRef = CreatePathRef(model, index)
+		pathRef = CreateArrayIndexPathRef(model, index)
 	} else {
-		pathRef = Ref_NO_OP
+		pathRef = PathRefNoOp
 	}
 }
 

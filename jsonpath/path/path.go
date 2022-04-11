@@ -73,18 +73,27 @@ func (r *defaultRef) CompareTo(o Ref) int {
 	return strings.Compare(jsonpath.UtilsToString(r.GetAccessor()), jsonpath.UtilsToString(o.GetAccessor())) * -1
 }
 
-var PATH_REF_NO_OP Ref = &defaultRef{}
+var PathRefNoOp Ref = &defaultRef{}
 
 func CreateObjectPropertyPathRef(obj interface{}, property string) Ref {
-	return &objectPropertyPathRef(obj, property)
+	om := &objectPropertyPathRef{}
+	om.parent = obj
+	om.property = property
+	return om
 }
 
 func CreateObjectMultiPropertyPathRef(obj interface{}, properties []string) Ref {
-	return &objectMultiPropertyPathRef(obj, property)
+	om := &objectMultiPropertyPathRef{}
+	om.parent = obj
+	om.properties = properties
+	return om
 }
 
 func CreateArrayIndexPathRef(array interface{}, index int) Ref {
-	return &objectArrayIndexPathRef(obj, property)
+	a := &arrayIndexPathRef{}
+	a.parent = array
+	a.index = index
+	return a
 }
 
 func CreateRootPathRef(root interface{}) Ref {
@@ -137,4 +146,180 @@ func (r *rootPathRef) RenameKey(oldKeyName string, newKeyName string, configurat
 	}
 	err := r.renameInMap(target, oldKeyName, newKeyName, configuration)
 	return err
+}
+
+// arrayIndexPathRef
+type arrayIndexPathRef struct {
+	*defaultRef
+	index int
+}
+
+func (r *arrayIndexPathRef) GetAccessor() interface{} {
+	return r.index
+}
+
+func (r *arrayIndexPathRef) Set(newVal interface{}, configuration *jsonpath.Configuration) error {
+	configuration.JsonProvider().SetArrayIndex(r.parent, r.index, newVal)
+	return nil
+}
+
+func (r *arrayIndexPathRef) Convert(mapFunction jsonpath.MapFunction, configuration *jsonpath.Configuration) error {
+	currentValue := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	configuration.JsonProvider().SetArrayIndex(r.parent, r.index, mapFunction.Map(currentValue, configuration))
+	return nil
+}
+
+func (r *arrayIndexPathRef) Delete(configuration *jsonpath.Configuration) error {
+	configuration.JsonProvider().RemoveProperty(r.parent, r.index)
+	return nil
+}
+
+func (r *arrayIndexPathRef) Add(value interface{}, configuration *jsonpath.Configuration) error {
+	target := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if r.targetInvalid(target) {
+		return nil
+	}
+	if configuration.JsonProvider().IsArray(target) {
+		configuration.JsonProvider().SetProperty(target, nil, value)
+	} else {
+		return &jsonpath.InvalidModificationError{Message: "Can only add to an array"}
+	}
+	return nil
+}
+
+func (r *arrayIndexPathRef) Put(key string, value interface{}, configuration *jsonpath.Configuration) error {
+	target := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if r.targetInvalid(target) {
+		return nil
+	}
+	if configuration.JsonProvider().IsMap(target) {
+		configuration.JsonProvider().SetProperty(target, key, value)
+	} else {
+		return &jsonpath.InvalidModificationError{Message: "Can only add properties to a map"}
+	}
+	return nil
+}
+
+func (r *arrayIndexPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *jsonpath.Configuration) error {
+	target := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if r.targetInvalid(target) {
+		return nil
+	}
+	return r.renameInMap(target, oldKeyName, newKeyName, configuration)
+}
+
+func (r *arrayIndexPathRef) CompareTo(o Ref) int {
+	switch o.(type) {
+	case *arrayIndexPathRef:
+		pf, _ := o.(*arrayIndexPathRef)
+		return pf.index - r.index
+	default:
+		return r.CompareTo(o)
+	}
+}
+
+// objectPropertyPathRef
+type objectPropertyPathRef struct {
+	*defaultRef
+	property string
+}
+
+func (r *objectPropertyPathRef) GetAccessor() interface{} {
+	return r.property
+}
+
+func (r *objectPropertyPathRef) Set(newVal interface{}, configuration *jsonpath.Configuration) error {
+	configuration.JsonProvider().SetProperty(r.parent, r.property, newVal)
+	return nil
+}
+
+func (r *objectPropertyPathRef) Convert(mapFunction jsonpath.MapFunction, configuration *jsonpath.Configuration) error {
+	currentValue := configuration.JsonProvider().GetMapValue(r.parent, r.property)
+	configuration.JsonProvider().SetProperty(r.parent, r.property, mapFunction.Map(currentValue, configuration))
+	return nil
+}
+
+func (r *objectPropertyPathRef) Delete(configuration *jsonpath.Configuration) error {
+	configuration.JsonProvider().RemoveProperty(r.parent, r.property)
+	return nil
+}
+
+func (r *objectPropertyPathRef) Add(value interface{}, configuration *jsonpath.Configuration) error {
+	target := configuration.JsonProvider().GetMapValue(r.parent, r.property)
+	if r.targetInvalid(target) {
+		return nil
+	}
+	if configuration.JsonProvider().IsArray(target) {
+		configuration.JsonProvider().SetArrayIndex(target, configuration.JsonProvider().Length(target), value)
+	} else {
+		return &jsonpath.InvalidModificationError{Message: "Can only add to an array"}
+	}
+	return nil
+}
+
+func (r *objectPropertyPathRef) Put(keyStr string, value interface{}, configuration *jsonpath.Configuration) error {
+	target := configuration.JsonProvider().GetMapValue(r.parent, r.property)
+	if r.targetInvalid(target) {
+		return nil
+	}
+	if configuration.JsonProvider().IsMap(target) {
+		configuration.JsonProvider().SetProperty(target, keyStr, value)
+	} else {
+		return &jsonpath.InvalidModificationError{Message: "Can only add properties to a map"}
+	}
+	return nil
+}
+
+func (r *objectPropertyPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *jsonpath.Configuration) error {
+	target := configuration.JsonProvider().GetMapValue(r.parent, r.property)
+	if r.targetInvalid(target) {
+		return nil
+	}
+	return r.renameInMap(target, oldKeyName, newKeyName, configuration)
+}
+
+// objectMultiPropertyPathRef
+type objectMultiPropertyPathRef struct {
+	*defaultRef
+	properties []string
+}
+
+func (r *objectMultiPropertyPathRef) GetAccessor() interface{} {
+	return jsonpath.UtilsJoin("&&", "", r.properties)
+}
+
+func (r *objectMultiPropertyPathRef) Set(newVal interface{}, configuration *jsonpath.Configuration) error {
+	for _, property := range r.properties {
+		configuration.JsonProvider().SetProperty(r.parent, property, newVal)
+	}
+	return nil
+}
+
+func (r *objectMultiPropertyPathRef) Convert(mapFunction jsonpath.MapFunction, configuration *jsonpath.Configuration) error {
+	for _, property := range r.properties {
+		currentValue := configuration.JsonProvider().GetMapValue(r.parent, property)
+		if currentValue != jsonpath.JsonProviderUndefined {
+			configuration.JsonProvider().SetProperty(r.parent, property, mapFunction.Map(currentValue, configuration))
+		}
+	}
+	return nil
+}
+
+func (r *objectMultiPropertyPathRef) Delete(configuration *jsonpath.Configuration) error {
+	for _, property := range r.properties {
+		configuration.JsonProvider().RemoveProperty(r.parent, property)
+	}
+	return nil
+}
+
+func (*objectMultiPropertyPathRef) Add(newVal interface{}, configuration *jsonpath.Configuration) error {
+	return &jsonpath.InvalidModificationError{Message: "Add can not be performed to multiple properties"}
+}
+
+func (*objectMultiPropertyPathRef) Put(key string, newVal interface{}, configuration *jsonpath.Configuration) error {
+	return &jsonpath.InvalidModificationError{Message: "Put can not be performed to multiple properties"}
+}
+
+func (*objectMultiPropertyPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *jsonpath.Configuration) error {
+	return &jsonpath.InvalidModificationError{Message: "Rename can not be performed to multiple properties"}
 }
