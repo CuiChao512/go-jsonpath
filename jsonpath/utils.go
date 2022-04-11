@@ -5,13 +5,15 @@ import (
 	"reflect"
 )
 
-func UtilsJoin(delimiter string, warp string, stringValues []string) string {
-	if len(stringValues) == 0 {
-		return ""
-	}
+func UtilsJoin(delimiter string, warp string, values interface{}) string {
 	r := ""
-	for _, stringValue := range stringValues {
-		r += delimiter + warp + stringValue
+	s := reflect.ValueOf(values)
+	if s.Kind() == reflect.Slice {
+		for i := 0; i < s.Len(); i++ {
+			r += delimiter + warp + UtilsToString(s.Index(i).Interface())
+		}
+	} else {
+		return delimiter + warp + UtilsToString(values)
 	}
 	return r
 }
@@ -51,4 +53,9 @@ func UtilsConcat(string ...string) string {
 
 func UtilsToString(obj ...interface{}) string {
 	return fmt.Sprint(obj)
+}
+
+func UtilsCharIsDigit(char rune) bool {
+	return char == '0' || char == '1' || char == '2' || char == '3' || char == '4' ||
+		char == '5' || char == '6' || char == '7' || char == '8' || char == '9'
 }
