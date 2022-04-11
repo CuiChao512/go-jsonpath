@@ -1,6 +1,9 @@
 package jsonpath
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 func UtilsJoin(delimiter string, warp string, stringValues []string) string {
 	if len(stringValues) == 0 {
@@ -44,4 +47,8 @@ func UtilsIsMap(mapObj interface{}) bool {
 func UtilsConcat(string ...string) string {
 	//TODO: Utils.concat
 	return ""
+}
+
+func UtilsToString(obj ...interface{}) string {
+	return fmt.Sprint(obj)
 }
