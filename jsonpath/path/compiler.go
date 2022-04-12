@@ -31,12 +31,12 @@ const (
 	DOUBLE_QUOTE = '"'
 )
 
-type CompiledPath struct {
+type Compiler struct {
 	filterStack []filter.PredicateNode
 	path        *jsonpath.CharacterIndex
 }
 
-func (cp *CompiledPath) readWhitespace() {
+func (cp *Compiler) readWhitespace() {
 	for cp.path.InBounds() {
 		c := cp.path.CurrentChar()
 		if cp.isWhitespace(c) {
@@ -46,39 +46,15 @@ func (cp *CompiledPath) readWhitespace() {
 	}
 }
 
-func (*CompiledPath) isWhitespace(c rune) bool {
+func (*Compiler) isWhitespace(c rune) bool {
 	return c == SPACE || c == TAB || c == LF || c == CR
 }
 
-func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *jsonpath.Configuration) (jsonpath.EvaluationContext, error) {
-	return nil, nil
+func (*Compiler) isPathContext(c rune) bool {
+	return c == DOC_CONTEXT || c == EVAL_CONTEXT
 }
 
-func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *jsonpath.Configuration, forUpdate bool) jsonpath.EvaluationContext {
-	return nil
-}
-
-func (cp *CompiledPath) String() string {
-	return ""
-}
-
-func (cp *CompiledPath) IsDefinite() bool {
-	return false
-}
-
-func (cp *CompiledPath) IsFunctionPath() bool {
-	return false
-}
-
-func (cp *CompiledPath) IsRootPath() bool {
-	return false
-}
-
-func (cp *CompiledPath) GetRoot() *RootPathToken {
-	return cp.root
-}
-
-func (cp *CompiledPath) readContextToken() (*RootPathToken, error) {
+func (cp *Compiler) readContextToken() (*RootPathToken, error) {
 	cp.readWhitespace()
 
 	if !cp.isPathContext(cp.path.CurrentChar()) {
@@ -98,8 +74,19 @@ func (cp *CompiledPath) readContextToken() (*RootPathToken, error) {
 	}
 
 	appender := pathToken.GetPathTokenAppender()
+
 	cp.readNextToken(appender)
 	return pathToken, nil
+}
+
+func (cp *Compiler) readNextToken(appender TokenAppender) bool {
+	switch cp.path.CurrentChar() {
+	case OPEN_SQUARE_BRACKET:
+	case PERIOD:
+	case WILDCARD:
+	default:
+	}
+	return true
 }
 
 func fail(message string) *jsonpath.InvalidPathError {
@@ -118,7 +105,7 @@ func Compile(pathString string, filters ...jsonpath.Predicate) (Path, error) {
 		return nil, fail("Path must not end with a '.' or '..'")
 	}
 
-	filterStack := filters[:]
+	//filterStack := filters[:]
 
-	return &CompiledPath{}
+	return &CompiledPath{}, nil
 }

@@ -376,6 +376,11 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model inter
 	}
 }
 
+func getNextTokenSuppressError(token Token) Token {
+	next, _ := token.nextToken()
+	return next
+}
+
 func (f *FunctionPathToken) cleanWildcardPathToken() {
 	if nil != f.functionParams && len(f.functionParams) > 0 {
 		path := f.functionParams[0].GetPath()
@@ -383,15 +388,16 @@ func (f *FunctionPathToken) cleanWildcardPathToken() {
 		case CompiledPath:
 			if nil != path && !path.IsFunctionPath() {
 				compiledPath, _ := jsonpath.UtilsGetPtrElem(path).(CompiledPath)
-				 root := compiledPath.GetRoot()
-				PathToken tail = root.getNext();
-				while (null != tail && null != tail.getNext() ) {
-				if(tail.getNext() instanceof WildcardPathToken){
-					tail.setNext(tail.getNext().getNext());
-					break;
-				}
-				next, _ := f.tail.getNext()
-				f.tail = f.tail.getNext()
+				root := compiledPath.GetRoot()
+				tail := root.GetNext()
+				for tail != nil && getNextTokenSuppressError(tail) != nil {
+					switch jsonpath.UtilsGetPtrElem(tail.GetNext()).(type) {
+					case WildcardPathToken:
+						tail.SetNext(tail.GetNext().GetNext())
+						break
+					default:
+						tail = tail.GetNext()
+					}
 				}
 			}
 		default:
@@ -419,5 +425,11 @@ func CreateFunctionPathToken(pathFragment string, parameters []*function.Paramet
 //PropertyPathToken
 
 type PropertyPathToken struct {
+	*defaultToken
+}
+
+//WildCardPathToken
+
+type WildcardPathToken struct {
 	*defaultToken
 }
