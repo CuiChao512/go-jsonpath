@@ -299,10 +299,7 @@ func (ci *CharacterIndex) String() string {
 
 func (ci *CharacterIndex) IsNumberCharacter(readPosition int) bool {
 	c := ci.CharAt(readPosition)
-
-	return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' ||
-		c == '5' || c == '6' || c == '7' || c == '8' || c == '9' ||
-		c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
+	return UtilsCharIsDigit(c) || c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
 }
 
 func (ci *CharacterIndex) SkipBlanks() *CharacterIndex {

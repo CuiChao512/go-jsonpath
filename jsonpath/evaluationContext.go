@@ -10,11 +10,33 @@ type EvaluationContext interface {
 }
 
 type EvaluationContextImpl struct {
+	configuration     *Configuration
+	forUpdate         bool
+	path              path.Path
+	rootDocument      interface{}
+	updateOperations  []path.Ref
+	documentEvalCache map[path.Path]interface{}
+	suppressException bool
+	resultIndex       int
+}
+
+func (e *EvaluationContextImpl) GetRoot() *path.RootPathToken {
+	//TODO:
+	return nil
 }
 
 func (e *EvaluationContextImpl) Configuration() *Configuration {
 	return nil
 }
+
+func (e *EvaluationContextImpl) JsonProvider() JsonProvider {
+	return e.Configuration().jsonProvider
+}
+
+func (e *EvaluationContextImpl) Options() []Option {
+	return e.Configuration().options
+}
+
 func (e *EvaluationContextImpl) RootDocument() interface{} {
 	return nil
 }
