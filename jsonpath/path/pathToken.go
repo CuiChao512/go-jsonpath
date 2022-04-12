@@ -16,11 +16,13 @@ type Token interface {
 	Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl)
 	Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl)
 	SetNext(next Token)
+	SetPrev(prev Token)
 	GetNext() Token
 	isLeaf() bool
 	nextToken() (Token, error)
 	prevToken() Token
-	getPathFragment() string
+	GetPathFragment() string
+	appendTailToken(next Token) Token
 }
 
 type defaultToken struct {
@@ -31,6 +33,12 @@ type defaultToken struct {
 	upstreamDefinite   bool
 	upstreamUpdated    bool
 	upstreamArrayIndex int
+}
+
+func (t *defaultToken) appendTailToken(next Token) Token {
+	t.next = next
+	t.next.SetPrev(t)
+	return next
 }
 
 func (t *defaultToken) SetUpstreamArrayIndex(idx int) {
@@ -89,7 +97,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 		}
 		if t.isLeaf() {
 			idx := "[" + jsonpath.UtilsToString(t.upstreamArrayIndex) + "]"
-			if idx == "[-1]" || ctx.GetRoot().GetTail().prevToken().getPathFragment() == idx {
+			if idx == "[-1]" || ctx.GetRoot().GetTail().prevToken().GetPathFragment() == idx {
 				ctx.AddResult(evalPath, ref, propertyVal)
 			}
 		} else {
@@ -228,10 +236,10 @@ func (t *defaultToken) GetTokenCount() (int, error) {
 
 func (t *defaultToken) String() string {
 	if t.isLeaf() {
-		return t.getPathFragment()
+		return t.GetPathFragment()
 	} else {
 		token, _ := t.nextToken()
-		return t.getPathFragment() + token.String()
+		return t.GetPathFragment() + token.String()
 	}
 }
 
@@ -246,8 +254,12 @@ func (t *defaultToken) nextToken() (Token, error) {
 	return t.next, nil
 }
 
-func (t *defaultToken) getPathFragment() string {
+func (t *defaultToken) GetPathFragment() string {
 	return ""
+}
+
+func (t *defaultToken) SetPrev(prev Token) {
+	t.prev = prev
 }
 
 func (t *defaultToken) SetNext(next Token) {
@@ -265,15 +277,143 @@ func (t *defaultToken) Evaluate(currentPath string, parent Ref, model interface{
 //RootPathToken ----
 type RootPathToken struct {
 	*defaultToken
+	tail       Token
+	tokenCount int
+	rootToken  string
 }
 
 func (r *RootPathToken) GetTail() Token {
-	//TODO:
-	return nil
+	return r.tail
+}
+
+func (r *RootPathToken) GetTokenCount() (int, error) {
+	return r.tokenCount, nil
+}
+
+func (r *RootPathToken) Append(next Token) *RootPathToken {
+	r.tail = r.tail.appendTailToken(next)
+	r.tokenCount++
+	return r
+}
+
+func (r *RootPathToken) AppendPathToken(next Token) TokenAppender {
+	r.Append(next)
+	return r
+}
+
+func (r *RootPathToken) GetPathTokenAppender() TokenAppender {
+	return r
+}
+
+func (r *RootPathToken) Evaluate(currentPath string, ref Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) {
+	if r.isLeaf() {
+		var op Ref
+		if ctx.ForUpdate() {
+			op = ref
+		} else {
+			op = PathRefNoOp
+		}
+		ctx.AddResult(r.rootToken, op, model)
+	} else {
+		next, _ := r.nextToken()
+		next.Evaluate(r.rootToken, ref, model, ctx)
+	}
+}
+
+func (r *RootPathToken) GetPathFragment() string {
+	return r.rootToken
+}
+
+func (r *RootPathToken) IsTokenDefinite() bool {
+	return true
+}
+
+func (r *RootPathToken) IsFunctionPath() bool {
+	switch jsonpath.UtilsGetPtrElem(r.tail).(type) {
+	case FunctionPathToken:
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *RootPathToken) SetTail(token Token) {
+	r.tail = token
 }
 
 func CreateRootPathToken(token rune) *RootPathToken {
-	return &RootPathToken{}
+	root := &RootPathToken{}
+	root.rootToken = string(token)
+	root.tail = root
+	root.tokenCount = 1
+	return root
+}
+
+// PathTokenAppender
+
+type TokenAppender interface {
+	AppendPathToken(next Token) TokenAppender
+}
+
+// FunctionPathToken
+
+type FunctionPathToken struct {
+	*defaultToken
+	functionName   string
+	pathFragment   string
+	functionParams []*function.Parameter
+}
+
+func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) {
+	pathFunction, err := function.GetFunctionByName(f.functionName)
+	f.evaluateParameters(currentPath, parent, model, ctx)
+	result := pathFunction.Invoke(currentPath, parent, model, ctx, f.functionParams)
+	ctx.AddResult(currentPath+"."+f.functionName, parent, result)
+	f.cleanWildcardPathToken()
+	if !f.isLeaf() {
+		next, _ := f.nextToken()
+		next.Evaluate(currentPath, parent, result, ctx)
+	}
+}
+
+func (f *FunctionPathToken) cleanWildcardPathToken() {
+	if nil != f.functionParams && len(f.functionParams) > 0 {
+		path := f.functionParams[0].GetPath()
+		switch jsonpath.UtilsGetPtrElem(path).(type) {
+		case CompiledPath:
+			if nil != path && !path.IsFunctionPath() {
+				compiledPath, _ := jsonpath.UtilsGetPtrElem(path).(CompiledPath)
+				 root := compiledPath.GetRoot()
+				PathToken tail = root.getNext();
+				while (null != tail && null != tail.getNext() ) {
+				if(tail.getNext() instanceof WildcardPathToken){
+					tail.setNext(tail.getNext().getNext());
+					break;
+				}
+				next, _ := f.tail.getNext()
+				f.tail = f.tail.getNext()
+				}
+			}
+		default:
+		}
+	}
+}
+
+func CreateFunctionPathToken(pathFragment string, parameters []*function.Parameter) *FunctionPathToken {
+	functionPathToken := &FunctionPathToken{}
+	if parameters != nil && len(parameters) > 0 {
+		functionPathToken.pathFragment = pathFragment + "(...)"
+	} else {
+		functionPathToken.pathFragment = pathFragment + "()"
+	}
+	if pathFragment != "" {
+		functionPathToken.functionName = pathFragment
+		functionPathToken.functionParams = parameters
+	} else {
+		functionPathToken.functionName = pathFragment
+		functionPathToken.functionParams = nil
+	}
+	return functionPathToken
 }
 
 //PropertyPathToken

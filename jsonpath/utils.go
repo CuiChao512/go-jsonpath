@@ -46,9 +46,12 @@ func UtilsIsMap(mapObj interface{}) bool {
 	return false
 }
 
-func UtilsConcat(string ...string) string {
-	//TODO: Utils.concat
-	return ""
+func UtilsConcat(s ...string) string {
+	result := ""
+	for _, str := range s {
+		result += str
+	}
+	return result
 }
 
 func UtilsToString(obj ...interface{}) string {

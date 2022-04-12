@@ -74,6 +74,10 @@ func (cp *CompiledPath) IsRootPath() bool {
 	return false
 }
 
+func (cp *CompiledPath) GetRoot() *RootPathToken {
+	return cp.root
+}
+
 func (cp *CompiledPath) readContextToken() (*RootPathToken, error) {
 	cp.readWhitespace()
 
