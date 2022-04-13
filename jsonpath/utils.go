@@ -66,7 +66,7 @@ func UtilsCharIsDigit(char rune) bool {
 func UtilsGetPtrElem(ptr interface{}) interface{} {
 	val := reflect.ValueOf(ptr)
 	if val.Kind() == reflect.Ptr {
-		return val.Elem().Interface()
+		return UtilsGetPtrElem(val.Elem().Interface())
 	} else {
 		return ptr
 	}

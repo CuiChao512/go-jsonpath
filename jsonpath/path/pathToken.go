@@ -14,7 +14,7 @@ type Token interface {
 	IsTokenDefinite() bool
 	String() string
 	Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl)
-	Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl)
+	Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error
 	SetNext(next Token)
 	SetPrev(prev Token)
 	GetNext() Token
@@ -270,8 +270,8 @@ func (t *defaultToken) GetNext() Token {
 	return t.next
 }
 
-func (t *defaultToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) {
-
+func (t *defaultToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	return nil
 }
 
 //RootPathToken ----
@@ -305,7 +305,7 @@ func (r *RootPathToken) GetPathTokenAppender() TokenAppender {
 	return r
 }
 
-func (r *RootPathToken) Evaluate(currentPath string, ref Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) {
+func (r *RootPathToken) Evaluate(currentPath string, ref Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
 	if r.isLeaf() {
 		var op Ref
 		if ctx.ForUpdate() {
@@ -316,8 +316,12 @@ func (r *RootPathToken) Evaluate(currentPath string, ref Ref, model interface{},
 		ctx.AddResult(r.rootToken, op, model)
 	} else {
 		next, _ := r.nextToken()
-		next.Evaluate(r.rootToken, ref, model, ctx)
+		err := next.Evaluate(r.rootToken, ref, model, ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (r *RootPathToken) GetPathFragment() string {
@@ -364,16 +368,50 @@ type FunctionPathToken struct {
 	functionParams []*function.Parameter
 }
 
-func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) {
+func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
 	pathFunction, err := function.GetFunctionByName(f.functionName)
-	f.evaluateParameters(currentPath, parent, model, ctx)
+	if err != nil {
+		return err
+	}
+	err = f.evaluateParameters(currentPath, parent, model, ctx)
+	if err != nil {
+		return err
+	}
 	result := pathFunction.Invoke(currentPath, parent, model, ctx, f.functionParams)
 	ctx.AddResult(currentPath+"."+f.functionName, parent, result)
 	f.cleanWildcardPathToken()
 	if !f.isLeaf() {
 		next, _ := f.nextToken()
-		next.Evaluate(currentPath, parent, result, ctx)
+		err = next.Evaluate(currentPath, parent, result, ctx)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func (f *FunctionPathToken) evaluateParameters(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	if f.functionParams != nil {
+		for _, param := range f.functionParams {
+			switch param.GetType() {
+			case function.PATH:
+				pathLateBindingValue, err := function.CreateLateBindingValue(param.GetPath(), ctx.RootDocument(), ctx.Configuration())
+				if err != nil {
+					return err
+				}
+				if !param.HasEvaluated() || !pathLateBindingValue.Equals(param.GetILateBindingValue()) {
+					param.SetLateBinding(pathLateBindingValue)
+					param.SetEvaluated(true)
+				}
+			case function.JSON:
+				if !param.HasEvaluated() {
+					param.SetLateBinding(function.CreateJsonLateBindingValue(ctx.Configuration().JsonProvider(), param))
+					param.SetEvaluated(true)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func getNextTokenSuppressError(token Token) Token {
@@ -426,6 +464,36 @@ func CreateFunctionPathToken(pathFragment string, parameters []*function.Paramet
 
 type PropertyPathToken struct {
 	*defaultToken
+	properties      []string
+	stringDelimiter string
+}
+
+func (p *PropertyPathToken) GetProperties() []string {
+	return p.properties
+}
+
+func (p *PropertyPathToken) SinglePropertyCase() bool {
+	return len(p.properties) == 1
+}
+
+func (p *PropertyPathToken) MultiPropertyMergeCase() bool {
+	return p.isLeaf() && len(p.properties) > 1
+}
+
+func (p *PropertyPathToken) MultiPropertyIterationCase() bool {
+	return !p.isLeaf() && len(p.properties) > 1
+}
+
+func (p *PropertyPathToken) IsTokenDefinite() bool {
+	return p.SinglePropertyCase() || p.MultiPropertyMergeCase()
+}
+
+func (p *PropertyPathToken) GetPathFragment() string {
+	return "[" + jsonpath.UtilsJoin(",", p.stringDelimiter, p.properties) + "]"
+}
+
+func (p *PropertyPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	return nil
 }
 
 //WildCardPathToken

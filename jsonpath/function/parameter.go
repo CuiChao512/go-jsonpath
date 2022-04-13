@@ -14,7 +14,7 @@ const (
 type Parameter struct {
 	paramType   ParamType
 	path        path.Path
-	lateBinding LateBindingValue
+	lateBinding ILateBindingValue
 	evaluated   bool
 	json        string
 }
@@ -23,7 +23,7 @@ func (p *Parameter) GetValue() interface{} {
 	return p.lateBinding.Get()
 }
 
-func (p *Parameter) SetLateBinding(lateBinding LateBindingValue) {
+func (p *Parameter) SetLateBinding(lateBinding ILateBindingValue) {
 	p.lateBinding = lateBinding
 }
 
@@ -55,6 +55,6 @@ func (p *Parameter) GetJson() string {
 	return p.json
 }
 
-func (p *Parameter) GetLateBindingValue() LateBindingValue {
+func (p *Parameter) GetILateBindingValue() ILateBindingValue {
 	return p.lateBinding
 }
