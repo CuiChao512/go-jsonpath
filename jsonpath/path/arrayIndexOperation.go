@@ -44,3 +44,6 @@ func ParseArrayIndexOperation(operation string) (*ArrayIndexOperation, error) {
 	a := &ArrayIndexOperation{indexes: tempIndexes}
 	return a, nil
 }
+
+type ArraySliceOperation struct {
+}

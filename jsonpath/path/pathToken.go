@@ -105,7 +105,10 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			}
 		} else {
 			next, _ := t.nextToken()
-			next.Evaluate(evalPath, ref, propertyVal, ctx)
+			err := next.Evaluate(evalPath, ref, propertyVal, ctx)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		evalPath := currentPath + "[" + jsonpath.UtilsJoin(", ", "'", properties) + "]"
@@ -522,7 +525,7 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent Ref, model inter
 			} else {
 				m = reflect.TypeOf(jsonpath.UtilsGetPtrElem(model)).Name()
 			}
-			message := fmt.Sprint("Expected to find an object with property %s in path %s but found '%s'. "+
+			message := fmt.Sprintf("Expected to find an object with property %s in path %s but found '%s'. "+
 				"This is not a json object according to the JsonProvider: '%s'.",
 				p.GetPathFragment(), currentPath, m, reflect.TypeOf(jsonpath.UtilsGetPtrElem(ctx.Configuration().JsonProvider())).Name())
 			return &jsonpath.PathNotFoundError{Message: message}
@@ -742,7 +745,7 @@ func (*ScanPathToken) createScanPredicate(target Token, ctx *jsonpath.Evaluation
 	case *PropertyPathToken:
 		p, _ := target.(*PropertyPathToken)
 		return createPropertyPathTokenPredicate(p, ctx)
-	case *ArrayPathToken:
+	case *arrayPathToken:
 		return &arrayPathTokenPredicate{ctx: ctx}
 	case *WildcardPathToken:
 		return &wildCardPathTokenPredicate{}
@@ -763,8 +766,68 @@ func (*ScanPathToken) GetPathFragment() string {
 
 // ArrayPathToken
 
-type ArrayPathToken struct {
+type arrayPathToken struct {
 	*defaultToken
+}
+
+func (a *arrayPathToken) checkArrayModel(currentPath string, model interface{}, ctx *jsonpath.EvaluationContextImpl) (bool, error) {
+	if model == nil {
+		if !a.IsTokenDefinite() || jsonpath.UtilsSliceContains(ctx.Options(), jsonpath.OPTION_SUPPRESS_EXCEPTIONS) {
+			return false, nil
+		} else {
+			return false, &jsonpath.PathNotFoundError{Message: "The path " + currentPath + " is null"}
+		}
+	}
+
+	if ctx.JsonProvider().IsArray(model) {
+		if a.IsUpstreamDefinite() || jsonpath.UtilsSliceContains(ctx.Options(), jsonpath.OPTION_SUPPRESS_EXCEPTIONS) {
+			return false, nil
+		} else {
+			return false, &jsonpath.PathNotFoundError{Message: fmt.Sprintf("Filter: %s can only be applied to arrays. Current context is: %s", a, model)}
+		}
+	}
+	return true, nil
+}
+
+type ArrayIndexToken struct {
+	*arrayPathToken
+	arrayIndexOperation *ArrayIndexOperation
+}
+
+func (a *ArrayIndexToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	checkResult, err := a.checkArrayModel(currentPath, model, ctx)
+	if err != nil {
+		return err
+	}
+
+	if !checkResult {
+		return nil
+	}
+
+	if a.arrayIndexOperation.IsSingleIndexOperation() {
+		return a.handleArrayIndex(a.arrayIndexOperation.Indexes()[0], currentPath, model, ctx)
+	} else {
+		for _, idx := range a.arrayIndexOperation.Indexes() {
+			err = a.handleArrayIndex(idx, currentPath, model, ctx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (a *ArrayIndexToken) GetPathFragment() string {
+	return a.arrayIndexOperation.String()
+}
+
+func (a *ArrayIndexToken) IsTokenDefinite() bool {
+	return a.arrayIndexOperation.IsSingleIndexOperation()
+}
+
+type ArraySlicePathToken struct {
+	*arrayPathToken
+	operation *ArraySliceOperation
 }
 
 // PredicatePathToken
