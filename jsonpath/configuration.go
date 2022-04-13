@@ -37,4 +37,5 @@ type JsonProvider interface {
 	RemoveProperty(obj interface{}, key interface{})
 	IsMap(obj interface{}) bool
 	Unwrap(obj interface{}) interface{}
+	ToIterable(obj interface{}) []interface{}
 }

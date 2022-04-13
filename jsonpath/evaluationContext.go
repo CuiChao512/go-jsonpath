@@ -45,6 +45,10 @@ func (e *EvaluationContextImpl) GetValue() interface{} {
 	return nil
 }
 
+func (e *EvaluationContextImpl) ToIterable(model interface{}) []interface{} {
+	return nil
+}
+
 func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) interface{} {
 	return nil
 }

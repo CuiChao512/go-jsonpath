@@ -30,6 +30,21 @@ func UtilsSliceContains(slice interface{}, item interface{}) bool {
 	return false
 }
 
+func UtilsStringSliceContainsAll(strings1 []string, strings2 []string) bool {
+	if strings1 == nil || strings2 == nil {
+		return false
+	}
+	if len(strings1) != len(strings2) {
+		return false
+	}
+	for _, str1 := range strings1 {
+		if !UtilsSliceContains(strings2, str1) {
+			return false
+		}
+	}
+	return true
+}
+
 func UtilsIsSlice(slice interface{}) bool {
 	s := reflect.ValueOf(slice)
 	if s.Kind() == reflect.Slice {

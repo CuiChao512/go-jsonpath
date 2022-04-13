@@ -19,7 +19,7 @@ type Parameter struct {
 	json        string
 }
 
-func (p *Parameter) GetValue() interface{} {
+func (p *Parameter) GetValue() (interface{}, error) {
 	return p.lateBinding.Get()
 }
 
