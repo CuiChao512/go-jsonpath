@@ -100,3 +100,7 @@ func UtilsMinInt(int1 int, int2 int) int {
 	}
 	return int2
 }
+
+func UtilsGetTypeName(i interface{}) string {
+	return reflect.TypeOf(UtilsGetPtrElem(i)).Name()
+}

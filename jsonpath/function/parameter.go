@@ -1,6 +1,7 @@
 package function
 
 import (
+	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
@@ -57,4 +58,27 @@ func (p *Parameter) GetJson() string {
 
 func (p *Parameter) GetILateBindingValue() ILateBindingValue {
 	return p.lateBinding
+}
+
+func ParametersToList(typeName jsonpath.Type, ctx jsonpath.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
+	var values *[]interface{}
+	for _, param := range parameters {
+		value, err := param.GetValue()
+		if err != nil {
+			return nil, err
+		}
+		parameterConsume(typeName, ctx, values, value)
+	}
+	return *values, nil
+}
+
+func parameterConsume(expectedType jsonpath.Type, ctx jsonpath.EvaluationContext, collection *[]interface{}, value interface{}) {
+	if ctx.Configuration().JsonProvider().IsArray(value) {
+		for _, o := range ctx.Configuration().JsonProvider().ToIterable(value) {
+			// TODO type check if o != nil && Utils
+			*collection = append(*collection, o)
+		}
+	} else {
+		*collection = append(*collection, value)
+	}
 }
