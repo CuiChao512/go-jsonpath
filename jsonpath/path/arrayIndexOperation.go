@@ -45,5 +45,28 @@ func ParseArrayIndexOperation(operation string) (*ArrayIndexOperation, error) {
 	return a, nil
 }
 
+type ArraySliceOperationType int
+
+const (
+	SLICE_FROM    ArraySliceOperationType = 0
+	SLICE_TO      ArraySliceOperationType = 1
+	SLICE_BETWEEN ArraySliceOperationType = 2
+)
+
 type ArraySliceOperation struct {
+	from          int
+	to            int
+	operationType ArraySliceOperationType
+}
+
+func (a *ArraySliceOperation) From() int {
+	return a.from
+}
+
+func (a *ArraySliceOperation) To() int {
+	return a.to
+}
+
+func (a *ArraySliceOperation) OperationType() ArraySliceOperationType {
+	return a.operationType
 }

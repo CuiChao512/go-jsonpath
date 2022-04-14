@@ -86,3 +86,17 @@ func UtilsGetPtrElem(ptr interface{}) interface{} {
 		return ptr
 	}
 }
+
+func UtilsMaxInt(int1 int, int2 int) int {
+	if int1 >= int2 {
+		return int1
+	}
+	return int2
+}
+
+func UtilsMinInt(int1 int, int2 int) int {
+	if int1 <= int2 {
+		return int1
+	}
+	return int2
+}

@@ -5,6 +5,7 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 )
@@ -828,6 +829,108 @@ func (a *ArrayIndexToken) IsTokenDefinite() bool {
 type ArraySlicePathToken struct {
 	*arrayPathToken
 	operation *ArraySliceOperation
+}
+
+func (a *ArraySlicePathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	checkPass, err := a.checkArrayModel(currentPath, model, ctx)
+	if err != nil {
+		return err
+	}
+	if checkPass {
+		return nil
+	}
+	switch a.operation.OperationType() {
+	case SLICE_FROM:
+		return a.sliceFrom(currentPath, parent, model, ctx)
+	case SLICE_TO:
+		return a.sliceTo(currentPath, parent, model, ctx)
+	case SLICE_BETWEEN:
+		return a.sliceBetween(currentPath, parent, model, ctx)
+	}
+	return nil
+}
+
+func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	length := ctx.JsonProvider().Length(model)
+	from := a.operation.From()
+	if from < 0 {
+		//calculate slice start from array length
+		from = length + from
+	}
+	from = jsonpath.UtilsMaxInt(0, from)
+
+	log.Printf("Slice from index on array with length: %d. From index: %d to: %d. Input: %s", length, from, length-1, jsonpath.UtilsToString(a))
+
+	if length == 0 || from >= length {
+		return nil
+	}
+	for i := from; i < length; i++ {
+		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	length := ctx.JsonProvider().Length(model)
+	from := a.operation.From()
+	to := a.operation.To()
+
+	to = jsonpath.UtilsMinInt(length, to)
+
+	if from >= to || length == 0 {
+		return nil
+	}
+
+	log.Printf("Slice between indexes on array with length: %d. From index: %d to: %d. Input: %s", length, from, to, jsonpath.UtilsToString(a))
+
+	for i := from; i < to; i++ {
+		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (a *ArraySlicePathToken) sliceTo(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	length := ctx.JsonProvider().Length(model)
+	if length == 0 {
+		return nil
+	}
+	to := a.operation.To()
+	if to < 0 {
+		//calculate slice end from array length
+		to = length + to
+	}
+	to = jsonpath.UtilsMinInt(length, to)
+
+	log.Printf("Slice to index on array with length: %d. From index: 0 to: %d. Input: %s", length, to, jsonpath.UtilsToString(a))
+
+	for i := 0; i < to; i++ {
+		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *ArraySlicePathToken) GetPathFragment() string {
+	return jsonpath.UtilsToString(a.operation)
+}
+
+func (*ArraySlicePathToken) IsTokenDefinite() bool {
+	return false
+}
+
+func CreateArraySliceToken(operation *ArraySliceOperation) *ArraySlicePathToken {
+	return &ArraySlicePathToken{
+		operation: operation,
+	}
 }
 
 // PredicatePathToken
