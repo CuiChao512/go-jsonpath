@@ -22,15 +22,15 @@ func (filter *FilterImpl) String() string {
 	return ""
 }
 
-func (filter *FilterImpl) Apply(ctx *jsonpath.PredicateContext) bool {
+func (filter *FilterImpl) Apply(ctx jsonpath.PredicateContext) bool {
 	return false
 }
 
-func (filter *FilterImpl) And(other *jsonpath.Predicate) *AndFilter {
+func (filter *FilterImpl) And(other jsonpath.Predicate) *AndFilter {
 	return nil
 }
 
-func (filter *FilterImpl) Or(other *jsonpath.Predicate) *OrFilter {
+func (filter *FilterImpl) Or(other jsonpath.Predicate) *OrFilter {
 	return nil
 }
 
@@ -38,7 +38,7 @@ type SingleFilter struct {
 	predicate jsonpath.Predicate
 }
 
-func (filter *SingleFilter) Apply(ctx *jsonpath.PredicateContext) bool {
+func (filter *SingleFilter) Apply(ctx jsonpath.PredicateContext) bool {
 	return filter.predicate.Apply(ctx)
 }
 
@@ -67,7 +67,7 @@ type AndFilter struct {
 	predicates []*jsonpath.Predicate
 }
 
-func (filter *AndFilter) Apply(ctx *jsonpath.PredicateContext) bool {
+func (filter *AndFilter) Apply(ctx jsonpath.PredicateContext) bool {
 	for _, predicate := range filter.predicates {
 		if !(*predicate).Apply(ctx) {
 			return false
@@ -157,7 +157,7 @@ func (e *LogicalExpressionNode) GetOperator() string {
 	return e.operator
 }
 
-func (e *LogicalExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
+func (e *LogicalExpressionNode) Apply(ctx jsonpath.PredicateContext) bool {
 	if e.operator == LogicalOperator_OR {
 		for _, expression := range e.chain {
 			if expression.Apply(ctx) {

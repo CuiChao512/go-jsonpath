@@ -937,8 +937,74 @@ func CreateArraySliceToken(operation *ArraySliceOperation) *ArraySlicePathToken 
 
 type PredicatePathToken struct {
 	*defaultToken
+	predicates []jsonpath.Predicate
+}
+
+func (p *PredicatePathToken) evaluate(currentPath string, ref Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	if ctx.JsonProvider().IsMap(model) {
+		if p.accept(model, ctx.RootDocument(), ctx.Configuration(), ctx) {
+			var op Ref
+			if ctx.ForUpdate() {
+				op = ref
+			} else {
+				op = PathRefNoOp
+			}
+			if p.isLeaf() {
+				ctx.AddResult(currentPath, op, model)
+			} else {
+				next, err := p.nextToken()
+				if err != nil {
+					return err
+				}
+				return next.Evaluate(currentPath, op, model, ctx)
+			}
+		}
+	} else if ctx.JsonProvider().IsArray(model) {
+		idx := 0
+		objects := ctx.JsonProvider().ToIterable(model)
+
+		for _, idxModel := range objects {
+			if p.accept(idxModel, ctx.RootDocument(), ctx.Configuration(), ctx) {
+				err := p.handleArrayIndex(idx, currentPath, model, ctx)
+				if err != nil {
+					return err
+				}
+			}
+			idx++
+		}
+	} else {
+		if p.IsUpstreamDefinite() {
+			return &jsonpath.InvalidPathError{Message: fmt.Sprintf("Filter: %s can not be applied to primitives. Current context is: %s", p, model)}
+		}
+	}
+	return nil
 }
 
 func (p *PredicatePathToken) accept(obj interface{}, root interface{}, configuration *jsonpath.Configuration, evaluationContext *jsonpath.EvaluationContextImpl) bool {
+	ctx := jsonpath.CreatePredicateContextImpl(obj, root, configuration, evaluationContext.DocumentEvalCache())
+
+	for _, predicate := range p.predicates {
+
+		if !predicate.Apply(ctx) {
+			return false
+		}
+		//TODO: err catch
+	}
+	return true
+}
+
+func (p *PredicatePathToken) GetPathFragment() string {
+	str := "["
+	for i := 0; i < len(p.predicates); i++ {
+		if i != 0 {
+			str += ","
+		}
+		str += "?"
+	}
+	str += "]"
+	return str
+}
+
+func (p *PredicatePathToken) IsTokenDefinite() bool {
 	return false
 }

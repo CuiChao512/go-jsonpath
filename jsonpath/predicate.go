@@ -3,7 +3,7 @@ package jsonpath
 import "cuichao.com/go-jsonpath/jsonpath/path"
 
 type Predicate interface {
-	Apply(ctx *PredicateContext) bool
+	Apply(ctx PredicateContext) bool
 	String() string
 }
 
@@ -36,4 +36,13 @@ func (pc *PredicateContextImpl) Configuration() *Configuration {
 
 func (pc *PredicateContextImpl) Evaluate(path2 path.Path) interface{} {
 	return nil
+}
+
+func CreatePredicateContextImpl(contextDocument interface{}, rootDocument interface{}, configuration *Configuration, documentPathCache map[path.Path]interface{}) PredicateContext {
+	return &PredicateContextImpl{
+		contextDocument:   contextDocument,
+		rootDocument:      rootDocument,
+		configuration:     configuration,
+		documentPathCache: documentPathCache,
+	}
 }

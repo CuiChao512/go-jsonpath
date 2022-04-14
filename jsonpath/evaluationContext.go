@@ -20,6 +20,10 @@ type EvaluationContextImpl struct {
 	resultIndex       int
 }
 
+func (e *EvaluationContextImpl) DocumentEvalCache() map[path.Path]interface{} {
+	return e.documentEvalCache
+}
+
 func (e *EvaluationContextImpl) GetRoot() *path.RootPathToken {
 	//TODO:
 	return nil
