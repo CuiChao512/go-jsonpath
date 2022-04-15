@@ -322,7 +322,7 @@ func (ci *CharacterIndex) Trim() *CharacterIndex {
 	return ci
 }
 
-func NewCharacterIndex(pathString string) *CharacterIndex {
+func CreateCharacterIndex(pathString string) *CharacterIndex {
 	return &CharacterIndex{
 		charSequence: pathString,
 		position:     0,

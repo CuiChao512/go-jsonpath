@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 func UtilsJoin(delimiter string, warp string, values interface{}) string {
@@ -155,4 +156,82 @@ func UtilsNumberToFloat64(v interface{}) (float64, error) {
 func UtilsNumberToFloat64Force(v interface{}) float64 {
 	f, _ := UtilsNumberToFloat64(v)
 	return f
+}
+
+func
+
+func UtilsStringUnescape(str string) string {
+	if str == "" {
+		return ""
+	}
+
+	writer := new(strings.Builder)
+	unicode := new(strings.Builder)
+	hadSlash := false
+	inUnicode := false
+	runes := []rune(str)
+	for i := 0; i < len(str); i++ {
+		ch := runes[i]
+		if inUnicode {
+			unicode.WriteRune(ch)
+			if unicode.Len() == 4 {
+				try {
+					value := Integer.parseInt(unicode.toString(), 16);
+					writer.write((char) value);
+					unicode.setLength(0);
+					inUnicode = false;
+					hadSlash = false;
+				} catch (NumberFormatException nfe) {
+					throw new JsonPathException("Unable to parse unicode value: " + unicode, nfe);
+				}
+			}
+			continue;
+		}
+		if (hadSlash) {
+			hadSlash = false;
+			switch (ch) {
+			case '\\':
+				writer.write('\\');
+				break;
+			case '\'':
+				writer.write('\'');
+				break;
+			case '\"':
+				writer.write('"');
+				break;
+			case 'r':
+				writer.write('\r');
+				break;
+			case 'f':
+				writer.write('\f');
+				break;
+			case 't':
+				writer.write('\t');
+				break;
+			case 'n':
+				writer.write('\n');
+				break;
+			case 'b':
+				writer.write('\b');
+				break;
+			case 'u':
+				{
+					inUnicode = true;
+					break;
+				}
+			default :
+				writer.write(ch);
+				break;
+			}
+			continue;
+		} else if (ch == '\\') {
+			hadSlash = true;
+			continue;
+		}
+		writer.write(ch);
+	}
+	if (hadSlash) {
+		writer.write('\\');
+	}
+	return writer.toString();
 }

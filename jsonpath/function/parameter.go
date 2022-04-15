@@ -60,6 +60,14 @@ func (p *Parameter) GetILateBindingValue() ILateBindingValue {
 	return p.lateBinding
 }
 
+func CreateJsonParameter(json string) *Parameter {
+	return &Parameter{json: json, paramType: JSON}
+}
+
+func CreatePathParameter(p path.Path) *Parameter {
+	return &Parameter{path: p, paramType: PATH}
+}
+
 func ParametersToList(typeName jsonpath.Type, ctx jsonpath.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
 	var values *[]interface{}
 	for _, param := range parameters {

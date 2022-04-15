@@ -70,3 +70,47 @@ func (a *ArraySliceOperation) To() int {
 func (a *ArraySliceOperation) OperationType() ArraySliceOperationType {
 	return a.operationType
 }
+
+func tryRead(tokens []string, idx int) (bool, int, error) {
+	if len(tokens) > idx {
+		if tokens[idx] == "" {
+			return false, 0, nil
+		}
+		intR, err := strconv.Atoi(tokens[idx])
+		return true, intR, err
+	} else {
+		return false, 0, nil
+	}
+}
+
+func ParseArraySliceOperation(operation string) (*ArraySliceOperation, error) {
+	for i := 0; i < len(operation); i++ {
+		c := []rune(operation)[i]
+		if !jsonpath.UtilsCharIsDigit(c) && c != '-' && c != ':' {
+			return nil, &jsonpath.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
+		}
+	}
+	tokens := strings.Split(operation, ":")
+
+	tempFromSuccess, tempFrom, err := tryRead(tokens, 0)
+	if err != nil {
+		return nil, err
+	}
+	tempToSuccess, tempTo, err := tryRead(tokens, 1)
+	if err != nil {
+		return nil, err
+	}
+	var tempOperation ArraySliceOperationType
+
+	if tempFromSuccess && !tempToSuccess {
+		tempOperation = SLICE_FROM
+	} else if tempFromSuccess {
+		tempOperation = SLICE_BETWEEN
+	} else if tempToSuccess {
+		tempOperation = SLICE_TO
+	} else {
+		return nil, &jsonpath.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
+	}
+
+	return &ArraySliceOperation{from: tempFrom, to: tempTo, operationType: tempOperation}, nil
+}

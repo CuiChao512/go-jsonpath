@@ -16,7 +16,7 @@ type Token interface {
 	IsUpstreamDefinite() bool
 	IsTokenDefinite() bool
 	String() string
-	Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl)
+	Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error
 	Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error
 	SetNext(next Token)
 	SetPrev(prev Token)
@@ -252,8 +252,13 @@ func (t *defaultToken) String() string {
 	}
 }
 
-func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) {
-	ctx.AddResult(currentPath, parent, pathFunction.Invoke(currentPath, parent, model, ctx, nil))
+func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, nil)
+	if err != nil {
+		return err
+	}
+	ctx.AddResult(currentPath, parent, result)
+	return nil
 }
 
 func (t *defaultToken) nextToken() (Token, error) {
@@ -386,7 +391,10 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model inter
 	if err != nil {
 		return err
 	}
-	result := pathFunction.Invoke(currentPath, parent, model, ctx, f.functionParams)
+	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, &f.functionParams)
+	if err != nil {
+		return err
+	}
 	ctx.AddResult(currentPath+"."+f.functionName, parent, result)
 	f.cleanWildcardPathToken()
 	if !f.isLeaf() {
@@ -551,6 +559,10 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent Ref, model inter
 	return nil
 }
 
+func CreatePropertyPathToken(properties []string, stringDelimiter string) *PropertyPathToken {
+	return &PropertyPathToken{properties: properties, stringDelimiter: stringDelimiter}
+}
+
 //WildCardPathToken
 
 type WildcardPathToken struct {
@@ -583,6 +595,10 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent Ref, model inter
 		}
 	}
 	return nil
+}
+
+func CreateWildcardPathToken() *WildcardPathToken {
+	return &WildcardPathToken{}
 }
 
 // ScanPathToken -----
@@ -765,6 +781,10 @@ func (*ScanPathToken) GetPathFragment() string {
 	return ".."
 }
 
+func CreateScanPathToken() *ScanPathToken {
+	return &ScanPathToken{}
+}
+
 // ArrayPathToken
 
 type arrayPathToken struct {
@@ -790,12 +810,12 @@ func (a *arrayPathToken) checkArrayModel(currentPath string, model interface{}, 
 	return true, nil
 }
 
-type ArrayIndexToken struct {
+type ArrayIndexPathToken struct {
 	*arrayPathToken
 	arrayIndexOperation *ArrayIndexOperation
 }
 
-func (a *ArrayIndexToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
 	checkResult, err := a.checkArrayModel(currentPath, model, ctx)
 	if err != nil {
 		return err
@@ -818,14 +838,19 @@ func (a *ArrayIndexToken) Evaluate(currentPath string, parent Ref, model interfa
 	return nil
 }
 
-func (a *ArrayIndexToken) GetPathFragment() string {
+func (a *ArrayIndexPathToken) GetPathFragment() string {
 	return a.arrayIndexOperation.String()
 }
 
-func (a *ArrayIndexToken) IsTokenDefinite() bool {
+func (a *ArrayIndexPathToken) IsTokenDefinite() bool {
 	return a.arrayIndexOperation.IsSingleIndexOperation()
 }
 
+func CreateArrayIndexPathToken(arrayIndexOperation *ArrayIndexOperation) *ArrayIndexPathToken {
+	return &ArrayIndexPathToken{arrayIndexOperation: arrayIndexOperation}
+}
+
+// ArraySlicePathToken -----
 type ArraySlicePathToken struct {
 	*arrayPathToken
 	operation *ArraySliceOperation
@@ -927,7 +952,7 @@ func (*ArraySlicePathToken) IsTokenDefinite() bool {
 	return false
 }
 
-func CreateArraySliceToken(operation *ArraySliceOperation) *ArraySlicePathToken {
+func CreateArraySlicePathToken(operation *ArraySliceOperation) *ArraySlicePathToken {
 	return &ArraySlicePathToken{
 		operation: operation,
 	}
@@ -1007,4 +1032,8 @@ func (p *PredicatePathToken) GetPathFragment() string {
 
 func (p *PredicatePathToken) IsTokenDefinite() bool {
 	return false
+}
+
+func CreatePredicatePathToken(predicates []jsonpath.Predicate) *PredicatePathToken {
+	return &PredicatePathToken{predicates: predicates}
 }
