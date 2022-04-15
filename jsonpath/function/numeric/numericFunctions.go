@@ -4,16 +4,17 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"cuichao.com/go-jsonpath/jsonpath/path"
+	"math"
 )
 
 type abstractAggregation struct {
 }
 
-func (*abstractAggregation) next(value interface{}) {}
+func (*abstractAggregation) Next(value interface{}) {}
 
 func (*abstractAggregation) GetValue() interface{} { return nil }
 
-func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
+func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters *[]*function.Parameter) (interface{}, error) {
 	count := 0
 	if ctx.Configuration().JsonProvider().IsArray(model) {
 
@@ -30,22 +31,118 @@ func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model 
 			}
 			if isNumber {
 				count++
-				a.next(obj)
+				a.Next(obj)
 			}
 		}
 	}
 	if parameters != nil {
-		values, err := function.ParametersToList(jsonpath.TYPE_NUMBER, ctx, parameters)
+		values, err := function.ParametersToList(jsonpath.TYPE_NUMBER, ctx, *parameters)
 		if err != nil {
 			return nil, err
 		}
 		for _, value := range values {
 			count++
-			a.next(value)
+			a.Next(value)
 		}
 	}
 	if count != 0 {
 		return a.GetValue(), nil
 	}
 	return nil, &jsonpath.JsonPathError{Message: "Aggregation function attempted to calculate value using empty array"}
+}
+
+// Average function
+
+type Average struct {
+	*abstractAggregation
+	summation float64
+	count     int
+}
+
+func (a *Average) Next(value interface{}) {
+	a.count++
+	v, _ := jsonpath.UtilsNumberToFloat64(value)
+	a.summation += v
+}
+
+func (a *Average) GetValue() interface{} {
+	if a.count != 0 {
+		return a.summation / float64(a.count)
+	}
+	return 0
+}
+
+//Max function
+type Max struct {
+	*abstractAggregation
+	max float64
+}
+
+func (m *Max) Next(value interface{}) {
+	v := jsonpath.UtilsNumberToFloat64Force(value)
+	if m.max < v {
+		m.max = v
+	}
+}
+
+func (m *Max) GetValue() interface{} {
+	return m.max
+}
+
+func CreateMaxFunction() *Max {
+	return &Max{max: math.MinInt64}
+}
+
+// Min function
+type Min struct {
+	*abstractAggregation
+	min float64
+}
+
+func (m *Min) Next(value interface{}) {
+	v := jsonpath.UtilsNumberToFloat64Force(value)
+	if m.min > v {
+		m.min = v
+	}
+}
+
+func (m *Min) GetValue() interface{} {
+	return m.min
+}
+
+func CreateMinFunction() *Min {
+	return &Min{min: math.MaxInt64}
+}
+
+// StandardDeviation ---
+type StandardDeviation struct {
+	sumSq float64
+	sum   float64
+	count int64
+}
+
+func (s *StandardDeviation) Next(value interface{}) {
+	v := jsonpath.UtilsNumberToFloat64Force(value)
+	s.sum += v
+	s.sumSq += v * v
+	s.count++
+}
+
+func (s *StandardDeviation) GetValue() interface{} {
+	count := float64(s.count)
+	return math.Sqrt(s.sumSq/count - s.sum*s.sum/count/count)
+}
+
+// Sum function
+type Sum struct {
+	sum float64
+}
+
+func (s *Sum) Next(value interface{}) {
+	v := jsonpath.UtilsNumberToFloat64Force(value)
+	s.sum += v
+}
+
+func (s *Sum) GetValue() interface{} {
+	return s.sum
 }

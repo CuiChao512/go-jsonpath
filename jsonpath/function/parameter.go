@@ -75,10 +75,17 @@ func ParametersToList(typeName jsonpath.Type, ctx jsonpath.EvaluationContext, pa
 func parameterConsume(expectedType jsonpath.Type, ctx jsonpath.EvaluationContext, collection *[]interface{}, value interface{}) {
 	if ctx.Configuration().JsonProvider().IsArray(value) {
 		for _, o := range ctx.Configuration().JsonProvider().ToIterable(value) {
-			// TODO type check if o != nil && Utils
-			*collection = append(*collection, o)
+			if expectedType == jsonpath.TYPE_NUMBER {
+				*collection = append(*collection, o)
+			} else {
+				*collection = append(*collection, jsonpath.UtilsToString(o))
+			}
 		}
 	} else {
-		*collection = append(*collection, value)
+		if expectedType == jsonpath.TYPE_NUMBER {
+			*collection = append(*collection, value)
+		} else {
+			*collection = append(*collection, jsonpath.UtilsToString(value))
+		}
 	}
 }

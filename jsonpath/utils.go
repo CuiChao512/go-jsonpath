@@ -1,6 +1,7 @@
 package jsonpath
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -103,4 +104,55 @@ func UtilsMinInt(int1 int, int2 int) int {
 
 func UtilsGetTypeName(i interface{}) string {
 	return reflect.TypeOf(UtilsGetPtrElem(i)).Name()
+}
+
+func UtilsIsFloat(v interface{}) bool {
+	kind := reflect.ValueOf(v).Kind()
+
+	return kind == reflect.Float32 || kind == reflect.Float64
+}
+
+func UtilsIsInt(v interface{}) bool {
+	kind := reflect.ValueOf(v).Kind()
+
+	return kind == reflect.Int || kind == reflect.Int8 || kind == reflect.Int16 || kind == reflect.Int32 || kind == reflect.Int64
+
+}
+
+func UtilsIsNumber(v interface{}) bool {
+	return UtilsIsFloat(v) || UtilsIsInt(v)
+}
+
+func UtilsNumberToFloat64(v interface{}) (float64, error) {
+	if UtilsIsNumber(v) {
+		switch v.(type) {
+		case int:
+			vv, _ := v.(int)
+			return float64(vv), nil
+		case int8:
+			vv, _ := v.(int8)
+			return float64(vv), nil
+		case int16:
+			vv, _ := v.(int16)
+			return float64(vv), nil
+		case int32:
+			vv, _ := v.(int32)
+			return float64(vv), nil
+		case int64:
+			vv, _ := v.(int64)
+			return float64(vv), nil
+		case float32:
+			vv, _ := v.(float32)
+			return float64(vv), nil
+		case float64:
+			vv, _ := v.(float64)
+			return vv, nil
+		}
+	}
+	return 0, errors.New("not a number")
+}
+
+func UtilsNumberToFloat64Force(v interface{}) float64 {
+	f, _ := UtilsNumberToFloat64(v)
+	return f
 }
