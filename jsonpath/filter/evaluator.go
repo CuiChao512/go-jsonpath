@@ -359,6 +359,279 @@ func (*allEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.Pre
 	return false, nil
 }
 
+type containsEvaluator struct {
+}
+
+func (*containsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if left.IsStringNode() && right.IsStringNode() {
+		leftNode, err := left.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+
+		return leftNode.Contains(rightNode.String()), nil
+	} else if left.IsJsonNode() {
+		jsonNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+		if err != nil {
+			return false, err
+		}
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			vln, err := valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+
+			res := vln.Contains(right)
+			return res, nil
+		}
+	}
+	return false, nil
+}
+
+type predicateMatchEvaluator struct{}
+
+func (*predicateMatchEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	rightNode, err := right.AsPredicateNode()
+	if err != nil {
+		return false, err
+	}
+	return rightNode.GetPredicate().Apply(ctx), nil
+}
+
+type regexpEvaluator struct{}
+
+func (r *regexpEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if left.IsPatternNode() == right.IsPatternNode() {
+		return false, nil
+	}
+
+	if left.IsPatternNode() {
+		leftNode, err := left.AsPatternNode()
+		if err != nil {
+			return false, err
+		}
+		input, err := r.getInput(right)
+		if err != nil {
+			return false, err
+		}
+		return r.matches(leftNode, input), nil
+	} else {
+		rightNode, err := right.AsPatternNode()
+		if err != nil {
+			return false, err
+		}
+		input, err := r.getInput(left)
+		if err != nil {
+			return false, err
+		}
+		return r.matches(rightNode, input), nil
+	}
+}
+
+func (*regexpEvaluator) matches(patternNode *jsonpath.PatternNode, inputToMatch string) bool {
+	return patternNode.GetCompiledPattern().MatchString(inputToMatch)
+}
+
+func (*regexpEvaluator) getInput(node ValueNode) (string, error) {
+	input := ""
+	if node.IsStringNode() || node.IsNumberNode() {
+		stringNode, err := node.AsStringNode()
+		if err != nil {
+			return input, err
+		}
+		input = stringNode.String()
+	} else if node.IsBooleanNode() {
+		booleanNode, err := node.AsStringNode()
+		if err != nil {
+			return input, err
+		}
+		input = booleanNode.String()
+	}
+	return input, nil
+}
+
+type subsetOfEvaluator struct{}
+
+func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	var rightValueListNode *jsonpath.ValueListNode
+	if right.IsJsonNode() {
+		jsonNode, err := right.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			rightValueListNode, err = valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error
+		rightValueListNode, err = right.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+	var leftValueListNode *jsonpath.ValueListNode
+	if left.IsJsonNode() {
+		jsonNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			leftValueListNode, err = valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error
+		leftValueListNode, err = left.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+	return leftValueListNode.SubSetOf(rightValueListNode), nil
+}
+
+type anyOfEvaluator struct{}
+
+func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	var rightValueListNode *jsonpath.ValueListNode
+	if right.IsJsonNode() {
+		jsonNode, err := right.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			rightValueListNode, err = valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error
+		rightValueListNode, err = right.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+	var leftValueListNode *jsonpath.ValueListNode
+	if left.IsJsonNode() {
+		jsonNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			leftValueListNode, err = valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error
+		leftValueListNode, err = left.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+
+	for _, leftNode := range leftValueListNode.GetNodes() {
+		for _, rightNode := range rightValueListNode.GetNodes() {
+			if leftNode.Equals(rightNode) {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
+
+type noneOfEvaluator struct{}
+
+func (*noneOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	var rightValueListNode *jsonpath.ValueListNode
+	if right.IsJsonNode() {
+		jsonNode, err := right.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			rightValueListNode, err = valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error
+		rightValueListNode, err = right.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+	var leftValueListNode *jsonpath.ValueListNode
+	if left.IsJsonNode() {
+		jsonNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueListNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+
+		if valueListNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			leftValueListNode, err = valueListNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error
+		leftValueListNode, err = left.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+
+	for _, leftNode := range leftValueListNode.GetNodes() {
+		for _, rightNode := range rightValueListNode.GetNodes() {
+			if leftNode.Equals(rightNode) {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
 // RelationalOperator
 const (
 	RelationalOperator_GTE      = ">="
@@ -446,7 +719,7 @@ func (e *LogicalExpressionNode) GetOperator() string {
 	return e.operator
 }
 
-func (e *LogicalExpressionNode) Apply(ctx PredicateContext) bool {
+func (e *LogicalExpressionNode) Apply(ctx predicate.PredicateContext) bool {
 	if e.operator == LogicalOperator_OR {
 		for _, expression := range e.chain {
 			if expression.Apply(ctx) {
@@ -519,13 +792,13 @@ type RelationExpressionNode struct {
 func (e *RelationExpressionNode) ExpressionNodeLabel() {
 	return
 }
-func (e *RelationExpressionNode) Apply(ctx PredicateContext) bool {
+func (e *RelationExpressionNode) Apply(ctx predicate.PredicateContext) bool {
 	return false
 }
 func (e *RelationExpressionNode) String() string {
 	return "nil"
 }
 
-func CreateRelationExpressionNode(valueNode1 filter.ValueNode, operator string, valueNode2 filter.ValueNode) *RelationExpressionNode {
+func CreateRelationExpressionNode(valueNode1 ValueNode, operator string, valueNode2 ValueNode) *RelationExpressionNode {
 	return &RelationExpressionNode{}
 }

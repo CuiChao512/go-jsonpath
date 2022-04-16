@@ -35,6 +35,10 @@ func NewPatternNode(pattern string) *PatternNode {
 	return &PatternNode{pattern: purePattern, compiledPattern: compiledPattern}
 }
 
+func (pn *PatternNode) GetCompiledPattern() *regexp.Regexp {
+	return pn.compiledPattern
+}
+
 func (pn *PatternNode) IsPatternNode() bool {
 	return true
 }
@@ -421,8 +425,8 @@ func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
 	return true
 }
 
-func (v *ValueListNode) AsValueListNode() *ValueListNode {
-	return v
+func (v *ValueListNode) AsValueListNode() (*ValueListNode, error) {
+	return v, nil
 }
 
 func (v *ValueListNode) GetNodes() []filter.ValueNode {
