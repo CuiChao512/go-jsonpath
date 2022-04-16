@@ -1,14 +1,14 @@
 package jsonpath
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/path"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"strings"
 )
 
 type Filter interface {
-	path.Predicate
-	Or(other *path.Predicate) *OrFilter
-	And(other *path.Predicate) *AndFilter
+	common.Predicate
+	Or(other common.Predicate) *OrFilter
+	And(other common.Predicate) *AndFilter
 }
 
 type FilterImpl struct {
@@ -18,23 +18,23 @@ func (filter *FilterImpl) String() string {
 	return ""
 }
 
-func (filter *FilterImpl) Apply(ctx path.PredicateContext) bool {
+func (filter *FilterImpl) Apply(ctx common.PredicateContext) bool {
 	return false
 }
 
-func (filter *FilterImpl) And(other path.Predicate) *AndFilter {
+func (filter *FilterImpl) And(other common.Predicate) *AndFilter {
 	return nil
 }
 
-func (filter *FilterImpl) Or(other path.Predicate) *OrFilter {
+func (filter *FilterImpl) Or(other common.Predicate) *OrFilter {
 	return nil
 }
 
 type SingleFilter struct {
-	predicate path.Predicate
+	predicate common.Predicate
 }
 
-func (filter *SingleFilter) Apply(ctx path.PredicateContext) bool {
+func (filter *SingleFilter) Apply(ctx common.PredicateContext) bool {
 	return filter.predicate.Apply(ctx)
 }
 
@@ -47,12 +47,12 @@ func (filter *SingleFilter) String() string {
 	}
 }
 
-func NewAndFilterByPredicates(predicates []*path.Predicate) *AndFilter {
+func NewAndFilterByPredicates(predicates []common.Predicate) *AndFilter {
 	return &AndFilter{predicates: predicates}
 }
 
-func NewAndFilter(left *path.Predicate, right *path.Predicate) *AndFilter {
-	predicates := []*path.Predicate{
+func NewAndFilter(left common.Predicate, right common.Predicate) *AndFilter {
+	predicates := []common.Predicate{
 		left, right,
 	}
 	return &AndFilter{predicates: predicates}
@@ -60,12 +60,12 @@ func NewAndFilter(left *path.Predicate, right *path.Predicate) *AndFilter {
 
 type AndFilter struct {
 	FilterImpl
-	predicates []*path.Predicate
+	predicates []common.Predicate
 }
 
-func (filter *AndFilter) Apply(ctx path.PredicateContext) bool {
+func (filter *AndFilter) Apply(ctx common.PredicateContext) bool {
 	for _, predicate0 := range filter.predicates {
-		if !(*predicate0).Apply(ctx) {
+		if !(predicate0).Apply(ctx) {
 			return false
 		}
 	}
@@ -77,7 +77,7 @@ func (filter *AndFilter) String() string {
 	lenPredicates := len(filter.predicates)
 	for i := 0; i < lenPredicates; i++ {
 		p := filter.predicates[i]
-		pString := (*p).String()
+		pString := (p).String()
 		if strings.HasPrefix(pString, "[?(") {
 			pString = pString[3:]
 		}

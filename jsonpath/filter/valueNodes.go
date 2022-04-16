@@ -60,7 +60,7 @@ type PathNode struct {
 	shouldExist bool
 }
 
-func NewPathNodeWithString(pathString string, existsCheck bool, shouldExist bool) (*PathNode, error) {
+func CreatePathNodeWithString(pathString string, existsCheck bool, shouldExist bool) (*PathNode, error) {
 	compiledPath, err := path.Compile(pathString)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func NewPathNodeWithString(pathString string, existsCheck bool, shouldExist bool
 	return &PathNode{path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}, nil
 }
 
-func NewPathNode(path common.Path, existsCheck bool, shouldExist bool) *PathNode {
+func CreatePathNode(path common.Path, existsCheck bool, shouldExist bool) *PathNode {
 	return &PathNode{path: path, existsCheck: existsCheck, shouldExist: shouldExist}
 }
 

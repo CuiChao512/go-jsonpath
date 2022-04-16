@@ -401,7 +401,7 @@ func (c *Compiler) readPath() (*PathNode, error) {
 
 	shouldExists := !(previousSignificantChar == NOT)
 	path := filter.SubSequence(begin, filter.Position())
-	return NewPathNodeWithString(path, false, shouldExists)
+	return CreatePathNodeWithString(path, false, shouldExists)
 }
 
 func (c *Compiler) currentCharIsClosingFunctionBracket(lowerBound int) bool {
