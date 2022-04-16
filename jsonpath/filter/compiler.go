@@ -4,6 +4,7 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"fmt"
 	"log"
+	"strings"
 )
 
 const (
@@ -61,7 +62,7 @@ func (c *Compiler) readLogicalOR() ExpressionNode {
 	if len(ops) == 1 {
 		return ops[0]
 	} else {
-		return NewLogicalOrByList(ops)
+		return CreateLogicalOrByList(ops)
 	}
 }
 
@@ -82,7 +83,7 @@ func (c *Compiler) readLogicalAND() ExpressionNode {
 	if len(ops) == 1 {
 		return ops[0]
 	} else {
-		return NewLogicalAndByList(ops)
+		return CreateLogicalAndByList(ops)
 	}
 }
 
@@ -98,7 +99,7 @@ func (c *Compiler) readLogicalANDOperand() ExpressionNode {
 			filter.SetPosition(savepoint)
 			break
 		default:
-			return NewLogicalNot(c.readLogicalANDOperand())
+			return CreateLogicalNot(c.readLogicalANDOperand())
 		}
 	}
 
@@ -166,7 +167,7 @@ func (c *Compiler) readExpression() *RelationExpressionNode {
 	operator := c.readRelationalOperator()
 	right, err1 := c.readValueNode()
 	if err0 == nil && err1 == nil {
-		return NewRelationExpressionNode(left, operator, right)
+		return CreateRelationExpressionNode(left, operator, right)
 	} else {
 		filter.SetPosition(savepoint)
 		pathNode, _ := left.AsPathNode()
@@ -177,7 +178,7 @@ func (c *Compiler) readExpression() *RelationExpressionNode {
 		} else {
 			right = FALSE_NODE
 		}
-		return NewRelationExpressionNode(left, RelationalOperator_EXISTS, right)
+		return CreateRelationExpressionNode(left, RelationalOperator_EXISTS, right)
 	}
 }
 
@@ -365,7 +366,7 @@ func (c *Compiler) readPath() (*PathNode, error) {
 
 	shouldExists := !(previousSignificantChar == NOT)
 	path := filter.SubSequence(begin, filter.Position())
-	return NewPathNodeWithString(path, false, shouldExists), nil
+	return NewPathNodeWithString(path, false, shouldExists)
 }
 
 func (c *Compiler) currentCharIsClosingFunctionBracket(lowerBound int) bool {
@@ -411,9 +412,59 @@ func (c *Compiler) Compile() (jsonpath.Predicate, error) {
 	return result, nil
 }
 
-func FilterCompile(filterString string) CompiledFilter {
-	return CompiledFilter{}
+func CreateFilterCompiler(filterString string) (*Compiler, error) {
+	compiler := &Compiler{}
+	compiler.filter = jsonpath.CreateCharacterIndex(filterString)
+
+	f := compiler.filter
+	f.Trim()
+
+	if !f.CurrentCharIs('[') || !f.LastCharIs(']') {
+		return nil, &jsonpath.InvalidPathError{Message: "Filter must start with '[' and end with ']'. " + filterString}
+	}
+
+	f.IncrementPosition(1)
+	f.DecrementEndPosition(1)
+	f.Trim()
+
+	if !f.CurrentCharIs('?') {
+		return nil, &jsonpath.InvalidPathError{Message: "Filter must start with '[?' and end with ']'. " + filterString}
+	}
+
+	f.IncrementPosition(1)
+	f.Trim()
+	if !f.CurrentCharIs('(') || !f.LastCharIs(')') {
+		return nil, &jsonpath.InvalidPathError{Message: "Filter must start with '[?(' and end with ')]'. " + filterString}
+	}
+
+	return compiler, nil
+}
+
+func Compile(filterString string) (*CompiledFilter, error) {
+	compiler, err := CreateFilterCompiler(filterString)
+	if err != nil {
+		return nil, err
+	}
+	compiledFilter, err := compiler.Compile()
+	if err != nil {
+		return nil, err
+	}
+	return &CompiledFilter{predicate: compiledFilter}, nil
 }
 
 type CompiledFilter struct {
+	predicate jsonpath.Predicate
+}
+
+func (cf *CompiledFilter) Apply(ctx jsonpath.PredicateContext) bool {
+	return cf.predicate.Apply(ctx)
+}
+
+func (cf *CompiledFilter) String() string {
+	predicateString := cf.predicate.String()
+	if strings.HasPrefix(predicateString, "(") {
+		return "[?" + predicateString + "]"
+	} else {
+		return "[?(" + predicateString + ")]"
+	}
 }

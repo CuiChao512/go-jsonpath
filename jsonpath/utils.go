@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -158,11 +159,9 @@ func UtilsNumberToFloat64Force(v interface{}) float64 {
 	return f
 }
 
-func
-
-func UtilsStringUnescape(str string) string {
+func UtilsStringUnescape(str string) (string, error) {
 	if str == "" {
-		return ""
+		return "", nil
 	}
 
 	writer := new(strings.Builder)
@@ -175,63 +174,53 @@ func UtilsStringUnescape(str string) string {
 		if inUnicode {
 			unicode.WriteRune(ch)
 			if unicode.Len() == 4 {
-				try {
-					value := Integer.parseInt(unicode.toString(), 16);
-					writer.write((char) value);
-					unicode.setLength(0);
-					inUnicode = false;
-					hadSlash = false;
-				} catch (NumberFormatException nfe) {
-					throw new JsonPathException("Unable to parse unicode value: " + unicode, nfe);
+				value, err := strconv.ParseInt(unicode.String(), 16, 0)
+				if err != nil {
+					return "", &JsonPathError{Message: "Unable to parse unicode value: " + unicode.String()}
 				}
+				writer.WriteRune(rune(value))
+				unicode.Reset()
+				inUnicode = false
+				hadSlash = false
 			}
-			continue;
+			continue
 		}
-		if (hadSlash) {
-			hadSlash = false;
-			switch (ch) {
+		if hadSlash {
+			hadSlash = false
+			switch ch {
 			case '\\':
-				writer.write('\\');
-				break;
+				writer.WriteRune('\\')
 			case '\'':
-				writer.write('\'');
-				break;
-			case '\"':
-				writer.write('"');
-				break;
+				writer.WriteRune('\'')
+			//case '\"':
+			case '"':
+				writer.WriteRune('"')
 			case 'r':
-				writer.write('\r');
-				break;
+				writer.WriteRune('\r')
 			case 'f':
-				writer.write('\f');
-				break;
+				writer.WriteRune('\f')
 			case 't':
-				writer.write('\t');
-				break;
+				writer.WriteRune('\t')
 			case 'n':
-				writer.write('\n');
-				break;
+				writer.WriteRune('\n')
 			case 'b':
-				writer.write('\b');
-				break;
+				writer.WriteRune('\b')
 			case 'u':
 				{
-					inUnicode = true;
-					break;
+					inUnicode = true
 				}
-			default :
-				writer.write(ch);
-				break;
+			default:
+				writer.WriteRune(ch)
 			}
-			continue;
-		} else if (ch == '\\') {
-			hadSlash = true;
-			continue;
+			continue
+		} else if ch == '\\' {
+			hadSlash = true
+			continue
 		}
-		writer.write(ch);
+		writer.WriteRune(ch)
 	}
-	if (hadSlash) {
-		writer.write('\\');
+	if hadSlash {
+		writer.WriteRune('\\')
 	}
-	return writer.toString();
+	return writer.String(), nil
 }

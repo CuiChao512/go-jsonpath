@@ -2,6 +2,7 @@ package path
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/filter"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"strconv"
 	"strings"
@@ -77,7 +78,7 @@ func (c *Compiler) readContextToken() (*RootPathToken, error) {
 	appender := pathToken.GetPathTokenAppender()
 
 	_, err := c.readNextToken(appender)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	return pathToken, nil
@@ -86,15 +87,33 @@ func (c *Compiler) readContextToken() (*RootPathToken, error) {
 func (c *Compiler) readNextToken(appender TokenAppender) (bool, error) {
 	switch c.path.CurrentChar() {
 	case OPEN_SQUARE_BRACKET:
-		if !c.readBracketPropertyToken(appender) && !c.readArrayToken(appender) && !c.readWildCardToken(appender)
-		&& !c.readFilterToken(appender) && !c.readPlaceholderToken(appender) {
-		return fail("Could not parse token starting at position " + strconv.Itoa(c.path.Position()) + ". Expected ?, ', 0-9, * ")
-	}
-	return true,nil
+		readResult, err := c.readBracketPropertyToken(appender)
+		errMsg := "Could not parse token starting at position " + strconv.Itoa(c.path.Position()) + ". Expected ?, ', 0-9, * "
+		if err != nil || !readResult {
+			return false, fail(errMsg)
+		}
+
+		readResult, err = c.readArrayToken(appender)
+		if err != nil || !readResult {
+			return false, fail(errMsg)
+		}
+		readResult, err = c.readWildCardToken(appender)
+		if err != nil || !readResult {
+			return false, fail(errMsg)
+		}
+		readResult, err = c.readFilterToken(appender)
+		if err != nil || !readResult {
+			return false, fail(errMsg)
+		}
+		readResult, err = c.readPlaceholderToken(appender)
+		if err != nil || !readResult {
+			return false, fail(errMsg)
+		}
+		return true, nil
 	case PERIOD:
 		readResult, err := c.readDotToken(appender)
 		if err != nil {
-			return false,err
+			return false, err
 		}
 		if !readResult {
 			return false, fail("Could not parse token starting at position " + strconv.Itoa(c.path.Position()))
@@ -102,7 +121,7 @@ func (c *Compiler) readNextToken(appender TokenAppender) (bool, error) {
 	case WILDCARD:
 		readResult, err := c.readWildCardToken(appender)
 		if err != nil {
-			return false,err
+			return false, err
 		}
 		if !readResult {
 			return false, fail("Could not parse token starting at position " + strconv.Itoa(c.path.Position()))
@@ -110,36 +129,36 @@ func (c *Compiler) readNextToken(appender TokenAppender) (bool, error) {
 	default:
 		readResult, err := c.readPropertyOrFunctionToken(appender)
 		if err != nil {
-			return false,err
+			return false, err
 		}
 		if !readResult {
 			return false, fail("Could not parse token starting at position " + strconv.Itoa(c.path.Position()))
 		}
 	}
-	return true,nil
+	return true, nil
 }
 
-func (c *Compiler) readDotToken(appender TokenAppender) (bool,error) {
+func (c *Compiler) readDotToken(appender TokenAppender) (bool, error) {
 	if c.path.CurrentCharIs(PERIOD) && c.path.NextCharIs(PERIOD) {
 		appender.AppendPathToken(CreateScanPathToken())
 		c.path.IncrementPosition(2)
-	} else if !c.path.HasMoreCharacters(){
-		return false,&jsonpath.InvalidPathError{Message:"Path must not end with a '."}
+	} else if !c.path.HasMoreCharacters() {
+		return false, &jsonpath.InvalidPathError{Message: "Path must not end with a '."}
 	} else {
 		c.path.IncrementPosition(1)
 	}
 
-	if c.path.CurrentCharIs(PERIOD){
-		return false,&jsonpath.InvalidPathError{Message:"Character '.' on position " + strconv.Itoa(c.path.Position()) + " is not valid."}
+	if c.path.CurrentCharIs(PERIOD) {
+		return false, &jsonpath.InvalidPathError{Message: "Character '.' on position " + strconv.Itoa(c.path.Position()) + " is not valid."}
 	}
 
 	return c.readNextToken(appender)
 }
 
-func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool,error) {
+func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if path.CurrentCharIs(OPEN_SQUARE_BRACKET) || path.CurrentCharIs(WILDCARD) || path.CurrentCharIs(PERIOD) || path.CurrentCharIs(SPACE) {
-		return false,nil
+		return false, nil
 	}
 	startPosition := path.Position()
 	readPosition := startPosition
@@ -147,14 +166,14 @@ func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool,err
 
 	isFunction := false
 
-	for; path.InBoundsByPosition(readPosition); {
+	for path.InBoundsByPosition(readPosition) {
 		char := path.CharAt(readPosition)
 		if char == SPACE {
 			return false, &jsonpath.InvalidPathError{Message: "Use bracket notion ['my prop'] if your property contains blank characters. position: " + strconv.Itoa(path.Position())}
 		} else if char == PERIOD || char == OPEN_SQUARE_BRACKET {
 			endPosition = readPosition
 			break
-		}else if char == OPEN_PARENTHESIS {
+		} else if char == OPEN_PARENTHESIS {
 			isFunction = true
 			endPosition = readPosition
 			break
@@ -165,31 +184,30 @@ func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool,err
 		endPosition = path.Length()
 	}
 
-
 	var functionParameters []*function.Parameter
 	if isFunction {
 		parenthesisCount := 1
 		for i := readPosition + 1; i < path.Length(); i++ {
 			if path.CharAt(i) == CLOSE_PARENTHESIS {
 				parenthesisCount--
-			}else if path.CharAt(i) == OPEN_PARENTHESIS {
+			} else if path.CharAt(i) == OPEN_PARENTHESIS {
 				parenthesisCount++
 			}
-			if parenthesisCount == 0{
+			if parenthesisCount == 0 {
 				break
 			}
 		}
 
-		if parenthesisCount != 0{
+		if parenthesisCount != 0 {
 			functionName := path.SubSequence(startPosition, endPosition)
-			return false,&jsonpath.InvalidPathError{Message: "Arguments to function: '" + functionName + "' are not closed properly."}
+			return false, &jsonpath.InvalidPathError{Message: "Arguments to function: '" + functionName + "' are not closed properly."}
 		}
 
-		if path.InBoundsByPosition(readPosition+1) {
+		if path.InBoundsByPosition(readPosition + 1) {
 			// read the next token to determine if we have a simple no-args function call
 			char := path.CharAt(readPosition + 1)
 			if char != CLOSE_PARENTHESIS {
-				path.SetPosition(endPosition+1)
+				path.SetPosition(endPosition + 1)
 				// parse the arguments of the function - arguments that are inner queries or JSON document(s)
 				functionName := path.SubSequence(startPosition, endPosition)
 				var err error = nil
@@ -214,13 +232,13 @@ func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool,err
 		appender.AppendPathToken(CreatePropertyPathToken([]string{property}, string(SINGLE_QUOTE)))
 	}
 	readResult, err := c.readNextToken(appender)
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
-	return path.CurrentIsTail()|| readResult,nil
+	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Parameter,error){
+func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Parameter, error) {
 	paramType := function.JSON
 
 	paramTypeUpdated := false
@@ -228,14 +246,14 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 	// Parenthesis starts at 1 since we're marking the start of a function call, the close paren will denote the
 	// last parameter boundary
 
-	groupParen,groupBracket,groupBrace,groupQuote := 1,0,0,0
+	groupParen, groupBracket, groupBrace, groupQuote := 1, 0, 0, 0
 
 	path := c.path
 	endOfStream := false
 	priorChar := rune(0)
 	var parameters []*function.Parameter
 	parameter := ""
-	for ; path.InBounds() && !endOfStream; {
+	for path.InBounds() && !endOfStream {
 		char := path.CurrentChar()
 		path.IncrementPosition(1)
 
@@ -268,12 +286,12 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 			groupBracket++
 		case CLOSE_BRACE:
 			if 0 == groupBrace {
-				return nil, &jsonpath.InvalidPathError{Message:"Unexpected close brace '}' at character position: " + strconv.Itoa(path.Position())}
+				return nil, &jsonpath.InvalidPathError{Message: "Unexpected close brace '}' at character position: " + strconv.Itoa(path.Position())}
 			}
 			groupBrace--
 		case CLOSE_SQUARE_BRACKET:
 			if 0 == groupBracket {
-				return nil, &jsonpath.InvalidPathError{Message:"Unexpected close bracket ']' at character position: " + strconv.Itoa(path.Position())}
+				return nil, &jsonpath.InvalidPathError{Message: "Unexpected close bracket ']' at character position: " + strconv.Itoa(path.Position())}
 			}
 			groupBracket--
 
@@ -323,7 +341,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 	if 0 != groupBrace || 0 != groupParen || 0 != groupBracket {
 		return nil, &jsonpath.InvalidPathError{Message: "Arguments to function: '" + funcName + "' are not closed properly."}
 	}
-	return parameters,nil
+	return parameters, nil
 }
 
 func (c *Compiler) compile() (Path, error) {
@@ -335,44 +353,44 @@ func (c *Compiler) compile() (Path, error) {
 	return &CompiledPath{root: root, isRootPath: root.GetPathFragment() == "$"}, nil
 }
 
-func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error){
+func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) {
-		return false,nil
+		return false, nil
 	}
 	questionMarkIndex := path.IndexOfNextSignificantChar(BEGIN_FILTER)
 	if questionMarkIndex == -1 {
-		return false,nil
+		return false, nil
 	}
 	nextSignificantChar := path.NextSignificantCharFromStartPosition(questionMarkIndex)
 	if nextSignificantChar != CLOSE_SQUARE_BRACKET && nextSignificantChar != COMMA {
-		return false,nil
+		return false, nil
 	}
 
 	expressionBeginIndex := path.Position() + 1
 	expressionEndIndex := path.NextIndexOfFromStartPosition(expressionBeginIndex, CLOSE_SQUARE_BRACKET)
 
 	if expressionEndIndex == -1 {
-		return false,nil
+		return false, nil
 	}
 
 	expression := path.SubSequence(expressionBeginIndex, expressionEndIndex)
-	tokens := strings.Split(expression,",")
+	tokens := strings.Split(expression, ",")
 
 	if len(c.filterStack) < len(tokens) {
-		return false,&jsonpath.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
+		return false, &jsonpath.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
 	}
 
 	var predicates []jsonpath.Predicate
-	for _,token := range tokens {
-		if token != ""{
+	for _, token := range tokens {
+		if token != "" {
 			token = strings.TrimSpace(token)
 		}
 		if "?" != token {
 			return false, &jsonpath.InvalidPathError{Message: "Expected '?' but found " + token}
 		}
-		predicates = append(predicates, c.filterStack[len(c.filterStack) - 1])
-		c.filterStack = c.filterStack[0:len(c.filterStack)-1]
+		predicates = append(predicates, c.filterStack[len(c.filterStack)-1])
+		c.filterStack = c.filterStack[0 : len(c.filterStack)-1]
 	}
 
 	appender.AppendPathToken(CreatePredicatePathToken(predicates))
@@ -380,68 +398,70 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error){
 	path.SetPosition(expressionEndIndex + 1)
 
 	readResult, err := c.readNextToken(appender)
-	if err != nil{
+	if err != nil {
 		return false, err
 	}
-	return path.CurrentIsTail() ||readResult,nil
+	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) readFilterToken(appender TokenAppender) (bool,error){
+func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) && !path.NextSignificantCharIs(BEGIN_FILTER) {
-		return false,nil
+		return false, nil
 	}
 
 	openStatementBracketIndex := path.Position()
 	questionMarkIndex := path.IndexOfNextSignificantChar(BEGIN_FILTER)
 	if questionMarkIndex == -1 {
-		return false,nil
+		return false, nil
 	}
 	openBracketIndex := path.IndexOfNextSignificantCharFromStartPosition(questionMarkIndex, OPEN_PARENTHESIS)
 	if openBracketIndex == -1 {
-		return false,nil
+		return false, nil
 	}
-	closeBracketIndex,err := path.IndexOfClosingBracket(openBracketIndex, true, true)
+	closeBracketIndex, err := path.IndexOfClosingBracket(openBracketIndex, true, true)
 	if err != nil {
 		return false, err
 	}
 	if closeBracketIndex == -1 {
-		return false,nil
+		return false, nil
 	}
 	if !path.NextSignificantCharIsFromStartPosition(closeBracketIndex, CLOSE_SQUARE_BRACKET) {
-		return false,nil
+		return false, nil
 	}
 	closeStatementBracketIndex := path.IndexOfNextSignificantCharFromStartPosition(closeBracketIndex, CLOSE_SQUARE_BRACKET)
 
-	criteria := path.SubSequence(openStatementBracketIndex, closeStatementBracketIndex + 1)
+	criteria := path.SubSequence(openStatementBracketIndex, closeStatementBracketIndex+1)
 
-
-	Predicate predicate = FilterCompiler.compile(criteria);
-	appender.AppendPathToken(CreatePredicatePathToken(predicate))
+	predicate, e := filter.Compile(criteria)
+	if e != nil {
+		return false, nil
+	}
+	appender.AppendPathToken(CreatePredicatePathToken([]jsonpath.Predicate{predicate}))
 
 	path.SetPosition(closeStatementBracketIndex + 1)
 	readResult, e := c.readNextToken(appender)
-	if e != nil{
+	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult,nil
+	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) readWildCardToken(appender TokenAppender) (bool,error){
+func (c *Compiler) readWildCardToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	inBracket := path.CurrentCharIs(OPEN_SQUARE_BRACKET)
 
 	if inBracket && !path.NextSignificantCharIs(WILDCARD) {
-		return false,nil
+		return false, nil
 	}
-	if !path.CurrentCharIs(WILDCARD) && path.IsOutOfBounds(path.Position() + 1) {
-		return false,nil
+	if !path.CurrentCharIs(WILDCARD) && path.IsOutOfBounds(path.Position()+1) {
+		return false, nil
 	}
 	if inBracket {
 		wildCardIndex := path.IndexOfNextSignificantChar(WILDCARD)
 		if !path.NextSignificantCharIsFromStartPosition(wildCardIndex, CLOSE_SQUARE_BRACKET) {
 			offset := wildCardIndex + 1
-			return false,&jsonpath.InvalidPathError{Message:"Expected wildcard token to end with ']' on position " + strconv.Itoa(offset)}
+			return false, &jsonpath.InvalidPathError{Message: "Expected wildcard token to end with ']' on position " + strconv.Itoa(offset)}
 		}
 		bracketCloseIndex := path.IndexOfNextSignificantCharFromStartPosition(wildCardIndex, CLOSE_SQUARE_BRACKET)
 		path.SetPosition(bracketCloseIndex + 1)
@@ -451,54 +471,54 @@ func (c *Compiler) readWildCardToken(appender TokenAppender) (bool,error){
 
 	appender.AppendPathToken(CreateWildcardPathToken())
 	readResult, e := c.readNextToken(appender)
-	if e != nil{
+	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult,nil
+	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) readArrayToken(appender TokenAppender) (bool,error){
+func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) {
-		return false,nil
+		return false, nil
 	}
 	nextSignificantChar := path.NextSignificantChar()
 	if !jsonpath.UtilsCharIsDigit(nextSignificantChar) && nextSignificantChar != MINUS && nextSignificantChar != SPLIT {
-		return false,nil
+		return false, nil
 	}
 
 	expressionBeginIndex := path.Position() + 1
 	expressionEndIndex := path.NextIndexOfFromStartPosition(expressionBeginIndex, CLOSE_SQUARE_BRACKET)
 
 	if expressionEndIndex == -1 {
-		return false,nil
+		return false, nil
 	}
 
 	expression := strings.TrimSpace(path.SubSequence(expressionBeginIndex, expressionEndIndex))
 
-	if "*"==expression {
-		return false,nil
+	if "*" == expression {
+		return false, nil
 	}
 
 	//check valid chars
 	for i := 0; i < len(expression); i++ {
 		char := []rune(expression)[i]
 		if !jsonpath.UtilsCharIsDigit(char) && char != COMMA && char != MINUS && char != SPLIT && char != SPACE {
-			return false,nil
+			return false, nil
 		}
 	}
 
-	isSliceOperation := strings.Contains(expression,":")
+	isSliceOperation := strings.Contains(expression, ":")
 
 	if isSliceOperation {
-		arraySliceOperation,err := ParseArraySliceOperation(expression)
-		if err != nil{
+		arraySliceOperation, err := ParseArraySliceOperation(expression)
+		if err != nil {
 			return false, nil
 		}
 		appender.AppendPathToken(CreateArraySlicePathToken(arraySliceOperation))
 	} else {
-		arrayIndexOperation,err := ParseArrayIndexOperation(expression)
-		if err != nil{
+		arrayIndexOperation, err := ParseArrayIndexOperation(expression)
+		if err != nil {
 			return false, nil
 		}
 		appender.AppendPathToken(CreateArrayIndexPathToken(arrayIndexOperation))
@@ -506,24 +526,24 @@ func (c *Compiler) readArrayToken(appender TokenAppender) (bool,error){
 
 	path.SetPosition(expressionEndIndex + 1)
 	readResult, e := c.readNextToken(appender)
-	if e != nil{
+	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() ||  readResult,nil
+	return path.CurrentIsTail() || readResult, nil
 
 }
 
-func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool,error){
+func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) {
-		return false,nil
+		return false, nil
 	}
 	potentialStringDelimiter := path.NextSignificantChar()
 	if potentialStringDelimiter != SINGLE_QUOTE && potentialStringDelimiter != DOUBLE_QUOTE {
-		return false,nil
+		return false, nil
 	}
 
-	var properties = make([]string,0)
+	var properties = make([]string, 0)
 
 	startPosition := path.Position() + 1
 	readPosition := startPosition
@@ -532,7 +552,7 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool,error)
 	inEscape := false
 	lastSignificantWasComma := false
 
-	for; path.InBoundsByPosition(readPosition); {
+	for path.InBoundsByPosition(readPosition) {
 		char := path.CharAt(readPosition)
 
 		if inEscape {
@@ -541,18 +561,22 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool,error)
 			inEscape = true
 		} else if char == CLOSE_SQUARE_BRACKET && !inProperty {
 			if lastSignificantWasComma {
-				return false,fail("Found empty property at index "+strconv.Itoa(readPosition))
+				return false, fail("Found empty property at index " + strconv.Itoa(readPosition))
 			}
 			break
 		} else if char == potentialStringDelimiter {
 			if inProperty {
 				nextSignificantChar := path.NextSignificantCharFromStartPosition(readPosition)
 				if nextSignificantChar != CLOSE_SQUARE_BRACKET && nextSignificantChar != COMMA {
-					return false,fail("Property must be separated by comma or Property must be terminated close square bracket at index "+strconv.Itoa(readPosition))
+					return false, fail("Property must be separated by comma or Property must be terminated close square bracket at index " + strconv.Itoa(readPosition))
 				}
 				endPosition = readPosition
 				prop := path.SubSequence(startPosition, endPosition)
-				properties.add(Utils.unescape(prop))
+				property, err := jsonpath.UtilsStringUnescape(prop)
+				if err != nil {
+					return false, err
+				}
+				properties = append(properties, property)
 				inProperty = false
 			} else {
 				startPosition = readPosition + 1
@@ -561,7 +585,7 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool,error)
 			}
 		} else if char == COMMA && !inProperty {
 			if lastSignificantWasComma {
-				return false,fail("Found empty property at index "+strconv.Itoa(readPosition))
+				return false, fail("Found empty property at index " + strconv.Itoa(readPosition))
 			}
 			lastSignificantWasComma = true
 		}
@@ -569,7 +593,7 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool,error)
 	}
 
 	if inProperty {
-		return false,fail("Property has not been closed - missing closing " + string(potentialStringDelimiter))
+		return false, fail("Property has not been closed - missing closing " + string(potentialStringDelimiter))
 	}
 
 	endBracketIndex := path.IndexOfNextSignificantCharFromStartPosition(endPosition, CLOSE_SQUARE_BRACKET) + 1
@@ -579,10 +603,10 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool,error)
 	appender.AppendPathToken(CreatePropertyPathToken(properties, string(potentialStringDelimiter)))
 
 	readResult, e := c.readNextToken(appender)
-	if e != nil{
+	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult,nil
+	return path.CurrentIsTail() || readResult, nil
 
 }
 

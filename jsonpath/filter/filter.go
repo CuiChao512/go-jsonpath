@@ -143,10 +143,10 @@ func (e *LogicalExpressionNode) ExpressionNodeLabel() {
 	return
 }
 func (e *LogicalExpressionNode) And(other *LogicalExpressionNode) *LogicalExpressionNode {
-	return NewLogicalAnd(e, other)
+	return CreateLogicalAnd(e, other)
 }
 func (e *LogicalExpressionNode) Or(other *LogicalExpressionNode) *LogicalExpressionNode {
-	return NewLogicalOr(e, other)
+	return CreateLogicalOr(e, other)
 }
 func (e *LogicalExpressionNode) Append(node ExpressionNode) *LogicalExpressionNode {
 	e.chain = append(e.chain, node)
@@ -202,23 +202,23 @@ func newLogicalExpressionNodeByOperatorAndValues(operator string, values []Expre
 	}
 }
 
-func NewLogicalOr(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
+func CreateLogicalOr(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
 	return newLogicalExpressionNode(left, LogicalOperator_OR, right)
 }
 
-func NewLogicalOrByList(operands []ExpressionNode) *LogicalExpressionNode {
+func CreateLogicalOrByList(operands []ExpressionNode) *LogicalExpressionNode {
 	return newLogicalExpressionNodeByOperatorAndValues(LogicalOperator_OR, operands)
 }
 
-func NewLogicalAnd(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
+func CreateLogicalAnd(left ExpressionNode, right ExpressionNode) *LogicalExpressionNode {
 	return newLogicalExpressionNode(left, LogicalOperator_AND, right)
 }
 
-func NewLogicalAndByList(operands []ExpressionNode) *LogicalExpressionNode {
+func CreateLogicalAndByList(operands []ExpressionNode) *LogicalExpressionNode {
 	return newLogicalExpressionNodeByOperatorAndValues(LogicalOperator_AND, operands)
 }
 
-func NewLogicalNot(op ExpressionNode) *LogicalExpressionNode {
+func CreateLogicalNot(op ExpressionNode) *LogicalExpressionNode {
 	return newLogicalExpressionNode(op, LogicalOperator_NOT, nil)
 }
 
@@ -230,13 +230,13 @@ type RelationExpressionNode struct {
 func (e *RelationExpressionNode) ExpressionNodeLabel() {
 	return
 }
-func (e *RelationExpressionNode) Apply(ctx *jsonpath.PredicateContext) bool {
+func (e *RelationExpressionNode) Apply(ctx jsonpath.PredicateContext) bool {
 	return false
 }
 func (e *RelationExpressionNode) String() string {
 	return "nil"
 }
 
-func NewRelationExpressionNode(valueNode1 ValueNode, operator string, valueNode2 ValueNode) *RelationExpressionNode {
+func CreateRelationExpressionNode(valueNode1 ValueNode, operator string, valueNode2 ValueNode) *RelationExpressionNode {
 	return &RelationExpressionNode{}
 }
