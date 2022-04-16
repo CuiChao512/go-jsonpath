@@ -16,8 +16,8 @@ type Token interface {
 	IsUpstreamDefinite() bool
 	IsTokenDefinite() bool
 	String() string
-	Invoke(pathFunction function.PathFunction, currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error
-	Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error
+	Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error
+	Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error
 	SetNext(next Token)
 	SetPrev(prev Token)
 	GetNext() Token
@@ -92,7 +92,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			}
 		}
 
-		var ref PathRef
+		var ref common.PathRef
 
 		if ctx.ForUpdate() {
 			ref = CreateObjectPropertyPathRef(model, property)
@@ -141,7 +141,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			}
 			ctx.JsonProvider().SetProperty(merged, property, propertyVal)
 		}
-		var pathRef PathRef
+		var pathRef common.PathRef
 		if ctx.ForUpdate() {
 			pathRef = CreateObjectMultiPropertyPathRef(model, properties)
 		} else {
@@ -162,7 +162,7 @@ func pathTokenReadObjectProperty(property string, model interface{}, ctx *Evalua
 
 func (t *defaultToken) handleArrayIndex(index int, currentPath string, model interface{}, ctx *EvaluationContextImpl) error {
 	evalPath := common.UtilsConcat(currentPath, "[", strconv.FormatInt(int64(index), 10), "]")
-	var pathRef PathRef
+	var pathRef common.PathRef
 	if ctx.ForUpdate() {
 		pathRef = CreateArrayIndexPathRef(model, index)
 	} else {
@@ -252,7 +252,7 @@ func (t *defaultToken) String() string {
 	}
 }
 
-func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, nil)
 	if err != nil {
 		return err
@@ -284,7 +284,7 @@ func (t *defaultToken) GetNext() Token {
 	return t.next
 }
 
-func (t *defaultToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (t *defaultToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	return nil
 }
 
@@ -319,9 +319,9 @@ func (r *RootPathToken) GetPathTokenAppender() TokenAppender {
 	return r
 }
 
-func (r *RootPathToken) Evaluate(currentPath string, ref PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (r *RootPathToken) Evaluate(currentPath string, ref common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	if r.isLeaf() {
-		var op PathRef
+		var op common.PathRef
 		if ctx.ForUpdate() {
 			op = ref
 		} else {
@@ -382,7 +382,7 @@ type FunctionPathToken struct {
 	functionParams []*function.Parameter
 }
 
-func (f *FunctionPathToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (f *FunctionPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	pathFunction, err := function.GetFunctionByName(f.functionName)
 	if err != nil {
 		return err
@@ -407,7 +407,7 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent PathRef, model i
 	return nil
 }
 
-func (f *FunctionPathToken) evaluateParameters(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (f *FunctionPathToken) evaluateParameters(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	if f.functionParams != nil {
 		for _, param := range f.functionParams {
 			switch param.GetType() {
@@ -509,7 +509,7 @@ func (p *PropertyPathToken) GetPathFragment() string {
 	return "[" + common.UtilsJoin(",", p.stringDelimiter, p.properties) + "]"
 }
 
-func (p *PropertyPathToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (p *PropertyPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	var truthCount int = 0
 	if p.SinglePropertyCase() {
 		truthCount++
@@ -577,7 +577,7 @@ func (w *WildcardPathToken) GetPathFragment() string {
 	return "[*]"
 }
 
-func (w *WildcardPathToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (w *WildcardPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	if ctx.JsonProvider().IsMap(model) {
 		for _, property := range ctx.JsonProvider().GetPropertyKeys(model) {
 			err := w.handleObjectProperty(currentPath, model, ctx, []string{property})
@@ -679,7 +679,7 @@ type ScanPathToken struct {
 	*defaultToken
 }
 
-func (s *ScanPathToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (s *ScanPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	pt, err := s.nextToken()
 	if err != nil {
 		return err
@@ -687,7 +687,7 @@ func (s *ScanPathToken) Evaluate(currentPath string, parent PathRef, model inter
 	return s.walk(pt, currentPath, parent, model, ctx, s.createScanPredicate(pt, ctx))
 }
 
-func (s *ScanPathToken) walk(pt Token, currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl, predicate ScanPredicate) error {
+func (s *ScanPathToken) walk(pt Token, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl, predicate ScanPredicate) error {
 	if ctx.JsonProvider().IsMap(model) {
 		return s.walkObject(pt, currentPath, parent, model, ctx, predicate)
 	} else if ctx.JsonProvider().IsArray(model) {
@@ -696,7 +696,7 @@ func (s *ScanPathToken) walk(pt Token, currentPath string, parent PathRef, model
 	return nil
 }
 
-func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl, predicate ScanPredicate) error {
+func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl, predicate ScanPredicate) error {
 	if predicate.matches(model) {
 		err := pt.Evaluate(currentPath, parent, model, ctx)
 		if err != nil {
@@ -718,7 +718,7 @@ func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent PathRef,
 	return nil
 }
 
-func (s *ScanPathToken) walkArray(pt Token, currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl, predicate ScanPredicate) error {
+func (s *ScanPathToken) walkArray(pt Token, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl, predicate ScanPredicate) error {
 	if predicate.matches(model) {
 		if pt.isLeaf() {
 			err := pt.Evaluate(currentPath, parent, model, ctx)
@@ -815,7 +815,7 @@ type ArrayIndexPathToken struct {
 	arrayIndexOperation *ArrayIndexOperation
 }
 
-func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	checkResult, err := a.checkArrayModel(currentPath, model, ctx)
 	if err != nil {
 		return err
@@ -856,7 +856,7 @@ type ArraySlicePathToken struct {
 	operation *ArraySliceOperation
 }
 
-func (a *ArraySlicePathToken) Evaluate(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	checkPass, err := a.checkArrayModel(currentPath, model, ctx)
 	if err != nil {
 		return err
@@ -875,7 +875,7 @@ func (a *ArraySlicePathToken) Evaluate(currentPath string, parent PathRef, model
 	return nil
 }
 
-func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	length := ctx.JsonProvider().Length(model)
 	from := a.operation.From()
 	if from < 0 {
@@ -898,7 +898,7 @@ func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent PathRef, mode
 	return nil
 }
 
-func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	length := ctx.JsonProvider().Length(model)
 	from := a.operation.From()
 	to := a.operation.To()
@@ -921,7 +921,7 @@ func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent PathRef, m
 	return nil
 }
 
-func (a *ArraySlicePathToken) sliceTo(currentPath string, parent PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) sliceTo(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	length := ctx.JsonProvider().Length(model)
 	if length == 0 {
 		return nil
@@ -962,13 +962,13 @@ func CreateArraySlicePathToken(operation *ArraySliceOperation) *ArraySlicePathTo
 
 type PredicatePathToken struct {
 	*defaultToken
-	predicates []Predicate
+	predicates []common.Predicate
 }
 
-func (p *PredicatePathToken) evaluate(currentPath string, ref PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (p *PredicatePathToken) evaluate(currentPath string, ref common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	if ctx.JsonProvider().IsMap(model) {
 		if p.accept(model, ctx.RootDocument(), ctx.Configuration(), ctx) {
-			var op PathRef
+			var op common.PathRef
 			if ctx.ForUpdate() {
 				op = ref
 			} else {
@@ -1034,6 +1034,6 @@ func (p *PredicatePathToken) IsTokenDefinite() bool {
 	return false
 }
 
-func CreatePredicatePathToken(predicates []Predicate) *PredicatePathToken {
+func CreatePredicatePathToken(predicates []common.Predicate) *PredicatePathToken {
 	return &PredicatePathToken{predicates: predicates}
 }

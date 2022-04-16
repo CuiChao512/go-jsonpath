@@ -2,7 +2,6 @@ package function
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
 type ILateBindingValue interface {
@@ -10,7 +9,7 @@ type ILateBindingValue interface {
 }
 
 type LateBindingValue struct {
-	path          path.Path
+	path          common.Path
 	rootDocument  string
 	configuration *common.Configuration
 	result        interface{}
@@ -38,7 +37,7 @@ func (l *LateBindingValue) Equals(o interface{}) bool {
 	return l.path == that.path && l.rootDocument == that.rootDocument && l.configuration == that.configuration
 }
 
-func CreateLateBindingValue(path path.Path, rootDocument interface{}, configuration *common.Configuration) (*LateBindingValue, error) {
+func CreateLateBindingValue(path common.Path, rootDocument interface{}, configuration *common.Configuration) (*LateBindingValue, error) {
 	l := &LateBindingValue{}
 	l.path = path
 	l.rootDocument = common.UtilsToString(rootDocument)

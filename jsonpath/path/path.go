@@ -5,26 +5,6 @@ import (
 	"strings"
 )
 
-type Path interface {
-	Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (EvaluationContext, error)
-	EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) EvaluationContext
-	String() string
-	IsDefinite() bool
-	IsFunctionPath() bool
-	IsRootPath() bool
-}
-
-type PathRef interface {
-	GetAccessor() interface{}
-	Set(newVal interface{}, configuration *common.Configuration) error
-	Convert(mapFunction common.MapFunction, configuration *common.Configuration) error
-	Delete(configuration *common.Configuration) error
-	Add(newVal interface{}, configuration *common.Configuration) error
-	Put(key string, newVal interface{}, configuration *common.Configuration) error
-	RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error
-	CompareTo(o PathRef) int
-}
-
 type defaultPathRef struct {
 	parent interface{}
 }
@@ -69,34 +49,34 @@ func (r *defaultPathRef) targetInvalid(target interface{}) bool {
 	return target == common.JsonProviderUndefined || target == nil
 }
 
-func (r *defaultPathRef) CompareTo(o PathRef) int {
+func (r *defaultPathRef) CompareTo(o common.PathRef) int {
 	return strings.Compare(common.UtilsToString(r.GetAccessor()), common.UtilsToString(o.GetAccessor())) * -1
 }
 
-var PathRefNoOp PathRef = &defaultPathRef{}
+var PathRefNoOp common.PathRef = &defaultPathRef{}
 
-func CreateObjectPropertyPathRef(obj interface{}, property string) PathRef {
+func CreateObjectPropertyPathRef(obj interface{}, property string) common.PathRef {
 	om := &objectPropertyPathRef{}
 	om.parent = obj
 	om.property = property
 	return om
 }
 
-func CreateObjectMultiPropertyPathRef(obj interface{}, properties []string) PathRef {
+func CreateObjectMultiPropertyPathRef(obj interface{}, properties []string) common.PathRef {
 	om := &objectMultiPropertyPathRef{}
 	om.parent = obj
 	om.properties = properties
 	return om
 }
 
-func CreateArrayIndexPathRef(array interface{}, index int) PathRef {
+func CreateArrayIndexPathRef(array interface{}, index int) common.PathRef {
 	a := &arrayIndexPathRef{}
 	a.parent = array
 	a.index = index
 	return a
 }
 
-func CreateRootPathRef(root interface{}) PathRef {
+func CreateRootPathRef(root interface{}) common.PathRef {
 	d := &defaultPathRef{parent: root}
 	return d
 }
@@ -208,7 +188,7 @@ func (r *arrayIndexPathRef) RenameKey(oldKeyName string, newKeyName string, conf
 	return r.renameInMap(target, oldKeyName, newKeyName, configuration)
 }
 
-func (r *arrayIndexPathRef) CompareTo(o PathRef) int {
+func (r *arrayIndexPathRef) CompareTo(o common.PathRef) int {
 	switch o.(type) {
 	case *arrayIndexPathRef:
 		pf, _ := o.(*arrayIndexPathRef)

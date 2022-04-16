@@ -55,7 +55,7 @@ func (pn *PatternNode) String() string {
 // PathNode ------PathNode-----
 type PathNode struct {
 	*ValueNodeDefault
-	path        path.Path
+	path        common.Path
 	existsCheck bool
 	shouldExist bool
 }
@@ -68,7 +68,7 @@ func NewPathNodeWithString(pathString string, existsCheck bool, shouldExist bool
 	return &PathNode{path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}, nil
 }
 
-func NewPathNode(path path.Path, existsCheck bool, shouldExist bool) *PathNode {
+func NewPathNode(path common.Path, existsCheck bool, shouldExist bool) *PathNode {
 	return &PathNode{path: path, existsCheck: existsCheck, shouldExist: shouldExist}
 }
 
@@ -104,11 +104,11 @@ func (pn *PathNode) String() string {
 	}
 }
 
-func (pn *PathNode) GetPath() path.Path {
+func (pn *PathNode) GetPath() common.Path {
 	return pn.path
 }
 
-func (pn *PathNode) Evaluate(ctx path.PredicateContext) (ValueNode, error) {
+func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 	if pn.IsExistsCheck() {
 		c := &common.Configuration{} //TODO
 		result, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
@@ -183,7 +183,7 @@ func (n *NumberNode) GetNumber() *decimal.Decimal {
 	return n.number
 }
 
-func (n *NumberNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *NumberNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Float64
 }
 
@@ -274,7 +274,7 @@ func (n *StringNode) Contains(str1 string) bool {
 	return strings.Contains(n.str, str1)
 }
 
-func (n *StringNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *StringNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.String
 }
 
@@ -330,7 +330,7 @@ type BooleanNode struct {
 	value bool
 }
 
-func (*BooleanNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (*BooleanNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Bool
 }
 
@@ -376,10 +376,10 @@ func NewBooleanNode(value bool) *BooleanNode {
 // PredicateNode -----------
 type PredicateNode struct {
 	*ValueNodeDefault
-	predicate path.Predicate
+	predicate common.Predicate
 }
 
-func (n *PredicateNode) GetPredicate() path.Predicate {
+func (n *PredicateNode) GetPredicate() common.Predicate {
 	return n.predicate
 }
 
@@ -387,7 +387,7 @@ func (n *PredicateNode) AsPredicateNode() (*PredicateNode, error) {
 	return n, nil
 }
 
-func (n *PredicateNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *PredicateNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 
@@ -430,7 +430,7 @@ func (v *ValueListNode) GetNodes() []ValueNode {
 	return v.nodes
 }
 
-func (v *ValueListNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (v *ValueListNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Slice
 }
 
@@ -447,7 +447,7 @@ type NullNode struct {
 	*ValueNodeDefault
 }
 
-func (n *NullNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *NullNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 
@@ -488,7 +488,7 @@ func (n *UndefinedNode) AsUndefinedNode() (*UndefinedNode, error) {
 	return n, nil
 }
 
-func (n *UndefinedNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *UndefinedNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 
@@ -530,7 +530,7 @@ func (n *OffsetDateTimeNode) GetDate() *OffsetDateTime {
 	return n.dateTime
 }
 
-func (n *OffsetDateTimeNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *OffsetDateTimeNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	return reflect.Interface
 }
 
@@ -576,7 +576,7 @@ type JsonNode struct {
 	parsed bool
 }
 
-func (n *JsonNode) TypeOf(ctx path.PredicateContext) reflect.Kind {
+func (n *JsonNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
 	if n.IsArray(ctx) {
 		return reflect.Slice
 	} else {
@@ -602,7 +602,7 @@ func (n *JsonNode) AsJsonNode() (*JsonNode, error) {
 	return n, nil
 }
 
-func (n *JsonNode) IsEmpty(ctx path.PredicateContext) (bool, error) {
+func (n *JsonNode) IsEmpty(ctx common.PredicateContext) (bool, error) {
 	if n.IsArray(ctx) || n.IsMap(ctx) {
 		parseResult, err := n.Parse(ctx)
 		if err != nil {
@@ -636,17 +636,17 @@ func (n *JsonNode) GetJson() interface{} {
 	return n.json
 }
 
-func (n *JsonNode) IsArray(ctx path.PredicateContext) bool {
+func (n *JsonNode) IsArray(ctx common.PredicateContext) bool {
 	parsedObj, _ := n.Parse(ctx)
 	return common.UtilsIsSlice(parsedObj)
 }
 
-func (n *JsonNode) IsMap(ctx path.PredicateContext) bool {
+func (n *JsonNode) IsMap(ctx common.PredicateContext) bool {
 	parsedObj, _ := n.Parse(ctx)
 	return common.UtilsIsMap(parsedObj)
 }
 
-func (n *JsonNode) Parse(ctx path.PredicateContext) (interface{}, error) {
+func (n *JsonNode) Parse(ctx common.PredicateContext) (interface{}, error) {
 	if n.parsed {
 		return n.json, nil
 	} else {
@@ -655,7 +655,7 @@ func (n *JsonNode) Parse(ctx path.PredicateContext) (interface{}, error) {
 	}
 }
 
-func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx path.PredicateContext) bool {
+func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx common.PredicateContext) bool {
 	if n == jsonNode {
 		return true
 	}
@@ -667,7 +667,7 @@ func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx path.Predica
 	}
 }
 
-func (n *JsonNode) AsValueListNodeByPredicateContext(ctx path.PredicateContext) (ValueNode, error) {
+func (n *JsonNode) AsValueListNodeByPredicateContext(ctx common.PredicateContext) (ValueNode, error) {
 	if !n.IsArray(ctx) {
 		return UNDEFINED_NODE, nil
 	} else {

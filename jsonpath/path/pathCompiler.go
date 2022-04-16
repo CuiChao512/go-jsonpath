@@ -33,12 +33,12 @@ const (
 	DOUBLE_QUOTE = '"'
 )
 
-type Compiler struct {
-	filterStack []Predicate
+type PathCompiler struct {
+	filterStack []common.Predicate
 	path        *common.CharacterIndex
 }
 
-func (c *Compiler) readWhitespace() {
+func (c *PathCompiler) readWhitespace() {
 	for c.path.InBounds() {
 		char := c.path.CurrentChar()
 		if c.isWhitespace(char) {
@@ -48,15 +48,15 @@ func (c *Compiler) readWhitespace() {
 	}
 }
 
-func (*Compiler) isWhitespace(c rune) bool {
+func (*PathCompiler) isWhitespace(c rune) bool {
 	return c == SPACE || c == TAB || c == LF || c == CR
 }
 
-func (*Compiler) isPathContext(c rune) bool {
+func (*PathCompiler) isPathContext(c rune) bool {
 	return c == DOC_CONTEXT || c == EVAL_CONTEXT
 }
 
-func (c *Compiler) readContextToken() (*RootPathToken, error) {
+func (c *PathCompiler) readContextToken() (*RootPathToken, error) {
 	c.readWhitespace()
 
 	if !c.isPathContext(c.path.CurrentChar()) {
@@ -84,7 +84,7 @@ func (c *Compiler) readContextToken() (*RootPathToken, error) {
 	return pathToken, nil
 }
 
-func (c *Compiler) readNextToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readNextToken(appender TokenAppender) (bool, error) {
 	switch c.path.CurrentChar() {
 	case OPEN_SQUARE_BRACKET:
 		readResult, err := c.readBracketPropertyToken(appender)
@@ -138,7 +138,7 @@ func (c *Compiler) readNextToken(appender TokenAppender) (bool, error) {
 	return true, nil
 }
 
-func (c *Compiler) readDotToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readDotToken(appender TokenAppender) (bool, error) {
 	if c.path.CurrentCharIs(PERIOD) && c.path.NextCharIs(PERIOD) {
 		appender.AppendPathToken(CreateScanPathToken())
 		c.path.IncrementPosition(2)
@@ -155,7 +155,7 @@ func (c *Compiler) readDotToken(appender TokenAppender) (bool, error) {
 	return c.readNextToken(appender)
 }
 
-func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readPropertyOrFunctionToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if path.CurrentCharIs(OPEN_SQUARE_BRACKET) || path.CurrentCharIs(WILDCARD) || path.CurrentCharIs(PERIOD) || path.CurrentCharIs(SPACE) {
 		return false, nil
@@ -238,7 +238,7 @@ func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool, er
 	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Parameter, error) {
+func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Parameter, error) {
 	paramType := function.JSON
 
 	paramTypeUpdated := false
@@ -316,7 +316,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 						// parse the json and set the value
 						param = function.CreateJsonParameter(parameter)
 					case function.PATH:
-						var predicates []Predicate
+						var predicates []common.Predicate
 						compiler := createPathCompiler(common.CreateCharacterIndex(parameter), &predicates)
 						compiledPath, err := compiler.compile()
 						if err != nil {
@@ -344,7 +344,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 	return parameters, nil
 }
 
-func (c *Compiler) compile() (Path, error) {
+func (c *PathCompiler) compile() (common.Path, error) {
 	root, err := c.readContextToken()
 	if err != nil {
 		return nil, err
@@ -353,7 +353,7 @@ func (c *Compiler) compile() (Path, error) {
 	return &CompiledPath{root: root, isRootPath: root.GetPathFragment() == "$"}, nil
 }
 
-func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) {
 		return false, nil
@@ -381,7 +381,7 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 		return false, &common.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
 	}
 
-	var predicates []Predicate
+	var predicates []common.Predicate
 	for _, token := range tokens {
 		if token != "" {
 			token = strings.TrimSpace(token)
@@ -404,7 +404,7 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readFilterToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) && !path.NextSignificantCharIs(BEGIN_FILTER) {
 		return false, nil
@@ -437,7 +437,7 @@ func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
 	if e != nil {
 		return false, nil
 	}
-	appender.AppendPathToken(CreatePredicatePathToken([]Predicate{predicate0}))
+	appender.AppendPathToken(CreatePredicatePathToken([]common.Predicate{predicate0}))
 
 	path.SetPosition(closeStatementBracketIndex + 1)
 	readResult, e := c.readNextToken(appender)
@@ -447,7 +447,7 @@ func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
 	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) readWildCardToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readWildCardToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	inBracket := path.CurrentCharIs(OPEN_SQUARE_BRACKET)
 
@@ -477,7 +477,7 @@ func (c *Compiler) readWildCardToken(appender TokenAppender) (bool, error) {
 	return path.CurrentIsTail() || readResult, nil
 }
 
-func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readArrayToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) {
 		return false, nil
@@ -533,7 +533,7 @@ func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
 
 }
 
-func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool, error) {
+func (c *PathCompiler) readBracketPropertyToken(appender TokenAppender) (bool, error) {
 	path := c.path
 	if !path.CurrentCharIs(OPEN_SQUARE_BRACKET) {
 		return false, nil
@@ -614,11 +614,11 @@ func fail(message string) *common.InvalidPathError {
 	return &common.InvalidPathError{Message: message}
 }
 
-func createPathCompiler(path *common.CharacterIndex, filterStack *[]Predicate) *Compiler {
-	return &Compiler{path: path, filterStack: *filterStack}
+func createPathCompiler(path *common.CharacterIndex, filterStack *[]common.Predicate) *PathCompiler {
+	return &PathCompiler{path: path, filterStack: *filterStack}
 }
 
-func Compile(pathString string, filters ...Predicate) (Path, error) {
+func Compile(pathString string, filters ...common.Predicate) (common.Path, error) {
 	ci := common.CreateCharacterIndex(pathString)
 
 	if ci.CharAt(0) != DOC_CONTEXT && ci.CharAt(0) != EVAL_CONTEXT {

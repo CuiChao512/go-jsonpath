@@ -9,11 +9,11 @@ type CompiledPath struct {
 	isRootPath bool
 }
 
-func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (EvaluationContext, error) {
+func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (common.EvaluationContext, error) {
 	return nil, nil
 }
 
-func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) EvaluationContext {
+func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) common.EvaluationContext {
 	return nil
 }
 

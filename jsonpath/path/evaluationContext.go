@@ -4,25 +4,18 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
 )
 
-type EvaluationContext interface {
-	Configuration() *common.Configuration
-	RootDocument() interface{}
-	GetValue() interface{}
-	GetValueUnwrap(unwrap bool) interface{}
-}
-
 type EvaluationContextImpl struct {
 	configuration     *common.Configuration
 	forUpdate         bool
-	path              Path
+	path              common.Path
 	rootDocument      interface{}
-	updateOperations  []PathRef
-	documentEvalCache map[Path]interface{}
+	updateOperations  []common.PathRef
+	documentEvalCache map[common.Path]interface{}
 	suppressException bool
 	resultIndex       int
 }
 
-func (e *EvaluationContextImpl) DocumentEvalCache() map[Path]interface{} {
+func (e *EvaluationContextImpl) DocumentEvalCache() map[common.Path]interface{} {
 	return e.documentEvalCache
 }
 
@@ -63,6 +56,6 @@ func (e *EvaluationContextImpl) ForUpdate() bool {
 	return false
 }
 
-func (e *EvaluationContextImpl) AddResult(pathString string, operation PathRef, model interface{}) {
+func (e *EvaluationContextImpl) AddResult(pathString string, operation common.PathRef, model interface{}) {
 
 }

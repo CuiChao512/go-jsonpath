@@ -2,7 +2,6 @@ package function
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
 type ParamType int32
@@ -14,7 +13,7 @@ const (
 
 type Parameter struct {
 	paramType   ParamType
-	path        path.Path
+	path        common.Path
 	lateBinding ILateBindingValue
 	evaluated   bool
 	json        string
@@ -28,7 +27,7 @@ func (p *Parameter) SetLateBinding(lateBinding ILateBindingValue) {
 	p.lateBinding = lateBinding
 }
 
-func (p *Parameter) GetPath() path.Path {
+func (p *Parameter) GetPath() common.Path {
 	return p.path
 }
 
@@ -48,7 +47,7 @@ func (p *Parameter) SetType(paramType ParamType) {
 	p.paramType = paramType
 }
 
-func (p *Parameter) SetPath(path path.Path) {
+func (p *Parameter) SetPath(path common.Path) {
 	p.path = path
 }
 
@@ -64,11 +63,11 @@ func CreateJsonParameter(json string) *Parameter {
 	return &Parameter{json: json, paramType: JSON}
 }
 
-func CreatePathParameter(p path.Path) *Parameter {
+func CreatePathParameter(p common.Path) *Parameter {
 	return &Parameter{path: p, paramType: PATH}
 }
 
-func ParametersToList(typeName common.Type, ctx path.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
+func ParametersToList(typeName common.Type, ctx common.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
 	var values *[]interface{}
 	for _, param := range parameters {
 		value, err := param.GetValue()
@@ -80,7 +79,7 @@ func ParametersToList(typeName common.Type, ctx path.EvaluationContext, paramete
 	return *values, nil
 }
 
-func parameterConsume(expectedType common.Type, ctx path.EvaluationContext, collection *[]interface{}, value interface{}) {
+func parameterConsume(expectedType common.Type, ctx common.EvaluationContext, collection *[]interface{}, value interface{}) {
 	if ctx.Configuration().JsonProvider().IsArray(value) {
 		for _, o := range ctx.Configuration().JsonProvider().ToIterable(value) {
 			if expectedType == common.TYPE_NUMBER {

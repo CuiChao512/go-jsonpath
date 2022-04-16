@@ -1,8 +1,7 @@
 package filter
 
 import (
-	errors2 "cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/path"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"errors"
 	"fmt"
 	"log"
@@ -44,7 +43,7 @@ const (
 )
 
 type Compiler struct {
-	filter *errors2.CharacterIndex
+	filter *common.CharacterIndex
 }
 
 func (c *Compiler) readLogicalOR() (ExpressionNode, error) {
@@ -162,7 +161,7 @@ func (c *Compiler) readValueNode() (ValueNode, error) {
 		case EVAL_CONTEXT:
 			return c.readPath()
 		default:
-			return nil, &errors2.InvalidPathError{Message: fmt.Sprintf("Unexpected character: %c", NOT)}
+			return nil, &common.InvalidPathError{Message: fmt.Sprintf("Unexpected character: %c", NOT)}
 		}
 	default:
 		return c.readLiteral()
@@ -246,7 +245,7 @@ func (c *Compiler) readNullLiteral() (*NullNode, error) {
 		}
 	}
 
-	return nil, &errors2.InvalidPathError{Message: "Expected <null> value"}
+	return nil, &common.InvalidPathError{Message: "Expected <null> value"}
 }
 
 func (c *Compiler) readJsonLiteral() (*JsonNode, error) {
@@ -269,7 +268,7 @@ func (c *Compiler) readJsonLiteral() (*JsonNode, error) {
 	if err != nil {
 		return nil, err
 	} else if closingIndex == -1 {
-		return nil, &errors2.InvalidPathError{
+		return nil, &common.InvalidPathError{
 			Message: "String not closed. Expected " + string(SINGLE_QUOTE) + " in " + filter.String(),
 		}
 	} else {
@@ -305,7 +304,7 @@ func (c *Compiler) readPattern() (*PatternNode, error) {
 	closingIndex := filter.NextIndexOfUnescaped(PATTERN)
 
 	if closingIndex == -1 {
-		return nil, &errors2.InvalidPathError{Message: "Pattern not closed. Expected " + string(PATTERN) + " in " + filter.String()}
+		return nil, &common.InvalidPathError{Message: "Pattern not closed. Expected " + string(PATTERN) + " in " + filter.String()}
 	} else {
 		if filter.InBoundsByPosition(closingIndex + 1) {
 			endFlagsIndex := c.endOfFlags(closingIndex + 1)
@@ -327,7 +326,7 @@ func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
 
 	closingSingleQuoteIndex := filter.NextIndexOfUnescaped(endChar)
 	if closingSingleQuoteIndex == -1 {
-		return nil, &errors2.InvalidPathError{Message: "String literal does not have matching quotes. Expected " + string(endChar) + " in " + filter.String()}
+		return nil, &common.InvalidPathError{Message: "String literal does not have matching quotes. Expected " + string(endChar) + " in " + filter.String()}
 	} else {
 		filter.SetPosition(closingSingleQuoteIndex + 1)
 	}
@@ -357,11 +356,11 @@ func (c *Compiler) readBooleanLiteral() (*BooleanNode, error) {
 	}
 
 	if !filter.InBoundsByPosition(end) {
-		return nil, &errors2.InvalidPathError{Message: "Expected boolean literal"}
+		return nil, &common.InvalidPathError{Message: "Expected boolean literal"}
 	}
 	boolString := filter.SubSequence(begin, end+1)
 	if boolString != "true" && boolString != "false" {
-		return nil, &errors2.InvalidPathError{Message: "Expected boolean literal"}
+		return nil, &common.InvalidPathError{Message: "Expected boolean literal"}
 	}
 	filter.IncrementPosition(len(boolString))
 	log.Printf("BooleanLiteral from %d to %d -> [%s]", begin, end, boolString)
@@ -384,7 +383,7 @@ func (c *Compiler) readPath() (*PathNode, error) {
 			if err != nil {
 				return nil, err
 			} else if closingSquareBracketIndex == -1 {
-				return nil, &errors2.InvalidPathError{Message: "Square brackets does not match in filter " + filter.String()}
+				return nil, &common.InvalidPathError{Message: "Square brackets does not match in filter " + filter.String()}
 			} else {
 				filter.SetPosition(closingSquareBracketIndex + 1)
 			}
@@ -435,7 +434,7 @@ func (*Compiler) isRelationalOperatorChar(c rune) bool {
 	return c == LT || c == GT || c == EQ || c == TILDE || c == NOT
 }
 
-func (c *Compiler) Compile() (path.Predicate, error) {
+func (c *Compiler) Compile() (common.Predicate, error) {
 	result, err := c.readLogicalOR()
 	if err != nil {
 		return nil, err
@@ -443,7 +442,7 @@ func (c *Compiler) Compile() (path.Predicate, error) {
 	filter := c.filter
 	filter.SkipBlanks()
 	if filter.InBounds() {
-		return nil, &errors2.InvalidPathError{
+		return nil, &common.InvalidPathError{
 			Message: fmt.Sprintf("Expected end of filter expression instead of: %s",
 				c.filter.SubSequence(filter.Position(), filter.Length())),
 		}
@@ -453,13 +452,13 @@ func (c *Compiler) Compile() (path.Predicate, error) {
 
 func CreateFilterCompiler(filterString string) (*Compiler, error) {
 	compiler := &Compiler{}
-	compiler.filter = errors2.CreateCharacterIndex(filterString)
+	compiler.filter = common.CreateCharacterIndex(filterString)
 
 	f := compiler.filter
 	f.Trim()
 
 	if !f.CurrentCharIs('[') || !f.LastCharIs(']') {
-		return nil, &errors2.InvalidPathError{Message: "Filter must start with '[' and end with ']'. " + filterString}
+		return nil, &common.InvalidPathError{Message: "Filter must start with '[' and end with ']'. " + filterString}
 	}
 
 	f.IncrementPosition(1)
@@ -467,13 +466,13 @@ func CreateFilterCompiler(filterString string) (*Compiler, error) {
 	f.Trim()
 
 	if !f.CurrentCharIs('?') {
-		return nil, &errors2.InvalidPathError{Message: "Filter must start with '[?' and end with ']'. " + filterString}
+		return nil, &common.InvalidPathError{Message: "Filter must start with '[?' and end with ']'. " + filterString}
 	}
 
 	f.IncrementPosition(1)
 	f.Trim()
 	if !f.CurrentCharIs('(') || !f.LastCharIs(')') {
-		return nil, &errors2.InvalidPathError{Message: "Filter must start with '[?(' and end with ')]'. " + filterString}
+		return nil, &common.InvalidPathError{Message: "Filter must start with '[?(' and end with ')]'. " + filterString}
 	}
 
 	return compiler, nil
@@ -492,10 +491,10 @@ func Compile(filterString string) (*CompiledFilter, error) {
 }
 
 type CompiledFilter struct {
-	predicate path.Predicate
+	predicate common.Predicate
 }
 
-func (cf *CompiledFilter) Apply(ctx path.PredicateContext) bool {
+func (cf *CompiledFilter) Apply(ctx common.PredicateContext) bool {
 	return cf.predicate.Apply(ctx)
 }
 

@@ -2,19 +2,18 @@ package filter
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/path"
 	"reflect"
 	"strings"
 )
 
 type Evaluator interface {
-	Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error)
+	Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error)
 }
 
 type existsEvaluator struct {
 }
 
-func (*existsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*existsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if !left.IsBooleanNode() && !right.IsBooleanNode() {
 		return false, &common.JsonPathError{Message: "Failed to evaluate exists expression"}
 	}
@@ -29,7 +28,7 @@ func (*existsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predi
 type notEqualsEvaluator struct {
 }
 
-func (*notEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*notEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	eqResult, err := evaluators[RelationalOperator_EQ].Evaluate(left, right, ctx)
 	if err != nil {
 		return false, err
@@ -40,7 +39,7 @@ func (*notEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Pr
 type typeSafeNotEqualsEvaluator struct {
 }
 
-func (*typeSafeNotEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*typeSafeNotEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	tseqResult, err := evaluators[RelationalOperator_TSEQ].Evaluate(left, right, ctx)
 	if err != nil {
 		return false, err
@@ -50,7 +49,7 @@ func (*typeSafeNotEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx
 
 type equalsEvaluator struct{}
 
-func (*equalsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*equalsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsJsonNode() && right.IsJsonNode() {
 		leftNode, err := left.AsJsonNode()
 		if err != nil {
@@ -69,7 +68,7 @@ func (*equalsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predi
 
 type typeSafeEqualsEvaluator struct{}
 
-func (*typeSafeEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*typeSafeEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if reflect.TypeOf(left) != reflect.TypeOf(right) {
 		return false, nil
 	}
@@ -78,13 +77,13 @@ func (*typeSafeEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx pa
 
 type typeEvaluator struct{}
 
-func (*typeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*typeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	return reflect.ValueOf(right).Kind() == left.TypeOf(ctx), nil
 }
 
 type lessThanEvaluator struct{}
 
-func (*lessThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*lessThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsNumberNode() && right.IsNumberNode() {
 		leftNode, err := left.AsNumberNode()
 		if err != nil {
@@ -121,7 +120,7 @@ func (*lessThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Pre
 
 type lessThanEqualsEvaluator struct{}
 
-func (*lessThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*lessThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsNumberNode() && right.IsNumberNode() {
 		leftNode, err := left.AsNumberNode()
 		if err != nil {
@@ -158,7 +157,7 @@ func (*lessThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx pa
 
 type greaterThanEvaluator struct{}
 
-func (*greaterThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*greaterThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsNumberNode() && right.IsNumberNode() {
 		leftNode, err := left.AsNumberNode()
 		if err != nil {
@@ -195,7 +194,7 @@ func (*greaterThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.
 
 type greaterThanEqualsEvaluator struct{}
 
-func (*greaterThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*greaterThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsNumberNode() && right.IsNumberNode() {
 		leftNode, err := left.AsNumberNode()
 		if err != nil {
@@ -232,7 +231,7 @@ func (*greaterThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx
 
 type sizeEvaluator struct{}
 
-func (*sizeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*sizeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if !right.IsNumberNode() {
 		return false, nil
 	}
@@ -257,7 +256,7 @@ func (*sizeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predica
 type emptyEvaluator struct {
 }
 
-func (*emptyEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*emptyEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsStringNode() {
 		leftNode, err := left.AsStringNode()
 		if err != nil {
@@ -290,7 +289,7 @@ func (*emptyEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predic
 
 type inEvaluator struct{}
 
-func (*inEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*inEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	var valueListNode *ValueListNode
 	if right.IsJsonNode() {
 		rightNode, err := right.AsJsonNode()
@@ -322,7 +321,7 @@ func (*inEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predicate
 
 type notInEvaluator struct{}
 
-func (*notInEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*notInEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	isIn, err := evaluators[RelationalOperator_IN].Evaluate(left, right, ctx)
 	if err != nil {
 		return false, err
@@ -332,7 +331,7 @@ func (*notInEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predic
 
 type allEvaluator struct{}
 
-func (*allEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*allEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	requiredValues, err := right.AsValueListNode()
 	if err != nil {
 		return false, err
@@ -362,7 +361,7 @@ func (*allEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predicat
 type containsEvaluator struct {
 }
 
-func (*containsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*containsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsStringNode() && right.IsStringNode() {
 		leftNode, err := left.AsStringNode()
 		if err != nil {
@@ -400,7 +399,7 @@ func (*containsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Pre
 
 type predicateMatchEvaluator struct{}
 
-func (*predicateMatchEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*predicateMatchEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	rightNode, err := right.AsPredicateNode()
 	if err != nil {
 		return false, err
@@ -410,7 +409,7 @@ func (*predicateMatchEvaluator) Evaluate(left ValueNode, right ValueNode, ctx pa
 
 type regexpEvaluator struct{}
 
-func (r *regexpEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (r *regexpEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	if left.IsPatternNode() == right.IsPatternNode() {
 		return false, nil
 	}
@@ -462,7 +461,7 @@ func (*regexpEvaluator) getInput(node ValueNode) (string, error) {
 
 type subsetOfEvaluator struct{}
 
-func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	var rightValueListNode *ValueListNode
 	if right.IsJsonNode() {
 		jsonNode, err := right.AsJsonNode()
@@ -514,7 +513,7 @@ func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Pre
 
 type anyOfEvaluator struct{}
 
-func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	var rightValueListNode *ValueListNode
 	if right.IsJsonNode() {
 		jsonNode, err := right.AsJsonNode()
@@ -574,7 +573,7 @@ func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.Predic
 
 type noneOfEvaluator struct{}
 
-func (*noneOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx path.PredicateContext) (bool, error) {
+func (*noneOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.PredicateContext) (bool, error) {
 	var rightValueListNode *ValueListNode
 	if right.IsJsonNode() {
 		jsonNode, err := right.AsJsonNode()
@@ -691,7 +690,7 @@ const (
 )
 
 type ExpressionNode interface {
-	path.Predicate
+	common.Predicate
 	ExpressionNodeLabel()
 }
 
@@ -719,7 +718,7 @@ func (e *LogicalExpressionNode) GetOperator() string {
 	return e.operator
 }
 
-func (e *LogicalExpressionNode) Apply(ctx path.PredicateContext) bool {
+func (e *LogicalExpressionNode) Apply(ctx common.PredicateContext) bool {
 	if e.operator == LogicalOperator_OR {
 		for _, expression := range e.chain {
 			if expression.Apply(ctx) {
@@ -792,7 +791,7 @@ type RelationExpressionNode struct {
 func (e *RelationExpressionNode) ExpressionNodeLabel() {
 	return
 }
-func (e *RelationExpressionNode) Apply(ctx path.PredicateContext) bool {
+func (e *RelationExpressionNode) Apply(ctx common.PredicateContext) bool {
 	return false
 }
 func (e *RelationExpressionNode) String() string {
