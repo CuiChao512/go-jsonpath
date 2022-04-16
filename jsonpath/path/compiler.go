@@ -4,6 +4,8 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/filter"
 	"cuichao.com/go-jsonpath/jsonpath/function"
+	"cuichao.com/go-jsonpath/jsonpath/predicate"
+	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"strconv"
 	"strings"
 )
@@ -34,7 +36,7 @@ const (
 )
 
 type Compiler struct {
-	filterStack []jsonpath.Predicate
+	filterStack []predicate.Predicate
 	path        *jsonpath.CharacterIndex
 }
 
@@ -263,7 +265,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 				continue
 			}
 
-			if char == OPEN_BRACE || jsonpath.UtilsCharIsDigit(char) || DOUBLE_QUOTE == char {
+			if char == OPEN_BRACE || utils.UtilsCharIsDigit(char) || DOUBLE_QUOTE == char {
 				paramType = function.JSON
 			} else if c.isPathContext(char) {
 				paramType = function.PATH // read until we reach a terminating comma and we've reset grouping to zero
@@ -316,7 +318,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 						// parse the json and set the value
 						param = function.CreateJsonParameter(parameter)
 					case function.PATH:
-						var predicates []jsonpath.Predicate
+						var predicates []predicate.Predicate
 						compiler := createPathCompiler(jsonpath.CreateCharacterIndex(parameter), &predicates)
 						compiledPath, err := compiler.compile()
 						if err != nil {
@@ -381,7 +383,7 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 		return false, &jsonpath.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
 	}
 
-	var predicates []jsonpath.Predicate
+	var predicates []predicate.Predicate
 	for _, token := range tokens {
 		if token != "" {
 			token = strings.TrimSpace(token)
@@ -437,7 +439,7 @@ func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
 	if e != nil {
 		return false, nil
 	}
-	appender.AppendPathToken(CreatePredicatePathToken([]jsonpath.Predicate{predicate}))
+	appender.AppendPathToken(CreatePredicatePathToken([]predicate.Predicate{predicate}))
 
 	path.SetPosition(closeStatementBracketIndex + 1)
 	readResult, e := c.readNextToken(appender)
@@ -483,7 +485,7 @@ func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
 		return false, nil
 	}
 	nextSignificantChar := path.NextSignificantChar()
-	if !jsonpath.UtilsCharIsDigit(nextSignificantChar) && nextSignificantChar != MINUS && nextSignificantChar != SPLIT {
+	if !utils.UtilsCharIsDigit(nextSignificantChar) && nextSignificantChar != MINUS && nextSignificantChar != SPLIT {
 		return false, nil
 	}
 
@@ -503,7 +505,7 @@ func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
 	//check valid chars
 	for i := 0; i < len(expression); i++ {
 		char := []rune(expression)[i]
-		if !jsonpath.UtilsCharIsDigit(char) && char != COMMA && char != MINUS && char != SPLIT && char != SPACE {
+		if !utils.UtilsCharIsDigit(char) && char != COMMA && char != MINUS && char != SPLIT && char != SPACE {
 			return false, nil
 		}
 	}
@@ -572,7 +574,7 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool, error
 				}
 				endPosition = readPosition
 				prop := path.SubSequence(startPosition, endPosition)
-				property, err := jsonpath.UtilsStringUnescape(prop)
+				property, err := utils.UtilsStringUnescape(prop)
 				if err != nil {
 					return false, err
 				}
@@ -614,11 +616,11 @@ func fail(message string) *jsonpath.InvalidPathError {
 	return &jsonpath.InvalidPathError{Message: message}
 }
 
-func createPathCompiler(path *jsonpath.CharacterIndex, filterStack *[]jsonpath.Predicate) *Compiler {
+func createPathCompiler(path *jsonpath.CharacterIndex, filterStack *[]predicate.Predicate) *Compiler {
 	return &Compiler{path: path, filterStack: *filterStack}
 }
 
-func Compile(pathString string, filters ...jsonpath.Predicate) (Path, error) {
+func Compile(pathString string, filters ...predicate.Predicate) (Path, error) {
 	ci := jsonpath.CreateCharacterIndex(pathString)
 
 	if ci.CharAt(0) != DOC_CONTEXT && ci.CharAt(0) != EVAL_CONTEXT {

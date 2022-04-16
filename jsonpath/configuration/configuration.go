@@ -1,4 +1,4 @@
-package jsonpath
+package configuration
 
 type Option int
 

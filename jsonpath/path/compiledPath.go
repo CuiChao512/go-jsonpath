@@ -1,17 +1,20 @@
 package path
 
-import "cuichao.com/go-jsonpath/jsonpath"
+import (
+	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/configuration"
+)
 
 type CompiledPath struct {
 	root       *RootPathToken
 	isRootPath bool
 }
 
-func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *jsonpath.Configuration) (jsonpath.EvaluationContext, error) {
+func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *configuration.Configuration) (jsonpath.EvaluationContext, error) {
 	return nil, nil
 }
 
-func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *jsonpath.Configuration, forUpdate bool) jsonpath.EvaluationContext {
+func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *configuration.Configuration, forUpdate bool) jsonpath.EvaluationContext {
 	return nil
 }
 

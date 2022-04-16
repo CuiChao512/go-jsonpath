@@ -1,8 +1,9 @@
 package function
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/configuration"
 	"cuichao.com/go-jsonpath/jsonpath/path"
+	"cuichao.com/go-jsonpath/jsonpath/utils"
 )
 
 type ILateBindingValue interface {
@@ -12,7 +13,7 @@ type ILateBindingValue interface {
 type LateBindingValue struct {
 	path          path.Path
 	rootDocument  string
-	configuration *jsonpath.Configuration
+	configuration *configuration.Configuration
 	result        interface{}
 }
 
@@ -29,7 +30,7 @@ func (l *LateBindingValue) Equals(o interface{}) bool {
 		return false
 	}
 
-	if jsonpath.UtilsGetPtrElem(l) != jsonpath.UtilsGetPtrElem(o) {
+	if utils.UtilsGetPtrElem(l) != utils.UtilsGetPtrElem(o) {
 		return false
 	}
 
@@ -38,10 +39,10 @@ func (l *LateBindingValue) Equals(o interface{}) bool {
 	return l.path == that.path && l.rootDocument == that.rootDocument && l.configuration == that.configuration
 }
 
-func CreateLateBindingValue(path path.Path, rootDocument interface{}, configuration *jsonpath.Configuration) (*LateBindingValue, error) {
+func CreateLateBindingValue(path path.Path, rootDocument interface{}, configuration *configuration.Configuration) (*LateBindingValue, error) {
 	l := &LateBindingValue{}
 	l.path = path
-	l.rootDocument = jsonpath.UtilsToString(rootDocument)
+	l.rootDocument = utils.UtilsToString(rootDocument)
 	l.configuration = configuration
 	e, err := path.Evaluate(rootDocument, rootDocument, configuration)
 	if err != nil {
@@ -52,7 +53,7 @@ func CreateLateBindingValue(path path.Path, rootDocument interface{}, configurat
 }
 
 type JsonLateBindingValue struct {
-	jsonProvider  jsonpath.JsonProvider
+	jsonProvider  configuration.JsonProvider
 	jsonParameter *Parameter
 }
 
@@ -60,7 +61,7 @@ func (j *JsonLateBindingValue) Get() (interface{}, error) {
 	return j.jsonProvider.Parse(j.jsonParameter.GetJson())
 }
 
-func CreateJsonLateBindingValue(jsonProvider jsonpath.JsonProvider, jsonParameter *Parameter) *JsonLateBindingValue {
+func CreateJsonLateBindingValue(jsonProvider configuration.JsonProvider, jsonParameter *Parameter) *JsonLateBindingValue {
 	return &JsonLateBindingValue{
 		jsonParameter: jsonParameter,
 		jsonProvider:  jsonProvider,

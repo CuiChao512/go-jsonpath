@@ -1,5 +1,7 @@
 package jsonpath
 
+import "cuichao.com/go-jsonpath/jsonpath/utils"
+
 const (
 	OPEN_PARENTHESIS     rune = '('
 	CLOSE_PARENTHESIS    rune = ')'
@@ -299,7 +301,7 @@ func (ci *CharacterIndex) String() string {
 
 func (ci *CharacterIndex) IsNumberCharacter(readPosition int) bool {
 	c := ci.CharAt(readPosition)
-	return UtilsCharIsDigit(c) || c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
+	return utils.UtilsCharIsDigit(c) || c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
 }
 
 func (ci *CharacterIndex) SkipBlanks() *CharacterIndex {

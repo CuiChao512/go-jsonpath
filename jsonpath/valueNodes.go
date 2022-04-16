@@ -1,8 +1,11 @@
-package filter
+package jsonpath
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/configuration"
+	"cuichao.com/go-jsonpath/jsonpath/filter"
 	"cuichao.com/go-jsonpath/jsonpath/path"
+	predicate2 "cuichao.com/go-jsonpath/jsonpath/predicate"
+	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -18,7 +21,7 @@ var UNDEFINED_NODE = &UndefinedNode{}
 
 // PatternNode -------patternNode------
 type PatternNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	pattern         string
 	compiledPattern *regexp.Regexp
 }
@@ -50,7 +53,7 @@ func (pn *PatternNode) String() string {
 
 // PathNode ------PathNode-----
 type PathNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	path        path.Path
 	existsCheck bool
 	shouldExist bool
@@ -104,12 +107,12 @@ func (pn *PathNode) GetPath() path.Path {
 	return pn.path
 }
 
-func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
+func (pn *PathNode) Evaluate(ctx predicate2.PredicateContext) (filter.ValueNode, error) {
 	if pn.IsExistsCheck() {
-		c := &jsonpath.Configuration{} //TODO
+		c := &configuration.Configuration{} //TODO
 		result, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
 		if err == nil {
-			if result == jsonpath.JsonProviderUndefined {
+			if result == configuration.JsonProviderUndefined {
 				return FALSE_NODE, nil
 			} else {
 				return TRUE_NODE, nil
@@ -120,8 +123,8 @@ func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 	} else {
 		var res interface{}
 		switch ctx.(type) {
-		case *jsonpath.PredicateContextImpl:
-			ctxi, _ := ctx.(*jsonpath.PredicateContextImpl)
+		case *predicate2.PredicateContextImpl:
+			ctxi, _ := ctx.(*predicate2.PredicateContextImpl)
 			res = ctxi.Evaluate(pn.path)
 		default:
 			var doc interface{}
@@ -158,7 +161,7 @@ func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 			return NewBooleanNode(resBool), nil
 		case *OffsetDateTimeNode:
 		default:
-			return nil, &jsonpath.JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
+			return nil, &JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
 		}
 
 		return UNDEFINED_NODE, nil
@@ -167,7 +170,7 @@ func (pn *PathNode) Evaluate(ctx jsonpath.PredicateContext) (ValueNode, error) {
 
 // NumberNode -----------
 type NumberNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	number *decimal.Decimal
 }
 
@@ -179,7 +182,7 @@ func (n *NumberNode) GetNumber() *decimal.Decimal {
 	return n.number
 }
 
-func (n *NumberNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *NumberNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Float64
 }
 
@@ -240,7 +243,7 @@ func NewNumberNodeByString(str string) *NumberNode {
 
 // StringNode -----------
 type StringNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	str            string
 	useSingleQuote bool
 }
@@ -270,7 +273,7 @@ func (n *StringNode) Contains(str1 string) bool {
 	return strings.Contains(n.str, str1)
 }
 
-func (n *StringNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *StringNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.String
 }
 
@@ -322,11 +325,11 @@ func (n *StringNode) Equals(o interface{}) bool {
 
 // BooleanNode -----------
 type BooleanNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	value bool
 }
 
-func (*BooleanNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (*BooleanNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Bool
 }
 
@@ -371,11 +374,11 @@ func NewBooleanNode(value bool) *BooleanNode {
 
 // PredicateNode -----------
 type PredicateNode struct {
-	*valueNodeDefault
-	predicate jsonpath.Predicate
+	*filter.ValueNodeDefault
+	predicate predicate2.Predicate
 }
 
-func (n *PredicateNode) GetPredicate() jsonpath.Predicate {
+func (n *PredicateNode) GetPredicate() predicate2.Predicate {
 	return n.predicate
 }
 
@@ -383,7 +386,7 @@ func (n *PredicateNode) AsPredicateNode() (*PredicateNode, error) {
 	return n, nil
 }
 
-func (n *PredicateNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *PredicateNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 
@@ -401,28 +404,28 @@ func (n *PredicateNode) String() string {
 
 // ValueListNode -----------
 type ValueListNode struct {
-	*valueNodeDefault
-	nodes []ValueNode
+	*filter.ValueNodeDefault
+	nodes []filter.ValueNode
 }
 
-func (v *ValueListNode) Contains(node ValueNode) bool {
-	return jsonpath.UtilsSliceContains(v.nodes, node)
+func (v *ValueListNode) Contains(node filter.ValueNode) bool {
+	return utils.UtilsSliceContains(v.nodes, node)
 }
 
 func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
 	for _, leftNode := range v.nodes {
-		if !jsonpath.UtilsSliceContains(right, leftNode) {
+		if !utils.UtilsSliceContains(right, leftNode) {
 			return false
 		}
 	}
 	return true
 }
 
-func (v *ValueListNode) GetNodes() []ValueNode {
+func (v *ValueListNode) GetNodes() []filter.ValueNode {
 	return v.nodes
 }
 
-func (v *ValueListNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (v *ValueListNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Slice
 }
 
@@ -436,10 +439,10 @@ func NewValueListNode(list []interface{}) *ValueListNode {
 
 // NullNode -----------
 type NullNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 }
 
-func (n *NullNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *NullNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 
@@ -473,14 +476,14 @@ func NewNullNode() *NullNode {
 
 // UndefinedNode -----------
 type UndefinedNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 }
 
 func (n *UndefinedNode) AsUndefinedNode() (*UndefinedNode, error) {
 	return n, nil
 }
 
-func (n *UndefinedNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *UndefinedNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 
@@ -497,7 +500,7 @@ func NewUndefinedNode() *UndefinedNode {
 
 // ClassNode -----------
 type ClassNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 }
 
 // OffsetDateTime -----
@@ -510,7 +513,7 @@ func (o *OffsetDateTime) String() string {
 
 // OffsetDateTimeNode -----------
 type OffsetDateTimeNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	dateTime *OffsetDateTime
 }
 
@@ -522,7 +525,7 @@ func (n *OffsetDateTimeNode) GetDate() *OffsetDateTime {
 	return n.dateTime
 }
 
-func (n *OffsetDateTimeNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *OffsetDateTimeNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	return reflect.Interface
 }
 
@@ -544,11 +547,11 @@ func (n *OffsetDateTimeNode) Equals(o interface{}) bool {
 	}
 	switch o.(type) {
 	case *OffsetDateTimeNode:
-		v, _ := o.(ValueNode)
+		v, _ := o.(filter.ValueNode)
 		that, _ := v.AsOffsetDateTimeNode()
 		return OffsetDateTimeCompare(n.dateTime, that.dateTime) == 0
 	case *StringNode:
-		v, _ := o.(ValueNode)
+		v, _ := o.(filter.ValueNode)
 		that, _ := v.AsOffsetDateTimeNode()
 		return OffsetDateTimeCompare(n.dateTime, that.dateTime) == 0
 	default:
@@ -557,17 +560,18 @@ func (n *OffsetDateTimeNode) Equals(o interface{}) bool {
 }
 
 func OffsetDateTimeCompare(this *OffsetDateTime, that *OffsetDateTime) int {
+	//TODO:
 	return 0
 }
 
 // JsonNode --------
 type JsonNode struct {
-	*valueNodeDefault
+	*filter.ValueNodeDefault
 	json   interface{}
 	parsed bool
 }
 
-func (n *JsonNode) TypeOf(ctx jsonpath.PredicateContext) reflect.Kind {
+func (n *JsonNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
 	if n.IsArray(ctx) {
 		return reflect.Slice
 	} else {
@@ -601,17 +605,17 @@ func (n *JsonNode) GetJson() interface{} {
 	return n.json
 }
 
-func (n *JsonNode) IsArray(ctx jsonpath.PredicateContext) bool {
+func (n *JsonNode) IsArray(ctx predicate2.PredicateContext) bool {
 	parsedObj, _ := n.Parse(ctx)
-	return jsonpath.UtilsIsSlice(parsedObj)
+	return utils.UtilsIsSlice(parsedObj)
 }
 
-func (n *JsonNode) IsMap(ctx jsonpath.PredicateContext) bool {
+func (n *JsonNode) IsMap(ctx predicate2.PredicateContext) bool {
 	parsedObj, _ := n.Parse(ctx)
-	return jsonpath.UtilsIsMap(parsedObj)
+	return utils.UtilsIsMap(parsedObj)
 }
 
-func (n *JsonNode) Parse(ctx jsonpath.PredicateContext) (interface{}, error) {
+func (n *JsonNode) Parse(ctx predicate2.PredicateContext) (interface{}, error) {
 	if n.parsed {
 		return n.json, nil
 	} else {
@@ -620,7 +624,19 @@ func (n *JsonNode) Parse(ctx jsonpath.PredicateContext) (interface{}, error) {
 	}
 }
 
-func (n *JsonNode) AsValueListNodeByPredicateContext(ctx jsonpath.PredicateContext) (ValueNode, error) {
+func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx predicate2.PredicateContext) bool {
+	if n == jsonNode {
+		return true
+	}
+
+	if n.json != nil {
+		return n.json != jsonNode.Parse(ctx)
+	} else {
+		return jsonNode.json != nil
+	}
+}
+
+func (n *JsonNode) AsValueListNodeByPredicateContext(ctx predicate2.PredicateContext) (filter.ValueNode, error) {
 	if !n.IsArray(ctx) {
 		return UNDEFINED_NODE, nil
 	} else {

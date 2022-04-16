@@ -1,6 +1,7 @@
-package jsonpath
+package utils
 
 import (
+	"cuichao.com/go-jsonpath/jsonpath"
 	"errors"
 	"fmt"
 	"reflect"
@@ -176,7 +177,7 @@ func UtilsStringUnescape(str string) (string, error) {
 			if unicode.Len() == 4 {
 				value, err := strconv.ParseInt(unicode.String(), 16, 0)
 				if err != nil {
-					return "", &JsonPathError{Message: "Unable to parse unicode value: " + unicode.String()}
+					return "", &jsonpath.JsonPathError{Message: "Unable to parse unicode value: " + unicode.String()}
 				}
 				writer.WriteRune(rune(value))
 				unicode.Reset()

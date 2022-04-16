@@ -3,6 +3,7 @@ package function
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/path"
+	"cuichao.com/go-jsonpath/jsonpath/utils"
 )
 
 type ParamType int32
@@ -86,14 +87,14 @@ func parameterConsume(expectedType jsonpath.Type, ctx jsonpath.EvaluationContext
 			if expectedType == jsonpath.TYPE_NUMBER {
 				*collection = append(*collection, o)
 			} else {
-				*collection = append(*collection, jsonpath.UtilsToString(o))
+				*collection = append(*collection, utils.UtilsToString(o))
 			}
 		}
 	} else {
 		if expectedType == jsonpath.TYPE_NUMBER {
 			*collection = append(*collection, value)
 		} else {
-			*collection = append(*collection, jsonpath.UtilsToString(value))
+			*collection = append(*collection, utils.UtilsToString(value))
 		}
 	}
 }

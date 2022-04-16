@@ -2,6 +2,7 @@ package path
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,12 +23,12 @@ func (a *ArrayIndexOperation) IsSingleIndexOperation() bool {
 }
 
 func (a *ArrayIndexOperation) String() string {
-	return "[" + jsonpath.UtilsJoin(",", "", a.indexes) + "]"
+	return "[" + utils.UtilsJoin(",", "", a.indexes) + "]"
 }
 
 func ParseArrayIndexOperation(operation string) (*ArrayIndexOperation, error) {
 	for _, c := range []rune(operation) {
-		if !jsonpath.UtilsCharIsDigit(c) && c != ',' && c != ' ' && c != '-' {
+		if !utils.UtilsCharIsDigit(c) && c != ',' && c != ' ' && c != '-' {
 			return nil, &jsonpath.InvalidPathError{Message: "Failed to parse ArrayIndexOperation: " + operation}
 		}
 	}
@@ -86,7 +87,7 @@ func tryRead(tokens []string, idx int) (bool, int, error) {
 func ParseArraySliceOperation(operation string) (*ArraySliceOperation, error) {
 	for i := 0; i < len(operation); i++ {
 		c := []rune(operation)[i]
-		if !jsonpath.UtilsCharIsDigit(c) && c != '-' && c != ':' {
+		if !utils.UtilsCharIsDigit(c) && c != '-' && c != ':' {
 			return nil, &jsonpath.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
 		}
 	}

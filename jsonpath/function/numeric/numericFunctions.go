@@ -4,6 +4,7 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"cuichao.com/go-jsonpath/jsonpath/path"
+	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"math"
 )
 
@@ -61,7 +62,7 @@ type Average struct {
 
 func (a *Average) Next(value interface{}) {
 	a.count++
-	v, _ := jsonpath.UtilsNumberToFloat64(value)
+	v, _ := utils.UtilsNumberToFloat64(value)
 	a.summation += v
 }
 
@@ -79,7 +80,7 @@ type Max struct {
 }
 
 func (m *Max) Next(value interface{}) {
-	v := jsonpath.UtilsNumberToFloat64Force(value)
+	v := utils.UtilsNumberToFloat64Force(value)
 	if m.max < v {
 		m.max = v
 	}
@@ -100,7 +101,7 @@ type Min struct {
 }
 
 func (m *Min) Next(value interface{}) {
-	v := jsonpath.UtilsNumberToFloat64Force(value)
+	v := utils.UtilsNumberToFloat64Force(value)
 	if m.min > v {
 		m.min = v
 	}
@@ -122,7 +123,7 @@ type StandardDeviation struct {
 }
 
 func (s *StandardDeviation) Next(value interface{}) {
-	v := jsonpath.UtilsNumberToFloat64Force(value)
+	v := utils.UtilsNumberToFloat64Force(value)
 	s.sum += v
 	s.sumSq += v * v
 	s.count++
@@ -139,7 +140,7 @@ type Sum struct {
 }
 
 func (s *Sum) Next(value interface{}) {
-	v := jsonpath.UtilsNumberToFloat64Force(value)
+	v := utils.UtilsNumberToFloat64Force(value)
 	s.sum += v
 }
 

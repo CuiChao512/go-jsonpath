@@ -1,6 +1,9 @@
-package jsonpath
+package predicate
 
-import "cuichao.com/go-jsonpath/jsonpath/path"
+import (
+	"cuichao.com/go-jsonpath/jsonpath/configuration"
+	"cuichao.com/go-jsonpath/jsonpath/path"
+)
 
 type Predicate interface {
 	Apply(ctx PredicateContext) bool
@@ -12,13 +15,13 @@ type PredicateContext interface {
 
 	Root() interface{}
 
-	Configuration() *Configuration
+	Configuration() *configuration.Configuration
 }
 
 type PredicateContextImpl struct {
 	contextDocument   interface{}
 	rootDocument      interface{}
-	configuration     *Configuration
+	configuration     *configuration.Configuration
 	documentPathCache map[path.Path]interface{}
 }
 
@@ -30,7 +33,7 @@ func (pc *PredicateContextImpl) Root() interface{} {
 	return pc.rootDocument
 }
 
-func (pc *PredicateContextImpl) Configuration() *Configuration {
+func (pc *PredicateContextImpl) Configuration() *configuration.Configuration {
 	return pc.configuration
 }
 
@@ -38,7 +41,7 @@ func (pc *PredicateContextImpl) Evaluate(path2 path.Path) interface{} {
 	return nil
 }
 
-func CreatePredicateContextImpl(contextDocument interface{}, rootDocument interface{}, configuration *Configuration, documentPathCache map[path.Path]interface{}) PredicateContext {
+func CreatePredicateContextImpl(contextDocument interface{}, rootDocument interface{}, configuration *configuration.Configuration, documentPathCache map[path.Path]interface{}) PredicateContext {
 	return &PredicateContextImpl{
 		contextDocument:   contextDocument,
 		rootDocument:      rootDocument,

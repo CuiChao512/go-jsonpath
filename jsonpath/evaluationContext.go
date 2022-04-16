@@ -1,16 +1,19 @@
 package jsonpath
 
-import "cuichao.com/go-jsonpath/jsonpath/path"
+import (
+	"cuichao.com/go-jsonpath/jsonpath/configuration"
+	"cuichao.com/go-jsonpath/jsonpath/path"
+)
 
 type EvaluationContext interface {
-	Configuration() *Configuration
+	Configuration() *configuration.Configuration
 	RootDocument() interface{}
 	GetValue() interface{}
 	GetValueUnwrap(unwrap bool) interface{}
 }
 
 type EvaluationContextImpl struct {
-	configuration     *Configuration
+	configuration     *configuration.Configuration
 	forUpdate         bool
 	path              path.Path
 	rootDocument      interface{}
@@ -29,15 +32,15 @@ func (e *EvaluationContextImpl) GetRoot() *path.RootPathToken {
 	return nil
 }
 
-func (e *EvaluationContextImpl) Configuration() *Configuration {
+func (e *EvaluationContextImpl) Configuration() *configuration.Configuration {
 	return nil
 }
 
-func (e *EvaluationContextImpl) JsonProvider() JsonProvider {
+func (e *EvaluationContextImpl) JsonProvider() configuration.JsonProvider {
 	return e.Configuration().jsonProvider
 }
 
-func (e *EvaluationContextImpl) Options() []Option {
+func (e *EvaluationContextImpl) Options() []configuration.Option {
 	return e.Configuration().options
 }
 
