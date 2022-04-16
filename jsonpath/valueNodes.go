@@ -421,6 +421,10 @@ func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
 	return true
 }
 
+func (v *ValueListNode) AsValueListNode() *ValueListNode {
+	return v
+}
+
 func (v *ValueListNode) GetNodes() []filter.ValueNode {
 	return v.nodes
 }
@@ -595,6 +599,32 @@ func (*JsonNode) IsJsonNode() bool {
 
 func (n *JsonNode) AsJsonNode() (*JsonNode, error) {
 	return n, nil
+}
+
+func (n *JsonNode) IsEmpty(ctx predicate2.PredicateContext) (bool, error) {
+	if n.IsArray(ctx) || n.IsMap(ctx) {
+		parseResult, err := n.Parse(ctx)
+		if err != nil {
+			return false, err
+		}
+		switch reflect.ValueOf(parseResult).Kind() {
+		case reflect.Slice:
+			fallthrough
+		case reflect.Map:
+			return reflect.ValueOf(parseResult).Len() == 0, nil
+		}
+	} else {
+		parseResult, err := n.Parse(ctx)
+		if err != nil {
+			return false, err
+		}
+		switch parseResult.(type) {
+		case string:
+			str, _ := parseResult.(string)
+			return len(str) == 0, nil
+		}
+	}
+	return true, nil
 }
 
 func (n *JsonNode) IsParsed() bool {

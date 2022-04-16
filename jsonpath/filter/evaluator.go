@@ -119,6 +119,246 @@ func (*lessThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicat
 	return false, nil
 }
 
+type lessThanEqualsEvaluator struct{}
+
+func (*lessThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if left.IsNumberNode() && right.IsNumberNode() {
+		leftNode, err := left.AsNumberNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsNumberNode()
+		if err != nil {
+			return false, err
+		}
+		return leftNode.GetNumber().Cmp(*rightNode.GetNumber()) <= 0, nil
+	} else if left.IsStringNode() && right.IsStringNode() {
+		leftNode, err := left.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		return strings.Compare(leftNode.String(), rightNode.String()) <= 0, nil
+	} else if left.IsOffsetDateTimeNode() && right.IsOffsetDateTimeNode() { //workaround for issue: https://github.com/json-path/JsonPath/issues/613
+		leftNode, err := left.AsOffsetDateTimeNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsOffsetDateTimeNode()
+		if err != nil {
+			return false, err
+		}
+		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) <= 0, nil
+	}
+	return false, nil
+}
+
+type greaterThanEvaluator struct{}
+
+func (*greaterThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if left.IsNumberNode() && right.IsNumberNode() {
+		leftNode, err := left.AsNumberNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsNumberNode()
+		if err != nil {
+			return false, err
+		}
+		return leftNode.GetNumber().Cmp(*rightNode.GetNumber()) > 0, nil
+	} else if left.IsStringNode() && right.IsStringNode() {
+		leftNode, err := left.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		return strings.Compare(leftNode.String(), rightNode.String()) > 0, nil
+	} else if left.IsOffsetDateTimeNode() && right.IsOffsetDateTimeNode() { //workaround for issue: https://github.com/json-path/JsonPath/issues/613
+		leftNode, err := left.AsOffsetDateTimeNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsOffsetDateTimeNode()
+		if err != nil {
+			return false, err
+		}
+		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) > 0, nil
+	}
+	return false, nil
+}
+
+type greaterThanEqualsEvaluator struct{}
+
+func (*greaterThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if left.IsNumberNode() && right.IsNumberNode() {
+		leftNode, err := left.AsNumberNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsNumberNode()
+		if err != nil {
+			return false, err
+		}
+		return leftNode.GetNumber().Cmp(*rightNode.GetNumber()) >= 0, nil
+	} else if left.IsStringNode() && right.IsStringNode() {
+		leftNode, err := left.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		return strings.Compare(leftNode.String(), rightNode.String()) >= 0, nil
+	} else if left.IsOffsetDateTimeNode() && right.IsOffsetDateTimeNode() { //workaround for issue: https://github.com/json-path/JsonPath/issues/613
+		leftNode, err := left.AsOffsetDateTimeNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsOffsetDateTimeNode()
+		if err != nil {
+			return false, err
+		}
+		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) >= 0, nil
+	}
+	return false, nil
+}
+
+type sizeEvaluator struct{}
+
+func (*sizeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if !right.IsNumberNode() {
+		return false, nil
+	}
+	rightNode, err := right.AsNumberNode()
+	if err != nil {
+		return false, nil
+	}
+	expectedSize := rightNode.GetNumber().IntPart()
+
+	if left.IsStringNode() {
+		leftNode, err := left.AsStringNode()
+		if err != nil {
+			return false, nil
+		}
+		return len(leftNode.String()) == int(expectedSize), nil
+	} else if left.IsJsonNode() {
+
+	}
+	return false, nil
+}
+
+type emptyEvaluator struct {
+}
+
+func (*emptyEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	if left.IsStringNode() {
+		leftNode, err := left.AsStringNode()
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsBooleanNode()
+		if err != nil {
+			return false, err
+		}
+		return leftNode.IsEmpty() == rightNode.GetBoolean(), nil
+	} else if left.IsJsonNode() {
+		leftNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+
+		leftIsEmpty, err := leftNode.IsEmpty(ctx)
+		if err != nil {
+			return false, err
+		}
+		rightNode, err := right.AsBooleanNode()
+		if err != nil {
+			return false, err
+		}
+
+		return leftIsEmpty == rightNode.GetBoolean(), nil
+	}
+	return false, nil
+}
+
+type inEvaluator struct{}
+
+func (*inEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	var valueListNode *jsonpath.ValueListNode
+	if right.IsJsonNode() {
+		rightNode, err := right.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueNode, err := rightNode.AsValueListNodeByPredicateContext(ctx)
+		if err != nil {
+			return false, err
+		}
+		if valueNode.IsUndefinedNode() {
+			return false, nil
+		} else {
+			valueListNode, err = valueNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+		}
+	} else {
+		var err error = nil
+		valueListNode, err = right.AsValueListNode()
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return valueListNode.Contains(left), nil
+}
+
+type notInEvaluator struct{}
+
+func (*notInEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	isIn, err := evaluators[RelationalOperator_IN].Evaluate(left, right, ctx)
+	if err != nil {
+		return false, err
+	}
+	return !isIn, nil
+}
+
+type allEvaluator struct{}
+
+func (*allEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
+	requiredValues, err := right.AsValueListNode()
+	if err != nil {
+		return false, err
+	}
+	if left.IsJsonNode() {
+		jsonNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		valueNode, err := jsonNode.AsValueListNodeByPredicateContext(ctx)
+		if valueNode.IsValueListNode() {
+			shouldContainAll, err := valueNode.AsValueListNode()
+			if err != nil {
+				return false, err
+			}
+			for _, required := range requiredValues.GetNodes() {
+				if !shouldContainAll.Contains(required) {
+					return false, err
+				}
+			}
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 // RelationalOperator
 const (
 	RelationalOperator_GTE      = ">="
@@ -152,22 +392,22 @@ func init() {
 	evaluators[RelationalOperator_TSNE] = &typeSafeNotEqualsEvaluator{}
 	evaluators[RelationalOperator_EQ] = &equalsEvaluator{}
 	evaluators[RelationalOperator_TSEQ] = &typeSafeEqualsEvaluator{}
-	evaluators[RelationalOperator_LT] = CreateLessThanEvaluator()
-	evaluators[RelationalOperator_LTE] = CreateLessThanEqualsEvaluator()
-	evaluators[RelationalOperator_GT] = CreateGreaterThanEvaluator()
-	evaluators[RelationalOperator_GTE] = CreateGreaterThanEqualsEvaluator()
-	evaluators[RelationalOperator_REGEX] = CreateRegexpEvaluator()
-	evaluators[RelationalOperator_SIZE] = CreateSizeEvaluator()
-	evaluators[RelationalOperator_EMPTY] = CreateEmptyEvaluator()
-	evaluators[RelationalOperator_IN] = CreateInEvaluator()
-	evaluators[RelationalOperator_NIN] = CreateNotInEvaluator()
-	evaluators[RelationalOperator_ALL] = CreateAllEvaluator()
-	evaluators[RelationalOperator_CONTAINS] = CreateContainsEvaluator()
-	evaluators[RelationalOperator_MATCHES] = CreatePredicateMatchEvaluator()
+	evaluators[RelationalOperator_LT] = &lessThanEvaluator{}
+	evaluators[RelationalOperator_LTE] = &lessThanEqualsEvaluator{}
+	evaluators[RelationalOperator_GT] = &greaterThanEvaluator{}
+	evaluators[RelationalOperator_GTE] = &greaterThanEqualsEvaluator{}
+	evaluators[RelationalOperator_REGEX] = &regexpEvaluator{}
+	evaluators[RelationalOperator_SIZE] = &sizeEvaluator{}
+	evaluators[RelationalOperator_EMPTY] = &emptyEvaluator{}
+	evaluators[RelationalOperator_IN] = &inEvaluator{}
+	evaluators[RelationalOperator_NIN] = &notInEvaluator{}
+	evaluators[RelationalOperator_ALL] = &allEvaluator{}
+	evaluators[RelationalOperator_CONTAINS] = &containsEvaluator{}
+	evaluators[RelationalOperator_MATCHES] = &predicateMatchEvaluator{}
 	evaluators[RelationalOperator_TYPE] = &typeEvaluator{}
-	evaluators[RelationalOperator_SUBSETOF] = CreateSubsetOfEvaluator()
-	evaluators[RelationalOperator_ANYOF] = CreateAnyOfEvaluator()
-	evaluators[RelationalOperator_NONEOF] = CreateNoneOfEvaluator()
+	evaluators[RelationalOperator_SUBSETOF] = &subsetOfEvaluator{}
+	evaluators[RelationalOperator_ANYOF] = &anyOfEvaluator{}
+	evaluators[RelationalOperator_NONEOF] = &noneOfEvaluator{}
 }
 
 //LogicalOperator
