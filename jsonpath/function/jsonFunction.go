@@ -1,14 +1,14 @@
 package function
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
 type KeySetFunction struct {
 }
 
-func (*KeySetFunction) Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
+func (*KeySetFunction) Invoke(currentPath string, parent path.Ref, model interface{}, ctx evaluationContext.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
 	if ctx.Configuration().JsonProvider().IsMap(model) {
 		return ctx.Configuration().JsonProvider().GetPropertyKeys(model), nil
 	}
@@ -18,7 +18,7 @@ func (*KeySetFunction) Invoke(currentPath string, parent path.Ref, model interfa
 type Append struct {
 }
 
-func (*Append) Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
+func (*Append) Invoke(currentPath string, parent path.Ref, model interface{}, ctx evaluationContext.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
 	jsonProvider := ctx.Configuration().JsonProvider()
 	if parameters != nil && len(*parameters) > 0 {
 		for _, param := range *parameters {

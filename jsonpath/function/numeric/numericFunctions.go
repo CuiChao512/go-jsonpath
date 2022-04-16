@@ -1,10 +1,10 @@
 package numeric
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/common"
+	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"cuichao.com/go-jsonpath/jsonpath/path"
-	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"math"
 )
 
@@ -15,7 +15,7 @@ func (*abstractAggregation) Next(value interface{}) {}
 
 func (*abstractAggregation) GetValue() interface{} { return nil }
 
-func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model interface{}, ctx jsonpath.EvaluationContext, parameters *[]*function.Parameter) (interface{}, error) {
+func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model interface{}, ctx evaluationContext.EvaluationContext, parameters *[]*function.Parameter) (interface{}, error) {
 	count := 0
 	if ctx.Configuration().JsonProvider().IsArray(model) {
 
@@ -37,7 +37,7 @@ func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model 
 		}
 	}
 	if parameters != nil {
-		values, err := function.ParametersToList(jsonpath.TYPE_NUMBER, ctx, *parameters)
+		values, err := function.ParametersToList(common.TYPE_NUMBER, ctx, *parameters)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,7 @@ func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model 
 	if count != 0 {
 		return a.GetValue(), nil
 	}
-	return nil, &jsonpath.JsonPathError{Message: "Aggregation function attempted to calculate value using empty array"}
+	return nil, &common.JsonPathError{Message: "Aggregation function attempted to calculate value using empty array"}
 }
 
 // Average function
@@ -62,7 +62,7 @@ type Average struct {
 
 func (a *Average) Next(value interface{}) {
 	a.count++
-	v, _ := utils.UtilsNumberToFloat64(value)
+	v, _ := common.UtilsNumberToFloat64(value)
 	a.summation += v
 }
 
@@ -80,7 +80,7 @@ type Max struct {
 }
 
 func (m *Max) Next(value interface{}) {
-	v := utils.UtilsNumberToFloat64Force(value)
+	v := common.UtilsNumberToFloat64Force(value)
 	if m.max < v {
 		m.max = v
 	}
@@ -101,7 +101,7 @@ type Min struct {
 }
 
 func (m *Min) Next(value interface{}) {
-	v := utils.UtilsNumberToFloat64Force(value)
+	v := common.UtilsNumberToFloat64Force(value)
 	if m.min > v {
 		m.min = v
 	}
@@ -123,7 +123,7 @@ type StandardDeviation struct {
 }
 
 func (s *StandardDeviation) Next(value interface{}) {
-	v := utils.UtilsNumberToFloat64Force(value)
+	v := common.UtilsNumberToFloat64Force(value)
 	s.sum += v
 	s.sumSq += v * v
 	s.count++
@@ -140,7 +140,7 @@ type Sum struct {
 }
 
 func (s *Sum) Next(value interface{}) {
-	v := utils.UtilsNumberToFloat64Force(value)
+	v := common.UtilsNumberToFloat64Force(value)
 	s.sum += v
 }
 

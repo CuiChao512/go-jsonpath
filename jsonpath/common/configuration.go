@@ -1,4 +1,4 @@
-package configuration
+package common
 
 type Option int
 
@@ -17,6 +17,10 @@ type Configuration struct {
 
 func (c *Configuration) JsonProvider() JsonProvider {
 	return c.jsonProvider
+}
+
+func (c *Configuration) Options() []Option {
+	return c.options
 }
 
 var JsonProviderUndefined interface{}

@@ -1,8 +1,9 @@
 package filter
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	errors2 "cuichao.com/go-jsonpath/jsonpath/common"
 	"cuichao.com/go-jsonpath/jsonpath/predicate"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -43,17 +44,25 @@ const (
 )
 
 type Compiler struct {
-	filter *jsonpath.CharacterIndex
+	filter *errors2.CharacterIndex
 }
 
-func (c *Compiler) readLogicalOR() jsonpath.ExpressionNode {
-	var ops []jsonpath.ExpressionNode
-	ops = append(ops, c.readLogicalAND())
+func (c *Compiler) readLogicalOR() (ExpressionNode, error) {
+	var ops []ExpressionNode
+	op, err := c.readLogicalAND()
+	if err != nil {
+		return nil, err
+	}
+	ops = append(ops, op)
 	filter := c.filter
 	for {
 		savepoint := filter.Position()
-		if filter.HasSignificantSubSequence(jsonpath.LogicalOperator_OR) {
-			ops = append(ops, c.readLogicalAND())
+		if filter.HasSignificantSubSequence(LogicalOperator_OR) {
+			op, err = c.readLogicalAND()
+			if err != nil {
+				return nil, err
+			}
+			ops = append(ops, op)
 		} else {
 			filter.SetPosition(savepoint)
 			break
@@ -61,20 +70,28 @@ func (c *Compiler) readLogicalOR() jsonpath.ExpressionNode {
 	}
 
 	if len(ops) == 1 {
-		return ops[0]
+		return ops[0], nil
 	} else {
-		return jsonpath.CreateLogicalOrByList(ops)
+		return CreateLogicalOrByList(ops), nil
 	}
 }
 
-func (c *Compiler) readLogicalAND() jsonpath.ExpressionNode {
-	var ops []jsonpath.ExpressionNode
-	ops = append(ops, c.readLogicalANDOperand())
+func (c *Compiler) readLogicalAND() (ExpressionNode, error) {
+	var ops []ExpressionNode
+	op, err := c.readLogicalANDOperand()
+	if err != nil {
+		return nil, err
+	}
+	ops = append(ops, op)
 	filter := *c.filter
 	for {
 		savepoint := filter.Position()
-		if filter.HasSignificantSubSequence(jsonpath.LogicalOperator_AND) {
-			ops = append(ops, c.readLogicalANDOperand())
+		if filter.HasSignificantSubSequence(LogicalOperator_AND) {
+			op, err := c.readLogicalANDOperand()
+			if err != nil {
+				return nil, err
+			}
+			ops = append(ops, op)
 		} else {
 			filter.SetPosition(savepoint)
 			break
@@ -82,17 +99,20 @@ func (c *Compiler) readLogicalAND() jsonpath.ExpressionNode {
 	}
 
 	if len(ops) == 1 {
-		return ops[0]
+		return ops[0], nil
 	} else {
-		return jsonpath.CreateLogicalAndByList(ops)
+		return CreateLogicalAndByList(ops), nil
 	}
 }
 
-func (c *Compiler) readLogicalANDOperand() jsonpath.ExpressionNode {
+func (c *Compiler) readLogicalANDOperand() (ExpressionNode, error) {
 	filter := c.filter
 	savepoint := filter.SkipBlanks().Position()
 	if filter.SkipBlanks().CurrentCharIs(NOT) {
-		filter.ReadSignificantChar(NOT)
+		err := filter.ReadSignificantChar(NOT)
+		if err != nil {
+			return nil, err
+		}
 		switch filter.SkipBlanks().CurrentChar() {
 		case DOC_CONTEXT:
 			fallthrough
@@ -100,18 +120,31 @@ func (c *Compiler) readLogicalANDOperand() jsonpath.ExpressionNode {
 			filter.SetPosition(savepoint)
 			break
 		default:
-			return jsonpath.CreateLogicalNot(c.readLogicalANDOperand())
+			expressionNode, err := c.readLogicalANDOperand()
+			if err != nil {
+				return nil, err
+			}
+			return CreateLogicalNot(expressionNode), nil
 		}
 	}
 
 	if filter.SkipBlanks().CurrentCharIs(OPEN_PARENTHESIS) {
-		filter.ReadSignificantChar(OPEN_PARENTHESIS)
-		op := c.readLogicalOR()
-		filter.ReadSignificantChar(CLOSE_PARENTHESIS)
-		return op
+		err := filter.ReadSignificantChar(OPEN_PARENTHESIS)
+		if err != nil {
+			return nil, err
+		}
+		op, err := c.readLogicalOR()
+		if err != nil {
+			return nil, err
+		}
+		err = filter.ReadSignificantChar(CLOSE_PARENTHESIS)
+		if err != nil {
+			return nil, err
+		}
+		return op, nil
 	}
 
-	return c.readExpression()
+	return c.readExpression(), nil
 }
 
 func (c *Compiler) readValueNode() (ValueNode, error) {
@@ -129,7 +162,7 @@ func (c *Compiler) readValueNode() (ValueNode, error) {
 		case EVAL_CONTEXT:
 			return c.readPath()
 		default:
-			return nil, &jsonpath.InvalidPathError{Message: fmt.Sprintf("Unexpected character: %c", NOT)}
+			return nil, &errors2.InvalidPathError{Message: fmt.Sprintf("Unexpected character: %c", NOT)}
 		}
 	default:
 		return c.readLiteral()
@@ -161,25 +194,25 @@ func (c *Compiler) readLiteral() (ValueNode, error) {
 	}
 }
 
-func (c *Compiler) readExpression() *jsonpath.RelationExpressionNode {
+func (c *Compiler) readExpression() *RelationExpressionNode {
 	left, err0 := c.readValueNode()
 	filter := c.filter
 	savepoint := filter.Position()
 	operator := c.readRelationalOperator()
 	right, err1 := c.readValueNode()
 	if err0 == nil && err1 == nil {
-		return jsonpath.CreateRelationExpressionNode(left, operator, right)
+		return CreateRelationExpressionNode(left, operator, right)
 	} else {
 		filter.SetPosition(savepoint)
 		pathNode, _ := left.AsPathNode()
 		pathNode = pathNode.AsExistsCheck(pathNode.ShouldExists())
-		var right *jsonpath.BooleanNode
+		var right *BooleanNode
 		if pathNode.ShouldExists() {
-			right = jsonpath.TRUE_NODE
+			right = TRUE_NODE
 		} else {
-			right = jsonpath.FALSE_NODE
+			right = FALSE_NODE
 		}
-		return jsonpath.CreateRelationExpressionNode(left, jsonpath.RelationalOperator_EXISTS, right)
+		return CreateRelationExpressionNode(left, RelationalOperator_EXISTS, right)
 	}
 }
 
@@ -199,7 +232,7 @@ func (c *Compiler) readRelationalOperator() string {
 	return filter.SubSequence(begin, filter.Position())
 }
 
-func (c *Compiler) readNullLiteral() (*jsonpath.NullNode, error) {
+func (c *Compiler) readNullLiteral() (*NullNode, error) {
 	filter := c.filter
 
 	begin := filter.Position()
@@ -209,21 +242,23 @@ func (c *Compiler) readNullLiteral() (*jsonpath.NullNode, error) {
 		if "null" == nullValue {
 			log.Printf("NullLiteral from %d to %d -> [%s]", begin, filter.Position()+3, nullValue)
 			filter.IncrementPosition(len(nullValue))
-			return jsonpath.NewNullNode(), nil
+			return NewNullNode(), nil
 		}
 	}
 
-	return nil, &jsonpath.InvalidPathError{Message: "Expected <null> value"}
+	return nil, &errors2.InvalidPathError{Message: "Expected <null> value"}
 }
 
-func (c *Compiler) readJsonLiteral() (*jsonpath.JsonNode, error) {
+func (c *Compiler) readJsonLiteral() (*JsonNode, error) {
 	filter := c.filter
 
 	begin := filter.Position()
 
 	openChar := filter.CurrentChar()
 
-	//TODO: assert openChar == OPEN_ARRAY || openChar == OPEN_OBJECT;
+	if openChar != OPEN_ARRAY && openChar != OPEN_OBJECT {
+		return nil, errors.New("not a json array or object")
+	}
 
 	closeChar := CLOSE_OBJECT
 	if openChar == OPEN_ARRAY {
@@ -234,7 +269,7 @@ func (c *Compiler) readJsonLiteral() (*jsonpath.JsonNode, error) {
 	if err != nil {
 		return nil, err
 	} else if closingIndex == -1 {
-		return nil, &jsonpath.InvalidPathError{
+		return nil, &errors2.InvalidPathError{
 			Message: "String not closed. Expected " + string(SINGLE_QUOTE) + " in " + filter.String(),
 		}
 	} else {
@@ -242,7 +277,7 @@ func (c *Compiler) readJsonLiteral() (*jsonpath.JsonNode, error) {
 	}
 
 	json := filter.SubSequence(begin, filter.Position())
-	return jsonpath.NewJsonNode(json), err
+	return NewJsonNode(json), err
 }
 
 func parsePatternFlags(c [1]rune) int {
@@ -264,13 +299,13 @@ func (c *Compiler) endOfFlags(position int) int {
 	return endIndex
 }
 
-func (c *Compiler) readPattern() (*jsonpath.PatternNode, error) {
+func (c *Compiler) readPattern() (*PatternNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 	closingIndex := filter.NextIndexOfUnescaped(PATTERN)
 
 	if closingIndex == -1 {
-		return nil, &jsonpath.InvalidPathError{Message: "Pattern not closed. Expected " + string(PATTERN) + " in " + filter.String()}
+		return nil, &errors2.InvalidPathError{Message: "Pattern not closed. Expected " + string(PATTERN) + " in " + filter.String()}
 	} else {
 		if filter.InBoundsByPosition(closingIndex + 1) {
 			endFlagsIndex := c.endOfFlags(closingIndex + 1)
@@ -283,25 +318,25 @@ func (c *Compiler) readPattern() (*jsonpath.PatternNode, error) {
 	}
 	pattern := filter.SubSequence(begin, filter.Position())
 	log.Printf("PatternNode from %d to %d -> [%s]", begin, filter.Position(), pattern)
-	return jsonpath.NewPatternNode(pattern), nil
+	return NewPatternNode(pattern), nil
 }
 
-func (c *Compiler) readStringLiteral(endChar rune) (*jsonpath.StringNode, error) {
+func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 
 	closingSingleQuoteIndex := filter.NextIndexOfUnescaped(endChar)
 	if closingSingleQuoteIndex == -1 {
-		return nil, &jsonpath.InvalidPathError{Message: "String literal does not have matching quotes. Expected " + string(endChar) + " in " + filter.String()}
+		return nil, &errors2.InvalidPathError{Message: "String literal does not have matching quotes. Expected " + string(endChar) + " in " + filter.String()}
 	} else {
 		filter.SetPosition(closingSingleQuoteIndex + 1)
 	}
 	stringLiteral := filter.SubSequence(begin, filter.Position())
 	log.Printf("StringLiteral from %d to %d -> [%s]", begin, filter.Position(), stringLiteral)
-	return jsonpath.NewStringNode(stringLiteral, true), nil
+	return NewStringNode(stringLiteral, true), nil
 }
 
-func (c *Compiler) readNumberLiteral() *jsonpath.NumberNode {
+func (c *Compiler) readNumberLiteral() *NumberNode {
 	filter := c.filter
 	begin := filter.Position()
 
@@ -310,10 +345,10 @@ func (c *Compiler) readNumberLiteral() *jsonpath.NumberNode {
 	}
 	numberLiteral := filter.SubSequence(begin, filter.Position())
 	log.Printf("NumberLiteral from %d to %d -> [%s]", begin, filter.Position(), numberLiteral)
-	return jsonpath.NewNumberNodeByString(numberLiteral)
+	return NewNumberNodeByString(numberLiteral)
 }
 
-func (c *Compiler) readBooleanLiteral() (*jsonpath.BooleanNode, error) {
+func (c *Compiler) readBooleanLiteral() (*BooleanNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 	end := filter.Position() + 4
@@ -322,11 +357,11 @@ func (c *Compiler) readBooleanLiteral() (*jsonpath.BooleanNode, error) {
 	}
 
 	if !filter.InBoundsByPosition(end) {
-		return nil, &jsonpath.InvalidPathError{Message: "Expected boolean literal"}
+		return nil, &errors2.InvalidPathError{Message: "Expected boolean literal"}
 	}
 	boolString := filter.SubSequence(begin, end+1)
 	if boolString != "true" && boolString != "false" {
-		return nil, &jsonpath.InvalidPathError{Message: "Expected boolean literal"}
+		return nil, &errors2.InvalidPathError{Message: "Expected boolean literal"}
 	}
 	filter.IncrementPosition(len(boolString))
 	log.Printf("BooleanLiteral from %d to %d -> [%s]", begin, end, boolString)
@@ -334,10 +369,10 @@ func (c *Compiler) readBooleanLiteral() (*jsonpath.BooleanNode, error) {
 	if boolString == "true" {
 		boolValue = true
 	}
-	return jsonpath.NewBooleanNode(boolValue), nil
+	return NewBooleanNode(boolValue), nil
 }
 
-func (c *Compiler) readPath() (*jsonpath.PathNode, error) {
+func (c *Compiler) readPath() (*PathNode, error) {
 	filter := c.filter
 	previousSignificantChar := filter.PreviousSignificantChar()
 	begin := filter.Position()
@@ -349,7 +384,7 @@ func (c *Compiler) readPath() (*jsonpath.PathNode, error) {
 			if err != nil {
 				return nil, err
 			} else if closingSquareBracketIndex == -1 {
-				return nil, &jsonpath.InvalidPathError{Message: "Square brackets does not match in filter " + filter.String()}
+				return nil, &errors2.InvalidPathError{Message: "Square brackets does not match in filter " + filter.String()}
 			} else {
 				filter.SetPosition(closingSquareBracketIndex + 1)
 			}
@@ -367,7 +402,7 @@ func (c *Compiler) readPath() (*jsonpath.PathNode, error) {
 
 	shouldExists := !(previousSignificantChar == NOT)
 	path := filter.SubSequence(begin, filter.Position())
-	return jsonpath.NewPathNodeWithString(path, false, shouldExists)
+	return NewPathNodeWithString(path, false, shouldExists)
 }
 
 func (c *Compiler) currentCharIsClosingFunctionBracket(lowerBound int) bool {
@@ -401,11 +436,14 @@ func (*Compiler) isRelationalOperatorChar(c rune) bool {
 }
 
 func (c *Compiler) Compile() (predicate.Predicate, error) {
-	result := c.readLogicalOR()
+	result, err := c.readLogicalOR()
+	if err != nil {
+		return nil, err
+	}
 	filter := c.filter
 	filter.SkipBlanks()
 	if filter.InBounds() {
-		return nil, &jsonpath.InvalidPathError{
+		return nil, &errors2.InvalidPathError{
 			Message: fmt.Sprintf("Expected end of filter expression instead of: %s",
 				c.filter.SubSequence(filter.Position(), filter.Length())),
 		}
@@ -415,13 +453,13 @@ func (c *Compiler) Compile() (predicate.Predicate, error) {
 
 func CreateFilterCompiler(filterString string) (*Compiler, error) {
 	compiler := &Compiler{}
-	compiler.filter = jsonpath.CreateCharacterIndex(filterString)
+	compiler.filter = errors2.CreateCharacterIndex(filterString)
 
 	f := compiler.filter
 	f.Trim()
 
 	if !f.CurrentCharIs('[') || !f.LastCharIs(']') {
-		return nil, &jsonpath.InvalidPathError{Message: "Filter must start with '[' and end with ']'. " + filterString}
+		return nil, &errors2.InvalidPathError{Message: "Filter must start with '[' and end with ']'. " + filterString}
 	}
 
 	f.IncrementPosition(1)
@@ -429,13 +467,13 @@ func CreateFilterCompiler(filterString string) (*Compiler, error) {
 	f.Trim()
 
 	if !f.CurrentCharIs('?') {
-		return nil, &jsonpath.InvalidPathError{Message: "Filter must start with '[?' and end with ']'. " + filterString}
+		return nil, &errors2.InvalidPathError{Message: "Filter must start with '[?' and end with ']'. " + filterString}
 	}
 
 	f.IncrementPosition(1)
 	f.Trim()
 	if !f.CurrentCharIs('(') || !f.LastCharIs(')') {
-		return nil, &jsonpath.InvalidPathError{Message: "Filter must start with '[?(' and end with ')]'. " + filterString}
+		return nil, &errors2.InvalidPathError{Message: "Filter must start with '[?(' and end with ')]'. " + filterString}
 	}
 
 	return compiler, nil

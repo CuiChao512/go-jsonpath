@@ -1,6 +1,8 @@
-package jsonpath
+package common
 
-import "cuichao.com/go-jsonpath/jsonpath/utils"
+import (
+	"fmt"
+)
 
 const (
 	OPEN_PARENTHESIS     rune = '('
@@ -219,11 +221,12 @@ func (ci *CharacterIndex) NextSignificantCharFromStartPosition(startPosition int
 	}
 }
 
-func (ci *CharacterIndex) ReadSignificantChar(c rune) {
+func (ci *CharacterIndex) ReadSignificantChar(c rune) error {
 	if ci.SkipBlanks().CurrentChar() != c {
-		// TODO:throw new InvalidPathException(String.format("Expected character: %c", c));
+		return &InvalidPathError{Message: fmt.Sprintf("Expected character: %c", c)}
 	}
 	ci.IncrementPosition(1)
+	return nil
 }
 
 func (ci *CharacterIndex) HasSignificantSubSequence(s string) bool {
@@ -301,7 +304,7 @@ func (ci *CharacterIndex) String() string {
 
 func (ci *CharacterIndex) IsNumberCharacter(readPosition int) bool {
 	c := ci.CharAt(readPosition)
-	return utils.UtilsCharIsDigit(c) || c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
+	return UtilsCharIsDigit(c) || c == MINUS || c == PERIOD || c == SCI_E || c == SCI_e
 }
 
 func (ci *CharacterIndex) SkipBlanks() *CharacterIndex {

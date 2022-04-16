@@ -1,11 +1,10 @@
 package path
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
-	"cuichao.com/go-jsonpath/jsonpath/configuration"
+	"cuichao.com/go-jsonpath/jsonpath/common"
+	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"cuichao.com/go-jsonpath/jsonpath/predicate"
-	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"errors"
 	"fmt"
 	"log"
@@ -19,8 +18,8 @@ type Token interface {
 	IsUpstreamDefinite() bool
 	IsTokenDefinite() bool
 	String() string
-	Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error
-	Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error
+	Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error
+	Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error
 	SetNext(next Token)
 	SetPrev(prev Token)
 	GetNext() Token
@@ -52,18 +51,18 @@ func (t *defaultToken) SetUpstreamArrayIndex(idx int) {
 	t.upstreamArrayIndex = idx
 }
 
-func (t *defaultToken) handleObjectProperty(currentPath string, model interface{}, ctx *jsonpath.EvaluationContextImpl, properties []string) error {
+func (t *defaultToken) handleObjectProperty(currentPath string, model interface{}, ctx *evaluationContext.EvaluationContextImpl, properties []string) error {
 
 	if len(properties) == 1 {
 		property := properties[0]
-		evalPath := utils.UtilsConcat(currentPath, "['", property, "']")
+		evalPath := common.UtilsConcat(currentPath, "['", property, "']")
 		propertyVal := pathTokenReadObjectProperty(property, model, ctx)
-		if propertyVal == configuration.JsonProviderUndefined {
+		if propertyVal == common.JsonProviderUndefined {
 			// Conditions below heavily depend on current token type (and its logic) and are not "universal",
 			// so this code is quite dangerous (I'd rather rewrite it & move to PropertyPathToken and implemented
 			// WildcardPathToken as a dynamic multi prop case of PropertyPathToken).
 			// Better safe than sorry.
-			switch utils.UtilsGetPtrElem(t).(type) {
+			switch common.UtilsGetPtrElem(t).(type) {
 			case PropertyPathToken:
 			default:
 				return errors.New("only PropertyPathToken is supported")
@@ -71,26 +70,26 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 
 			if t.isLeaf() {
 
-				if utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
+				if common.UtilsSliceContains(ctx.Options(), common.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
 					propertyVal = nil
 				} else {
-					if utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_SUPPRESS_EXCEPTIONS) ||
-						!utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_REQUIRE_PROPERTIES) {
+					if common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) ||
+						!common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) {
 						return nil
 					} else {
-						return &jsonpath.PathNotFoundError{Message: "No results for path: " + evalPath}
+						return &common.PathNotFoundError{Message: "No results for path: " + evalPath}
 					}
 				}
 			} else {
 				if !(t.IsUpstreamDefinite() && t.IsTokenDefinite()) &&
-					!utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_REQUIRE_PROPERTIES) ||
-					utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_SUPPRESS_EXCEPTIONS) {
+					!common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) ||
+					common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 					// If there is some indefiniteness in the path and properties are not required - we'll ignore
 					// absent property. And also in case of exception suppression - so that other path evaluation
 					// branches could be examined.
 					return nil
 				} else {
-					return &jsonpath.PathNotFoundError{Message: "Missing property in path " + evalPath}
+					return &common.PathNotFoundError{Message: "Missing property in path " + evalPath}
 				}
 			}
 		}
@@ -103,7 +102,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			ref = PathRefNoOp
 		}
 		if t.isLeaf() {
-			idx := "[" + utils.UtilsToString(t.upstreamArrayIndex) + "]"
+			idx := "[" + common.UtilsToString(t.upstreamArrayIndex) + "]"
 			if idx == "[-1]" || ctx.GetRoot().GetTail().prevToken().GetPathFragment() == idx {
 				ctx.AddResult(evalPath, ref, propertyVal)
 			}
@@ -115,7 +114,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			}
 		}
 	} else {
-		evalPath := currentPath + "[" + utils.UtilsJoin(", ", "'", properties) + "]"
+		evalPath := currentPath + "[" + common.UtilsJoin(", ", "'", properties) + "]"
 
 		if !t.isLeaf() {
 			return errors.New("non-leaf multi props handled elsewhere")
@@ -126,18 +125,18 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			var propertyVal interface{}
 			if pathTokenHasProperty(property, model, ctx) {
 				propertyVal = pathTokenReadObjectProperty(property, model, ctx)
-				if propertyVal == configuration.JsonProviderUndefined {
-					if utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
+				if propertyVal == common.JsonProviderUndefined {
+					if common.UtilsSliceContains(ctx.Options(), common.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
 						propertyVal = nil
 					} else {
 						continue
 					}
 				}
 			} else {
-				if utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
+				if common.UtilsSliceContains(ctx.Options(), common.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
 					propertyVal = nil
-				} else if utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_REQUIRE_PROPERTIES) {
-					return &jsonpath.PathNotFoundError{Message: "Missing property in path " + evalPath}
+				} else if common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) {
+					return &common.PathNotFoundError{Message: "Missing property in path " + evalPath}
 				} else {
 					continue
 				}
@@ -155,16 +154,16 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 	return nil
 }
 
-func pathTokenHasProperty(property string, model interface{}, impl *jsonpath.EvaluationContextImpl) bool {
-	return utils.UtilsSliceContains(impl.JsonProvider().GetPropertyKeys(model), property)
+func pathTokenHasProperty(property string, model interface{}, impl *evaluationContext.EvaluationContextImpl) bool {
+	return common.UtilsSliceContains(impl.JsonProvider().GetPropertyKeys(model), property)
 }
 
-func pathTokenReadObjectProperty(property string, model interface{}, ctx *jsonpath.EvaluationContextImpl) interface{} {
+func pathTokenReadObjectProperty(property string, model interface{}, ctx *evaluationContext.EvaluationContextImpl) interface{} {
 	return ctx.JsonProvider().GetMapValue(model, property)
 }
 
-func (t *defaultToken) handleArrayIndex(index int, currentPath string, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
-	evalPath := utils.UtilsConcat(currentPath, "[", strconv.FormatInt(int64(index), 10), "]")
+func (t *defaultToken) handleArrayIndex(index int, currentPath string, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
+	evalPath := common.UtilsConcat(currentPath, "[", strconv.FormatInt(int64(index), 10), "]")
 	var pathRef Ref
 	if ctx.ForUpdate() {
 		pathRef = CreateArrayIndexPathRef(model, index)
@@ -255,7 +254,7 @@ func (t *defaultToken) String() string {
 	}
 }
 
-func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, nil)
 	if err != nil {
 		return err
@@ -266,7 +265,7 @@ func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath st
 
 func (t *defaultToken) nextToken() (Token, error) {
 	if t.isLeaf() {
-		return nil, &jsonpath.IllegalStateException{Message: "Current path token is a leaf"}
+		return nil, &common.IllegalStateException{Message: "Current path token is a leaf"}
 	}
 	return t.next, nil
 }
@@ -287,7 +286,7 @@ func (t *defaultToken) GetNext() Token {
 	return t.next
 }
 
-func (t *defaultToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (t *defaultToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	return nil
 }
 
@@ -322,7 +321,7 @@ func (r *RootPathToken) GetPathTokenAppender() TokenAppender {
 	return r
 }
 
-func (r *RootPathToken) Evaluate(currentPath string, ref Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (r *RootPathToken) Evaluate(currentPath string, ref Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	if r.isLeaf() {
 		var op Ref
 		if ctx.ForUpdate() {
@@ -350,7 +349,7 @@ func (r *RootPathToken) IsTokenDefinite() bool {
 }
 
 func (r *RootPathToken) IsFunctionPath() bool {
-	switch utils.UtilsGetPtrElem(r.tail).(type) {
+	switch common.UtilsGetPtrElem(r.tail).(type) {
 	case FunctionPathToken:
 		return true
 	default:
@@ -385,7 +384,7 @@ type FunctionPathToken struct {
 	functionParams []*function.Parameter
 }
 
-func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	pathFunction, err := function.GetFunctionByName(f.functionName)
 	if err != nil {
 		return err
@@ -410,7 +409,7 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent Ref, model inter
 	return nil
 }
 
-func (f *FunctionPathToken) evaluateParameters(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (f *FunctionPathToken) evaluateParameters(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	if f.functionParams != nil {
 		for _, param := range f.functionParams {
 			switch param.GetType() {
@@ -442,14 +441,14 @@ func getNextTokenSuppressError(token Token) Token {
 func (f *FunctionPathToken) cleanWildcardPathToken() {
 	if nil != f.functionParams && len(f.functionParams) > 0 {
 		path := f.functionParams[0].GetPath()
-		switch utils.UtilsGetPtrElem(path).(type) {
+		switch common.UtilsGetPtrElem(path).(type) {
 		case CompiledPath:
 			if nil != path && !path.IsFunctionPath() {
-				compiledPath, _ := utils.UtilsGetPtrElem(path).(CompiledPath)
+				compiledPath, _ := common.UtilsGetPtrElem(path).(CompiledPath)
 				root := compiledPath.GetRoot()
 				tail := root.GetNext()
 				for tail != nil && getNextTokenSuppressError(tail) != nil {
-					switch utils.UtilsGetPtrElem(tail.GetNext()).(type) {
+					switch common.UtilsGetPtrElem(tail.GetNext()).(type) {
 					case WildcardPathToken:
 						tail.SetNext(tail.GetNext().GetNext())
 						break
@@ -509,10 +508,10 @@ func (p *PropertyPathToken) IsTokenDefinite() bool {
 }
 
 func (p *PropertyPathToken) GetPathFragment() string {
-	return "[" + utils.UtilsJoin(",", p.stringDelimiter, p.properties) + "]"
+	return "[" + common.UtilsJoin(",", p.stringDelimiter, p.properties) + "]"
 }
 
-func (p *PropertyPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (p *PropertyPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	var truthCount int = 0
 	if p.SinglePropertyCase() {
 		truthCount++
@@ -528,19 +527,19 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent Ref, model inter
 	}
 
 	if !ctx.JsonProvider().IsMap(model) {
-		if !p.IsUpstreamDefinite() || utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_SUPPRESS_EXCEPTIONS) {
+		if !p.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return nil
 		} else {
 			var m string
 			if model == nil {
 				m = "null"
 			} else {
-				m = reflect.TypeOf(utils.UtilsGetPtrElem(model)).Name()
+				m = reflect.TypeOf(common.UtilsGetPtrElem(model)).Name()
 			}
 			message := fmt.Sprintf("Expected to find an object with property %s in path %s but found '%s'. "+
 				"This is not a json object according to the JsonProvider: '%s'.",
-				p.GetPathFragment(), currentPath, m, reflect.TypeOf(utils.UtilsGetPtrElem(ctx.Configuration().JsonProvider())).Name())
-			return &jsonpath.PathNotFoundError{Message: message}
+				p.GetPathFragment(), currentPath, m, reflect.TypeOf(common.UtilsGetPtrElem(ctx.Configuration().JsonProvider())).Name())
+			return &common.PathNotFoundError{Message: message}
 		}
 	}
 
@@ -580,7 +579,7 @@ func (w *WildcardPathToken) GetPathFragment() string {
 	return "[*]"
 }
 
-func (w *WildcardPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (w *WildcardPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	if ctx.JsonProvider().IsMap(model) {
 		for _, property := range ctx.JsonProvider().GetPropertyKeys(model) {
 			err := w.handleObjectProperty(currentPath, model, ctx, []string{property})
@@ -592,7 +591,7 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent Ref, model inter
 		for idx := 0; idx < ctx.JsonProvider().Length(model); idx++ {
 			err := w.handleArrayIndex(idx, currentPath, model, ctx)
 
-			if err != nil && utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_REQUIRE_PROPERTIES) {
+			if err != nil && common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) {
 				return err
 			}
 		}
@@ -618,7 +617,7 @@ func (*defaultScanPredicate) matches(model interface{}) bool {
 }
 
 type filterPathTokenPredicate struct {
-	ctx                *jsonpath.EvaluationContextImpl
+	ctx                *evaluationContext.EvaluationContextImpl
 	predicatePathToken *PredicatePathToken
 }
 
@@ -626,7 +625,7 @@ func (f *filterPathTokenPredicate) matches(model interface{}) bool {
 	return f.predicatePathToken.accept(model, f.ctx.RootDocument(), f.ctx.Configuration(), f.ctx)
 }
 
-func createFilterPathTokenPredicate(target Token, ctx *jsonpath.EvaluationContextImpl) *filterPathTokenPredicate {
+func createFilterPathTokenPredicate(target Token, ctx *evaluationContext.EvaluationContextImpl) *filterPathTokenPredicate {
 	f := &filterPathTokenPredicate{}
 	t, _ := target.(*PredicatePathToken)
 	f.predicatePathToken = t
@@ -644,7 +643,7 @@ func (*wildCardPathTokenPredicate) matches(model interface{}) bool {
 
 type arrayPathTokenPredicate struct {
 	*defaultScanPredicate
-	ctx *jsonpath.EvaluationContextImpl
+	ctx *evaluationContext.EvaluationContextImpl
 }
 
 func (a *arrayPathTokenPredicate) matches(model interface{}) bool {
@@ -653,7 +652,7 @@ func (a *arrayPathTokenPredicate) matches(model interface{}) bool {
 
 type propertyPathTokenPredicate struct {
 	*defaultScanPredicate
-	ctx               *jsonpath.EvaluationContextImpl
+	ctx               *evaluationContext.EvaluationContextImpl
 	propertyPathToken *PropertyPathToken
 }
 
@@ -666,13 +665,13 @@ func (p *propertyPathTokenPredicate) matches(model interface{}) bool {
 		return true
 	}
 
-	if p.propertyPathToken.isLeaf() && utils.UtilsSliceContains(p.ctx.Options(), configuration.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
+	if p.propertyPathToken.isLeaf() && common.UtilsSliceContains(p.ctx.Options(), common.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
 		return true
 	}
-	return utils.UtilsStringSliceContainsAll(p.ctx.JsonProvider().GetPropertyKeys(model), p.propertyPathToken.GetProperties())
+	return common.UtilsStringSliceContainsAll(p.ctx.JsonProvider().GetPropertyKeys(model), p.propertyPathToken.GetProperties())
 }
 
-func createPropertyPathTokenPredicate(target *PropertyPathToken, ctx *jsonpath.EvaluationContextImpl) *propertyPathTokenPredicate {
+func createPropertyPathTokenPredicate(target *PropertyPathToken, ctx *evaluationContext.EvaluationContextImpl) *propertyPathTokenPredicate {
 	return &propertyPathTokenPredicate{propertyPathToken: target, ctx: ctx}
 }
 
@@ -682,7 +681,7 @@ type ScanPathToken struct {
 	*defaultToken
 }
 
-func (s *ScanPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (s *ScanPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	pt, err := s.nextToken()
 	if err != nil {
 		return err
@@ -690,7 +689,7 @@ func (s *ScanPathToken) Evaluate(currentPath string, parent Ref, model interface
 	return s.walk(pt, currentPath, parent, model, ctx, s.createScanPredicate(pt, ctx))
 }
 
-func (s *ScanPathToken) walk(pt Token, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl, predicate ScanPredicate) error {
+func (s *ScanPathToken) walk(pt Token, currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl, predicate ScanPredicate) error {
 	if ctx.JsonProvider().IsMap(model) {
 		return s.walkObject(pt, currentPath, parent, model, ctx, predicate)
 	} else if ctx.JsonProvider().IsArray(model) {
@@ -699,7 +698,7 @@ func (s *ScanPathToken) walk(pt Token, currentPath string, parent Ref, model int
 	return nil
 }
 
-func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl, predicate ScanPredicate) error {
+func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl, predicate ScanPredicate) error {
 	if predicate.matches(model) {
 		err := pt.Evaluate(currentPath, parent, model, ctx)
 		if err != nil {
@@ -711,7 +710,7 @@ func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent Ref, mod
 	for _, property := range properties {
 		evalPath := currentPath + "['" + property + "']"
 		propertyModel := ctx.JsonProvider().GetMapValue(model, property)
-		if propertyModel != configuration.JsonProviderUndefined {
+		if propertyModel != common.JsonProviderUndefined {
 			err := s.walk(pt, evalPath, CreateObjectPropertyPathRef(model, property), propertyModel, ctx, predicate)
 			if err != nil {
 				return err
@@ -721,7 +720,7 @@ func (s *ScanPathToken) walkObject(pt Token, currentPath string, parent Ref, mod
 	return nil
 }
 
-func (s *ScanPathToken) walkArray(pt Token, currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl, predicate ScanPredicate) error {
+func (s *ScanPathToken) walkArray(pt Token, currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl, predicate ScanPredicate) error {
 	if predicate.matches(model) {
 		if pt.isLeaf() {
 			err := pt.Evaluate(currentPath, parent, model, ctx)
@@ -760,7 +759,7 @@ func (s *ScanPathToken) walkArray(pt Token, currentPath string, parent Ref, mode
 	return nil
 }
 
-func (*ScanPathToken) createScanPredicate(target Token, ctx *jsonpath.EvaluationContextImpl) ScanPredicate {
+func (*ScanPathToken) createScanPredicate(target Token, ctx *evaluationContext.EvaluationContextImpl) ScanPredicate {
 	switch target.(type) {
 	case *PropertyPathToken:
 		p, _ := target.(*PropertyPathToken)
@@ -794,20 +793,20 @@ type arrayPathToken struct {
 	*defaultToken
 }
 
-func (a *arrayPathToken) checkArrayModel(currentPath string, model interface{}, ctx *jsonpath.EvaluationContextImpl) (bool, error) {
+func (a *arrayPathToken) checkArrayModel(currentPath string, model interface{}, ctx *evaluationContext.EvaluationContextImpl) (bool, error) {
 	if model == nil {
-		if !a.IsTokenDefinite() || utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_SUPPRESS_EXCEPTIONS) {
+		if !a.IsTokenDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
 		} else {
-			return false, &jsonpath.PathNotFoundError{Message: "The path " + currentPath + " is null"}
+			return false, &common.PathNotFoundError{Message: "The path " + currentPath + " is null"}
 		}
 	}
 
 	if ctx.JsonProvider().IsArray(model) {
-		if a.IsUpstreamDefinite() || utils.UtilsSliceContains(ctx.Options(), configuration.OPTION_SUPPRESS_EXCEPTIONS) {
+		if a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
 		} else {
-			return false, &jsonpath.PathNotFoundError{Message: fmt.Sprintf("Filter: %s can only be applied to arrays. Current context is: %s", a, model)}
+			return false, &common.PathNotFoundError{Message: fmt.Sprintf("Filter: %s can only be applied to arrays. Current context is: %s", a, model)}
 		}
 	}
 	return true, nil
@@ -818,7 +817,7 @@ type ArrayIndexPathToken struct {
 	arrayIndexOperation *ArrayIndexOperation
 }
 
-func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	checkResult, err := a.checkArrayModel(currentPath, model, ctx)
 	if err != nil {
 		return err
@@ -859,7 +858,7 @@ type ArraySlicePathToken struct {
 	operation *ArraySliceOperation
 }
 
-func (a *ArraySlicePathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) Evaluate(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	checkPass, err := a.checkArrayModel(currentPath, model, ctx)
 	if err != nil {
 		return err
@@ -878,16 +877,16 @@ func (a *ArraySlicePathToken) Evaluate(currentPath string, parent Ref, model int
 	return nil
 }
 
-func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	length := ctx.JsonProvider().Length(model)
 	from := a.operation.From()
 	if from < 0 {
 		//calculate slice start from array length
 		from = length + from
 	}
-	from = utils.UtilsMaxInt(0, from)
+	from = common.UtilsMaxInt(0, from)
 
-	log.Printf("Slice from index on array with length: %d. From index: %d to: %d. Input: %s", length, from, length-1, utils.UtilsToString(a))
+	log.Printf("Slice from index on array with length: %d. From index: %d to: %d. Input: %s", length, from, length-1, common.UtilsToString(a))
 
 	if length == 0 || from >= length {
 		return nil
@@ -901,18 +900,18 @@ func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent Ref, model in
 	return nil
 }
 
-func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	length := ctx.JsonProvider().Length(model)
 	from := a.operation.From()
 	to := a.operation.To()
 
-	to = utils.UtilsMinInt(length, to)
+	to = common.UtilsMinInt(length, to)
 
 	if from >= to || length == 0 {
 		return nil
 	}
 
-	log.Printf("Slice between indexes on array with length: %d. From index: %d to: %d. Input: %s", length, from, to, utils.UtilsToString(a))
+	log.Printf("Slice between indexes on array with length: %d. From index: %d to: %d. Input: %s", length, from, to, common.UtilsToString(a))
 
 	for i := from; i < to; i++ {
 		err := a.handleArrayIndex(i, currentPath, model, ctx)
@@ -924,7 +923,7 @@ func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent Ref, model
 	return nil
 }
 
-func (a *ArraySlicePathToken) sliceTo(currentPath string, parent Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (a *ArraySlicePathToken) sliceTo(currentPath string, parent Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	length := ctx.JsonProvider().Length(model)
 	if length == 0 {
 		return nil
@@ -934,9 +933,9 @@ func (a *ArraySlicePathToken) sliceTo(currentPath string, parent Ref, model inte
 		//calculate slice end from array length
 		to = length + to
 	}
-	to = utils.UtilsMinInt(length, to)
+	to = common.UtilsMinInt(length, to)
 
-	log.Printf("Slice to index on array with length: %d. From index: 0 to: %d. Input: %s", length, to, utils.UtilsToString(a))
+	log.Printf("Slice to index on array with length: %d. From index: 0 to: %d. Input: %s", length, to, common.UtilsToString(a))
 
 	for i := 0; i < to; i++ {
 		err := a.handleArrayIndex(i, currentPath, model, ctx)
@@ -948,7 +947,7 @@ func (a *ArraySlicePathToken) sliceTo(currentPath string, parent Ref, model inte
 }
 
 func (a *ArraySlicePathToken) GetPathFragment() string {
-	return utils.UtilsToString(a.operation)
+	return common.UtilsToString(a.operation)
 }
 
 func (*ArraySlicePathToken) IsTokenDefinite() bool {
@@ -968,7 +967,7 @@ type PredicatePathToken struct {
 	predicates []predicate.Predicate
 }
 
-func (p *PredicatePathToken) evaluate(currentPath string, ref Ref, model interface{}, ctx *jsonpath.EvaluationContextImpl) error {
+func (p *PredicatePathToken) evaluate(currentPath string, ref Ref, model interface{}, ctx *evaluationContext.EvaluationContextImpl) error {
 	if ctx.JsonProvider().IsMap(model) {
 		if p.accept(model, ctx.RootDocument(), ctx.Configuration(), ctx) {
 			var op Ref
@@ -1002,13 +1001,13 @@ func (p *PredicatePathToken) evaluate(currentPath string, ref Ref, model interfa
 		}
 	} else {
 		if p.IsUpstreamDefinite() {
-			return &jsonpath.InvalidPathError{Message: fmt.Sprintf("Filter: %s can not be applied to primitives. Current context is: %s", p, model)}
+			return &common.InvalidPathError{Message: fmt.Sprintf("Filter: %s can not be applied to primitives. Current context is: %s", p, model)}
 		}
 	}
 	return nil
 }
 
-func (p *PredicatePathToken) accept(obj interface{}, root interface{}, configuration *configuration.Configuration, evaluationContext *jsonpath.EvaluationContextImpl) bool {
+func (p *PredicatePathToken) accept(obj interface{}, root interface{}, configuration *common.Configuration, evaluationContext *evaluationContext.EvaluationContextImpl) bool {
 	ctx := predicate.CreatePredicateContextImpl(obj, root, configuration, evaluationContext.DocumentEvalCache())
 
 	for _, predicate := range p.predicates {

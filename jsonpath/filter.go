@@ -64,8 +64,8 @@ type AndFilter struct {
 }
 
 func (filter *AndFilter) Apply(ctx predicate.PredicateContext) bool {
-	for _, predicate := range filter.predicates {
-		if !(*predicate).Apply(ctx) {
+	for _, predicate0 := range filter.predicates {
+		if !(*predicate0).Apply(ctx) {
 			return false
 		}
 	}

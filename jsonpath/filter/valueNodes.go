@@ -1,11 +1,9 @@
-package jsonpath
+package filter
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/configuration"
-	"cuichao.com/go-jsonpath/jsonpath/filter"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 	predicate2 "cuichao.com/go-jsonpath/jsonpath/predicate"
-	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -21,7 +19,7 @@ var UNDEFINED_NODE = &UndefinedNode{}
 
 // PatternNode -------patternNode------
 type PatternNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	pattern         string
 	compiledPattern *regexp.Regexp
 }
@@ -57,7 +55,7 @@ func (pn *PatternNode) String() string {
 
 // PathNode ------PathNode-----
 type PathNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	path        path.Path
 	existsCheck bool
 	shouldExist bool
@@ -111,12 +109,12 @@ func (pn *PathNode) GetPath() path.Path {
 	return pn.path
 }
 
-func (pn *PathNode) Evaluate(ctx predicate2.PredicateContext) (filter.ValueNode, error) {
+func (pn *PathNode) Evaluate(ctx predicate2.PredicateContext) (ValueNode, error) {
 	if pn.IsExistsCheck() {
-		c := &configuration.Configuration{} //TODO
+		c := &common.Configuration{} //TODO
 		result, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
 		if err == nil {
-			if result == configuration.JsonProviderUndefined {
+			if result == common.JsonProviderUndefined {
 				return FALSE_NODE, nil
 			} else {
 				return TRUE_NODE, nil
@@ -165,7 +163,7 @@ func (pn *PathNode) Evaluate(ctx predicate2.PredicateContext) (filter.ValueNode,
 			return NewBooleanNode(resBool), nil
 		case *OffsetDateTimeNode:
 		default:
-			return nil, &JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
+			return nil, &common.JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
 		}
 
 		return UNDEFINED_NODE, nil
@@ -174,7 +172,7 @@ func (pn *PathNode) Evaluate(ctx predicate2.PredicateContext) (filter.ValueNode,
 
 // NumberNode -----------
 type NumberNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	number *decimal.Decimal
 }
 
@@ -247,7 +245,7 @@ func NewNumberNodeByString(str string) *NumberNode {
 
 // StringNode -----------
 type StringNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	str            string
 	useSingleQuote bool
 }
@@ -329,7 +327,7 @@ func (n *StringNode) Equals(o interface{}) bool {
 
 // BooleanNode -----------
 type BooleanNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	value bool
 }
 
@@ -378,7 +376,7 @@ func NewBooleanNode(value bool) *BooleanNode {
 
 // PredicateNode -----------
 type PredicateNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	predicate predicate2.Predicate
 }
 
@@ -408,17 +406,17 @@ func (n *PredicateNode) String() string {
 
 // ValueListNode -----------
 type ValueListNode struct {
-	*filter.ValueNodeDefault
-	nodes []filter.ValueNode
+	*ValueNodeDefault
+	nodes []ValueNode
 }
 
-func (v *ValueListNode) Contains(node filter.ValueNode) bool {
-	return utils.UtilsSliceContains(v.nodes, node)
+func (v *ValueListNode) Contains(node ValueNode) bool {
+	return common.UtilsSliceContains(v.nodes, node)
 }
 
 func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
 	for _, leftNode := range v.nodes {
-		if !utils.UtilsSliceContains(right, leftNode) {
+		if !common.UtilsSliceContains(right, leftNode) {
 			return false
 		}
 	}
@@ -429,7 +427,7 @@ func (v *ValueListNode) AsValueListNode() (*ValueListNode, error) {
 	return v, nil
 }
 
-func (v *ValueListNode) GetNodes() []filter.ValueNode {
+func (v *ValueListNode) GetNodes() []ValueNode {
 	return v.nodes
 }
 
@@ -447,7 +445,7 @@ func NewValueListNode(list []interface{}) *ValueListNode {
 
 // NullNode -----------
 type NullNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 }
 
 func (n *NullNode) TypeOf(ctx predicate2.PredicateContext) reflect.Kind {
@@ -484,7 +482,7 @@ func NewNullNode() *NullNode {
 
 // UndefinedNode -----------
 type UndefinedNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 }
 
 func (n *UndefinedNode) AsUndefinedNode() (*UndefinedNode, error) {
@@ -508,7 +506,7 @@ func NewUndefinedNode() *UndefinedNode {
 
 // ClassNode -----------
 type ClassNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 }
 
 // OffsetDateTime -----
@@ -521,7 +519,7 @@ func (o *OffsetDateTime) String() string {
 
 // OffsetDateTimeNode -----------
 type OffsetDateTimeNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	dateTime *OffsetDateTime
 }
 
@@ -555,11 +553,11 @@ func (n *OffsetDateTimeNode) Equals(o interface{}) bool {
 	}
 	switch o.(type) {
 	case *OffsetDateTimeNode:
-		v, _ := o.(filter.ValueNode)
+		v, _ := o.(ValueNode)
 		that, _ := v.AsOffsetDateTimeNode()
 		return OffsetDateTimeCompare(n.dateTime, that.dateTime) == 0
 	case *StringNode:
-		v, _ := o.(filter.ValueNode)
+		v, _ := o.(ValueNode)
 		that, _ := v.AsOffsetDateTimeNode()
 		return OffsetDateTimeCompare(n.dateTime, that.dateTime) == 0
 	default:
@@ -574,7 +572,7 @@ func OffsetDateTimeCompare(this *OffsetDateTime, that *OffsetDateTime) int {
 
 // JsonNode --------
 type JsonNode struct {
-	*filter.ValueNodeDefault
+	*ValueNodeDefault
 	json   interface{}
 	parsed bool
 }
@@ -641,12 +639,12 @@ func (n *JsonNode) GetJson() interface{} {
 
 func (n *JsonNode) IsArray(ctx predicate2.PredicateContext) bool {
 	parsedObj, _ := n.Parse(ctx)
-	return utils.UtilsIsSlice(parsedObj)
+	return common.UtilsIsSlice(parsedObj)
 }
 
 func (n *JsonNode) IsMap(ctx predicate2.PredicateContext) bool {
 	parsedObj, _ := n.Parse(ctx)
-	return utils.UtilsIsMap(parsedObj)
+	return common.UtilsIsMap(parsedObj)
 }
 
 func (n *JsonNode) Parse(ctx predicate2.PredicateContext) (interface{}, error) {
@@ -670,7 +668,7 @@ func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx predicate2.P
 	}
 }
 
-func (n *JsonNode) AsValueListNodeByPredicateContext(ctx predicate2.PredicateContext) (filter.ValueNode, error) {
+func (n *JsonNode) AsValueListNodeByPredicateContext(ctx predicate2.PredicateContext) (ValueNode, error) {
 	if !n.IsArray(ctx) {
 		return UNDEFINED_NODE, nil
 	} else {

@@ -1,4 +1,4 @@
-package jsonpath
+package common
 
 type Type string
 

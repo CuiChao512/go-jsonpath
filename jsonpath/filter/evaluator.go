@@ -1,7 +1,7 @@
 package filter
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"cuichao.com/go-jsonpath/jsonpath/predicate"
 	"reflect"
 	"strings"
@@ -16,7 +16,7 @@ type existsEvaluator struct {
 
 func (*existsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
 	if !left.IsBooleanNode() && !right.IsBooleanNode() {
-		return false, &jsonpath.JsonPathError{Message: "Failed to evaluate exists expression"}
+		return false, &common.JsonPathError{Message: "Failed to evaluate exists expression"}
 	}
 	leftNode, err := left.AsBooleanNode()
 	if err != nil {
@@ -114,7 +114,7 @@ func (*lessThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicat
 		if err != nil {
 			return false, err
 		}
-		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) < 0, nil
+		return OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) < 0, nil
 	}
 	return false, nil
 }
@@ -151,7 +151,7 @@ func (*lessThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx pr
 		if err != nil {
 			return false, err
 		}
-		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) <= 0, nil
+		return OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) <= 0, nil
 	}
 	return false, nil
 }
@@ -188,7 +188,7 @@ func (*greaterThanEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predi
 		if err != nil {
 			return false, err
 		}
-		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) > 0, nil
+		return OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) > 0, nil
 	}
 	return false, nil
 }
@@ -225,7 +225,7 @@ func (*greaterThanEqualsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx
 		if err != nil {
 			return false, err
 		}
-		return jsonpath.OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) >= 0, nil
+		return OffsetDateTimeCompare(leftNode.GetDate(), rightNode.GetDate()) >= 0, nil
 	}
 	return false, nil
 }
@@ -291,7 +291,7 @@ func (*emptyEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.P
 type inEvaluator struct{}
 
 func (*inEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
-	var valueListNode *jsonpath.ValueListNode
+	var valueListNode *ValueListNode
 	if right.IsJsonNode() {
 		rightNode, err := right.AsJsonNode()
 		if err != nil {
@@ -438,7 +438,7 @@ func (r *regexpEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicat
 	}
 }
 
-func (*regexpEvaluator) matches(patternNode *jsonpath.PatternNode, inputToMatch string) bool {
+func (*regexpEvaluator) matches(patternNode *PatternNode, inputToMatch string) bool {
 	return patternNode.GetCompiledPattern().MatchString(inputToMatch)
 }
 
@@ -463,7 +463,7 @@ func (*regexpEvaluator) getInput(node ValueNode) (string, error) {
 type subsetOfEvaluator struct{}
 
 func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
-	var rightValueListNode *jsonpath.ValueListNode
+	var rightValueListNode *ValueListNode
 	if right.IsJsonNode() {
 		jsonNode, err := right.AsJsonNode()
 		if err != nil {
@@ -486,7 +486,7 @@ func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicat
 			return false, err
 		}
 	}
-	var leftValueListNode *jsonpath.ValueListNode
+	var leftValueListNode *ValueListNode
 	if left.IsJsonNode() {
 		jsonNode, err := left.AsJsonNode()
 		if err != nil {
@@ -515,7 +515,7 @@ func (*subsetOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicat
 type anyOfEvaluator struct{}
 
 func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
-	var rightValueListNode *jsonpath.ValueListNode
+	var rightValueListNode *ValueListNode
 	if right.IsJsonNode() {
 		jsonNode, err := right.AsJsonNode()
 		if err != nil {
@@ -538,7 +538,7 @@ func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.P
 			return false, err
 		}
 	}
-	var leftValueListNode *jsonpath.ValueListNode
+	var leftValueListNode *ValueListNode
 	if left.IsJsonNode() {
 		jsonNode, err := left.AsJsonNode()
 		if err != nil {
@@ -575,7 +575,7 @@ func (*anyOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.P
 type noneOfEvaluator struct{}
 
 func (*noneOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.PredicateContext) (bool, error) {
-	var rightValueListNode *jsonpath.ValueListNode
+	var rightValueListNode *ValueListNode
 	if right.IsJsonNode() {
 		jsonNode, err := right.AsJsonNode()
 		if err != nil {
@@ -598,7 +598,7 @@ func (*noneOfEvaluator) Evaluate(left ValueNode, right ValueNode, ctx predicate.
 			return false, err
 		}
 	}
-	var leftValueListNode *jsonpath.ValueListNode
+	var leftValueListNode *ValueListNode
 	if left.IsJsonNode() {
 		jsonNode, err := left.AsJsonNode()
 		if err != nil {
@@ -744,7 +744,7 @@ func (e *LogicalExpressionNode) String() string {
 	for _, e := range e.chain {
 		chainString = append(chainString, e.String())
 	}
-	return "(" + UtilsJoin(" "+e.operator+" ", "", chainString) + ")"
+	return "(" + common.UtilsJoin(" "+e.operator+" ", "", chainString) + ")"
 }
 
 func newLogicalExpressionNode(left ExpressionNode, operator string, right ExpressionNode) *LogicalExpressionNode {

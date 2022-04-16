@@ -1,7 +1,7 @@
 package jsonpath
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/configuration"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"cuichao.com/go-jsonpath/jsonpath/predicate"
 )
 
@@ -9,7 +9,7 @@ type EvaluationListener interface {
 }
 
 type ReadContext interface {
-	Configuration() *configuration.Configuration
+	Configuration() *common.Configuration
 	Json() interface{}
 	JsonString() string
 	ReadWithFilters(path string, filters ...*predicate.Predicate)

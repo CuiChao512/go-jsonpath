@@ -1,9 +1,9 @@
 package function
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/common"
+	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/path"
-	"cuichao.com/go-jsonpath/jsonpath/utils"
 )
 
 type ParamType int32
@@ -69,7 +69,7 @@ func CreatePathParameter(p path.Path) *Parameter {
 	return &Parameter{path: p, paramType: PATH}
 }
 
-func ParametersToList(typeName jsonpath.Type, ctx jsonpath.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
+func ParametersToList(typeName common.Type, ctx evaluationContext.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
 	var values *[]interface{}
 	for _, param := range parameters {
 		value, err := param.GetValue()
@@ -81,20 +81,20 @@ func ParametersToList(typeName jsonpath.Type, ctx jsonpath.EvaluationContext, pa
 	return *values, nil
 }
 
-func parameterConsume(expectedType jsonpath.Type, ctx jsonpath.EvaluationContext, collection *[]interface{}, value interface{}) {
+func parameterConsume(expectedType common.Type, ctx evaluationContext.EvaluationContext, collection *[]interface{}, value interface{}) {
 	if ctx.Configuration().JsonProvider().IsArray(value) {
 		for _, o := range ctx.Configuration().JsonProvider().ToIterable(value) {
-			if expectedType == jsonpath.TYPE_NUMBER {
+			if expectedType == common.TYPE_NUMBER {
 				*collection = append(*collection, o)
 			} else {
-				*collection = append(*collection, utils.UtilsToString(o))
+				*collection = append(*collection, common.UtilsToString(o))
 			}
 		}
 	} else {
-		if expectedType == jsonpath.TYPE_NUMBER {
+		if expectedType == common.TYPE_NUMBER {
 			*collection = append(*collection, value)
 		} else {
-			*collection = append(*collection, utils.UtilsToString(value))
+			*collection = append(*collection, common.UtilsToString(value))
 		}
 	}
 }

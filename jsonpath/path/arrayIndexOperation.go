@@ -1,8 +1,7 @@
 package path
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
-	"cuichao.com/go-jsonpath/jsonpath/utils"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,13 +22,13 @@ func (a *ArrayIndexOperation) IsSingleIndexOperation() bool {
 }
 
 func (a *ArrayIndexOperation) String() string {
-	return "[" + utils.UtilsJoin(",", "", a.indexes) + "]"
+	return "[" + common.UtilsJoin(",", "", a.indexes) + "]"
 }
 
 func ParseArrayIndexOperation(operation string) (*ArrayIndexOperation, error) {
 	for _, c := range []rune(operation) {
-		if !utils.UtilsCharIsDigit(c) && c != ',' && c != ' ' && c != '-' {
-			return nil, &jsonpath.InvalidPathError{Message: "Failed to parse ArrayIndexOperation: " + operation}
+		if !common.UtilsCharIsDigit(c) && c != ',' && c != ' ' && c != '-' {
+			return nil, &common.InvalidPathError{Message: "Failed to parse ArrayIndexOperation: " + operation}
 		}
 	}
 	tokens := strings.Split(operation, ",")
@@ -38,7 +37,7 @@ func ParseArrayIndexOperation(operation string) (*ArrayIndexOperation, error) {
 	for _, token := range tokens {
 		i, err := strconv.Atoi(token)
 		if err != nil {
-			return nil, &jsonpath.InvalidPathError{Message: "Failed to parse token in ArrayIndexOperation: " + token}
+			return nil, &common.InvalidPathError{Message: "Failed to parse token in ArrayIndexOperation: " + token}
 		}
 		tempIndexes = append(tempIndexes, i)
 	}
@@ -87,8 +86,8 @@ func tryRead(tokens []string, idx int) (bool, int, error) {
 func ParseArraySliceOperation(operation string) (*ArraySliceOperation, error) {
 	for i := 0; i < len(operation); i++ {
 		c := []rune(operation)[i]
-		if !utils.UtilsCharIsDigit(c) && c != '-' && c != ':' {
-			return nil, &jsonpath.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
+		if !common.UtilsCharIsDigit(c) && c != '-' && c != ':' {
+			return nil, &common.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
 		}
 	}
 	tokens := strings.Split(operation, ":")
@@ -110,7 +109,7 @@ func ParseArraySliceOperation(operation string) (*ArraySliceOperation, error) {
 	} else if tempToSuccess {
 		tempOperation = SLICE_TO
 	} else {
-		return nil, &jsonpath.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
+		return nil, &common.InvalidPathError{Message: "Failed to parse SliceOperation: " + operation}
 	}
 
 	return &ArraySliceOperation{from: tempFrom, to: tempTo, operationType: tempOperation}, nil

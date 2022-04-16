@@ -1,11 +1,10 @@
 package path
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath"
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"cuichao.com/go-jsonpath/jsonpath/filter"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"cuichao.com/go-jsonpath/jsonpath/predicate"
-	"cuichao.com/go-jsonpath/jsonpath/utils"
 	"strconv"
 	"strings"
 )
@@ -37,7 +36,7 @@ const (
 
 type Compiler struct {
 	filterStack []predicate.Predicate
-	path        *jsonpath.CharacterIndex
+	path        *common.CharacterIndex
 }
 
 func (c *Compiler) readWhitespace() {
@@ -145,13 +144,13 @@ func (c *Compiler) readDotToken(appender TokenAppender) (bool, error) {
 		appender.AppendPathToken(CreateScanPathToken())
 		c.path.IncrementPosition(2)
 	} else if !c.path.HasMoreCharacters() {
-		return false, &jsonpath.InvalidPathError{Message: "Path must not end with a '."}
+		return false, &common.InvalidPathError{Message: "Path must not end with a '."}
 	} else {
 		c.path.IncrementPosition(1)
 	}
 
 	if c.path.CurrentCharIs(PERIOD) {
-		return false, &jsonpath.InvalidPathError{Message: "Character '.' on position " + strconv.Itoa(c.path.Position()) + " is not valid."}
+		return false, &common.InvalidPathError{Message: "Character '.' on position " + strconv.Itoa(c.path.Position()) + " is not valid."}
 	}
 
 	return c.readNextToken(appender)
@@ -171,7 +170,7 @@ func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool, er
 	for path.InBoundsByPosition(readPosition) {
 		char := path.CharAt(readPosition)
 		if char == SPACE {
-			return false, &jsonpath.InvalidPathError{Message: "Use bracket notion ['my prop'] if your property contains blank characters. position: " + strconv.Itoa(path.Position())}
+			return false, &common.InvalidPathError{Message: "Use bracket notion ['my prop'] if your property contains blank characters. position: " + strconv.Itoa(path.Position())}
 		} else if char == PERIOD || char == OPEN_SQUARE_BRACKET {
 			endPosition = readPosition
 			break
@@ -202,7 +201,7 @@ func (c *Compiler) readPropertyOrFunctionToken(appender TokenAppender) (bool, er
 
 		if parenthesisCount != 0 {
 			functionName := path.SubSequence(startPosition, endPosition)
-			return false, &jsonpath.InvalidPathError{Message: "Arguments to function: '" + functionName + "' are not closed properly."}
+			return false, &common.InvalidPathError{Message: "Arguments to function: '" + functionName + "' are not closed properly."}
 		}
 
 		if path.InBoundsByPosition(readPosition + 1) {
@@ -265,7 +264,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 				continue
 			}
 
-			if char == OPEN_BRACE || utils.UtilsCharIsDigit(char) || DOUBLE_QUOTE == char {
+			if char == OPEN_BRACE || common.UtilsCharIsDigit(char) || DOUBLE_QUOTE == char {
 				paramType = function.JSON
 			} else if c.isPathContext(char) {
 				paramType = function.PATH // read until we reach a terminating comma and we've reset grouping to zero
@@ -288,12 +287,12 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 			groupBracket++
 		case CLOSE_BRACE:
 			if 0 == groupBrace {
-				return nil, &jsonpath.InvalidPathError{Message: "Unexpected close brace '}' at character position: " + strconv.Itoa(path.Position())}
+				return nil, &common.InvalidPathError{Message: "Unexpected close brace '}' at character position: " + strconv.Itoa(path.Position())}
 			}
 			groupBrace--
 		case CLOSE_SQUARE_BRACKET:
 			if 0 == groupBracket {
-				return nil, &jsonpath.InvalidPathError{Message: "Unexpected close bracket ']' at character position: " + strconv.Itoa(path.Position())}
+				return nil, &common.InvalidPathError{Message: "Unexpected close bracket ']' at character position: " + strconv.Itoa(path.Position())}
 			}
 			groupBracket--
 
@@ -319,7 +318,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 						param = function.CreateJsonParameter(parameter)
 					case function.PATH:
 						var predicates []predicate.Predicate
-						compiler := createPathCompiler(jsonpath.CreateCharacterIndex(parameter), &predicates)
+						compiler := createPathCompiler(common.CreateCharacterIndex(parameter), &predicates)
 						compiledPath, err := compiler.compile()
 						if err != nil {
 							return nil, err
@@ -341,7 +340,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 		priorChar = char
 	}
 	if 0 != groupBrace || 0 != groupParen || 0 != groupBracket {
-		return nil, &jsonpath.InvalidPathError{Message: "Arguments to function: '" + funcName + "' are not closed properly."}
+		return nil, &common.InvalidPathError{Message: "Arguments to function: '" + funcName + "' are not closed properly."}
 	}
 	return parameters, nil
 }
@@ -380,7 +379,7 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 	tokens := strings.Split(expression, ",")
 
 	if len(c.filterStack) < len(tokens) {
-		return false, &jsonpath.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
+		return false, &common.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
 	}
 
 	var predicates []predicate.Predicate
@@ -389,7 +388,7 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 			token = strings.TrimSpace(token)
 		}
 		if "?" != token {
-			return false, &jsonpath.InvalidPathError{Message: "Expected '?' but found " + token}
+			return false, &common.InvalidPathError{Message: "Expected '?' but found " + token}
 		}
 		predicates = append(predicates, c.filterStack[len(c.filterStack)-1])
 		c.filterStack = c.filterStack[0 : len(c.filterStack)-1]
@@ -435,11 +434,11 @@ func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
 
 	criteria := path.SubSequence(openStatementBracketIndex, closeStatementBracketIndex+1)
 
-	predicate, e := filter.Compile(criteria)
+	predicate0, e := filter.Compile(criteria)
 	if e != nil {
 		return false, nil
 	}
-	appender.AppendPathToken(CreatePredicatePathToken([]predicate.Predicate{predicate}))
+	appender.AppendPathToken(CreatePredicatePathToken([]predicate.Predicate{predicate0}))
 
 	path.SetPosition(closeStatementBracketIndex + 1)
 	readResult, e := c.readNextToken(appender)
@@ -463,7 +462,7 @@ func (c *Compiler) readWildCardToken(appender TokenAppender) (bool, error) {
 		wildCardIndex := path.IndexOfNextSignificantChar(WILDCARD)
 		if !path.NextSignificantCharIsFromStartPosition(wildCardIndex, CLOSE_SQUARE_BRACKET) {
 			offset := wildCardIndex + 1
-			return false, &jsonpath.InvalidPathError{Message: "Expected wildcard token to end with ']' on position " + strconv.Itoa(offset)}
+			return false, &common.InvalidPathError{Message: "Expected wildcard token to end with ']' on position " + strconv.Itoa(offset)}
 		}
 		bracketCloseIndex := path.IndexOfNextSignificantCharFromStartPosition(wildCardIndex, CLOSE_SQUARE_BRACKET)
 		path.SetPosition(bracketCloseIndex + 1)
@@ -485,7 +484,7 @@ func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
 		return false, nil
 	}
 	nextSignificantChar := path.NextSignificantChar()
-	if !utils.UtilsCharIsDigit(nextSignificantChar) && nextSignificantChar != MINUS && nextSignificantChar != SPLIT {
+	if !common.UtilsCharIsDigit(nextSignificantChar) && nextSignificantChar != MINUS && nextSignificantChar != SPLIT {
 		return false, nil
 	}
 
@@ -505,7 +504,7 @@ func (c *Compiler) readArrayToken(appender TokenAppender) (bool, error) {
 	//check valid chars
 	for i := 0; i < len(expression); i++ {
 		char := []rune(expression)[i]
-		if !utils.UtilsCharIsDigit(char) && char != COMMA && char != MINUS && char != SPLIT && char != SPACE {
+		if !common.UtilsCharIsDigit(char) && char != COMMA && char != MINUS && char != SPLIT && char != SPACE {
 			return false, nil
 		}
 	}
@@ -574,7 +573,7 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool, error
 				}
 				endPosition = readPosition
 				prop := path.SubSequence(startPosition, endPosition)
-				property, err := utils.UtilsStringUnescape(prop)
+				property, err := common.UtilsStringUnescape(prop)
 				if err != nil {
 					return false, err
 				}
@@ -612,19 +611,19 @@ func (c *Compiler) readBracketPropertyToken(appender TokenAppender) (bool, error
 
 }
 
-func fail(message string) *jsonpath.InvalidPathError {
-	return &jsonpath.InvalidPathError{Message: message}
+func fail(message string) *common.InvalidPathError {
+	return &common.InvalidPathError{Message: message}
 }
 
-func createPathCompiler(path *jsonpath.CharacterIndex, filterStack *[]predicate.Predicate) *Compiler {
+func createPathCompiler(path *common.CharacterIndex, filterStack *[]predicate.Predicate) *Compiler {
 	return &Compiler{path: path, filterStack: *filterStack}
 }
 
 func Compile(pathString string, filters ...predicate.Predicate) (Path, error) {
-	ci := jsonpath.CreateCharacterIndex(pathString)
+	ci := common.CreateCharacterIndex(pathString)
 
 	if ci.CharAt(0) != DOC_CONTEXT && ci.CharAt(0) != EVAL_CONTEXT {
-		ci = jsonpath.CreateCharacterIndex("$." + pathString)
+		ci = common.CreateCharacterIndex("$." + pathString)
 	}
 	ci.Trim()
 
