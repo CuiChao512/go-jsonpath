@@ -2,7 +2,6 @@ package numeric
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/function"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 	"math"
@@ -15,7 +14,7 @@ func (*abstractAggregation) Next(value interface{}) {}
 
 func (*abstractAggregation) GetValue() interface{} { return nil }
 
-func (a *abstractAggregation) Invoke(currentPath string, parent path.Ref, model interface{}, ctx evaluationContext.EvaluationContext, parameters *[]*function.Parameter) (interface{}, error) {
+func (a *abstractAggregation) Invoke(currentPath string, parent path.PathRef, model interface{}, ctx path.EvaluationContext, parameters *[]*function.Parameter) (interface{}, error) {
 	count := 0
 	if ctx.Configuration().JsonProvider().IsArray(model) {
 

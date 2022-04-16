@@ -4,7 +4,6 @@ import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
 	"cuichao.com/go-jsonpath/jsonpath/filter"
 	"cuichao.com/go-jsonpath/jsonpath/function"
-	"cuichao.com/go-jsonpath/jsonpath/predicate"
 	"strconv"
 	"strings"
 )
@@ -35,7 +34,7 @@ const (
 )
 
 type Compiler struct {
-	filterStack []predicate.Predicate
+	filterStack []Predicate
 	path        *common.CharacterIndex
 }
 
@@ -317,7 +316,7 @@ func (c *Compiler) parseFunctionParameters(funcName string) ([]*function.Paramet
 						// parse the json and set the value
 						param = function.CreateJsonParameter(parameter)
 					case function.PATH:
-						var predicates []predicate.Predicate
+						var predicates []Predicate
 						compiler := createPathCompiler(common.CreateCharacterIndex(parameter), &predicates)
 						compiledPath, err := compiler.compile()
 						if err != nil {
@@ -382,7 +381,7 @@ func (c *Compiler) readPlaceholderToken(appender TokenAppender) (bool, error) {
 		return false, &common.InvalidPathError{Message: "Not enough predicates supplied for filter [" + expression + "] at position " + strconv.Itoa(path.Position())}
 	}
 
-	var predicates []predicate.Predicate
+	var predicates []Predicate
 	for _, token := range tokens {
 		if token != "" {
 			token = strings.TrimSpace(token)
@@ -438,7 +437,7 @@ func (c *Compiler) readFilterToken(appender TokenAppender) (bool, error) {
 	if e != nil {
 		return false, nil
 	}
-	appender.AppendPathToken(CreatePredicatePathToken([]predicate.Predicate{predicate0}))
+	appender.AppendPathToken(CreatePredicatePathToken([]Predicate{predicate0}))
 
 	path.SetPosition(closeStatementBracketIndex + 1)
 	readResult, e := c.readNextToken(appender)
@@ -615,11 +614,11 @@ func fail(message string) *common.InvalidPathError {
 	return &common.InvalidPathError{Message: message}
 }
 
-func createPathCompiler(path *common.CharacterIndex, filterStack *[]predicate.Predicate) *Compiler {
+func createPathCompiler(path *common.CharacterIndex, filterStack *[]Predicate) *Compiler {
 	return &Compiler{path: path, filterStack: *filterStack}
 }
 
-func Compile(pathString string, filters ...predicate.Predicate) (Path, error) {
+func Compile(pathString string, filters ...Predicate) (Path, error) {
 	ci := common.CreateCharacterIndex(pathString)
 
 	if ci.CharAt(0) != DOC_CONTEXT && ci.CharAt(0) != EVAL_CONTEXT {

@@ -2,7 +2,6 @@ package path
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 )
 
 type CompiledPath struct {
@@ -10,11 +9,11 @@ type CompiledPath struct {
 	isRootPath bool
 }
 
-func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (evaluationContext.EvaluationContext, error) {
+func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (EvaluationContext, error) {
 	return nil, nil
 }
 
-func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) evaluationContext.EvaluationContext {
+func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) EvaluationContext {
 	return nil
 }
 

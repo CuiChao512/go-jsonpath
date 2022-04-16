@@ -1,14 +1,14 @@
 package jsonpath
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/predicate"
+	"cuichao.com/go-jsonpath/jsonpath/path"
 	"strings"
 )
 
 type Filter interface {
-	predicate.Predicate
-	Or(other *predicate.Predicate) *OrFilter
-	And(other *predicate.Predicate) *AndFilter
+	path.Predicate
+	Or(other *path.Predicate) *OrFilter
+	And(other *path.Predicate) *AndFilter
 }
 
 type FilterImpl struct {
@@ -18,23 +18,23 @@ func (filter *FilterImpl) String() string {
 	return ""
 }
 
-func (filter *FilterImpl) Apply(ctx predicate.PredicateContext) bool {
+func (filter *FilterImpl) Apply(ctx path.PredicateContext) bool {
 	return false
 }
 
-func (filter *FilterImpl) And(other predicate.Predicate) *AndFilter {
+func (filter *FilterImpl) And(other path.Predicate) *AndFilter {
 	return nil
 }
 
-func (filter *FilterImpl) Or(other predicate.Predicate) *OrFilter {
+func (filter *FilterImpl) Or(other path.Predicate) *OrFilter {
 	return nil
 }
 
 type SingleFilter struct {
-	predicate predicate.Predicate
+	predicate path.Predicate
 }
 
-func (filter *SingleFilter) Apply(ctx predicate.PredicateContext) bool {
+func (filter *SingleFilter) Apply(ctx path.PredicateContext) bool {
 	return filter.predicate.Apply(ctx)
 }
 
@@ -47,12 +47,12 @@ func (filter *SingleFilter) String() string {
 	}
 }
 
-func NewAndFilterByPredicates(predicates []*predicate.Predicate) *AndFilter {
+func NewAndFilterByPredicates(predicates []*path.Predicate) *AndFilter {
 	return &AndFilter{predicates: predicates}
 }
 
-func NewAndFilter(left *predicate.Predicate, right *predicate.Predicate) *AndFilter {
-	predicates := []*predicate.Predicate{
+func NewAndFilter(left *path.Predicate, right *path.Predicate) *AndFilter {
+	predicates := []*path.Predicate{
 		left, right,
 	}
 	return &AndFilter{predicates: predicates}
@@ -60,10 +60,10 @@ func NewAndFilter(left *predicate.Predicate, right *predicate.Predicate) *AndFil
 
 type AndFilter struct {
 	FilterImpl
-	predicates []*predicate.Predicate
+	predicates []*path.Predicate
 }
 
-func (filter *AndFilter) Apply(ctx predicate.PredicateContext) bool {
+func (filter *AndFilter) Apply(ctx path.PredicateContext) bool {
 	for _, predicate0 := range filter.predicates {
 		if !(*predicate0).Apply(ctx) {
 			return false

@@ -2,7 +2,6 @@ package function
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
@@ -69,7 +68,7 @@ func CreatePathParameter(p path.Path) *Parameter {
 	return &Parameter{path: p, paramType: PATH}
 }
 
-func ParametersToList(typeName common.Type, ctx evaluationContext.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
+func ParametersToList(typeName common.Type, ctx path.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
 	var values *[]interface{}
 	for _, param := range parameters {
 		value, err := param.GetValue()
@@ -81,7 +80,7 @@ func ParametersToList(typeName common.Type, ctx evaluationContext.EvaluationCont
 	return *values, nil
 }
 
-func parameterConsume(expectedType common.Type, ctx evaluationContext.EvaluationContext, collection *[]interface{}, value interface{}) {
+func parameterConsume(expectedType common.Type, ctx path.EvaluationContext, collection *[]interface{}, value interface{}) {
 	if ctx.Configuration().JsonProvider().IsArray(value) {
 		for _, o := range ctx.Configuration().JsonProvider().ToIterable(value) {
 			if expectedType == common.TYPE_NUMBER {

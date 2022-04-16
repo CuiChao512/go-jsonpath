@@ -1,8 +1,7 @@
-package evaluationContext
+package path
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
 type EvaluationContext interface {
@@ -15,19 +14,19 @@ type EvaluationContext interface {
 type EvaluationContextImpl struct {
 	configuration     *common.Configuration
 	forUpdate         bool
-	path              path.Path
+	path              Path
 	rootDocument      interface{}
-	updateOperations  []path.Ref
-	documentEvalCache map[path.Path]interface{}
+	updateOperations  []PathRef
+	documentEvalCache map[Path]interface{}
 	suppressException bool
 	resultIndex       int
 }
 
-func (e *EvaluationContextImpl) DocumentEvalCache() map[path.Path]interface{} {
+func (e *EvaluationContextImpl) DocumentEvalCache() map[Path]interface{} {
 	return e.documentEvalCache
 }
 
-func (e *EvaluationContextImpl) GetRoot() *path.RootPathToken {
+func (e *EvaluationContextImpl) GetRoot() *RootPathToken {
 	//TODO:
 	return nil
 }
@@ -64,6 +63,6 @@ func (e *EvaluationContextImpl) ForUpdate() bool {
 	return false
 }
 
-func (e *EvaluationContextImpl) AddResult(pathString string, operation path.Ref, model interface{}) {
+func (e *EvaluationContextImpl) AddResult(pathString string, operation PathRef, model interface{}) {
 
 }

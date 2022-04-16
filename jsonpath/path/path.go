@@ -2,20 +2,19 @@ package path
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"strings"
 )
 
 type Path interface {
-	Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (evaluationContext.EvaluationContext, error)
-	EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) evaluationContext.EvaluationContext
+	Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (EvaluationContext, error)
+	EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) EvaluationContext
 	String() string
 	IsDefinite() bool
 	IsFunctionPath() bool
 	IsRootPath() bool
 }
 
-type Ref interface {
+type PathRef interface {
 	GetAccessor() interface{}
 	Set(newVal interface{}, configuration *common.Configuration) error
 	Convert(mapFunction common.MapFunction, configuration *common.Configuration) error
@@ -23,37 +22,37 @@ type Ref interface {
 	Add(newVal interface{}, configuration *common.Configuration) error
 	Put(key string, newVal interface{}, configuration *common.Configuration) error
 	RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error
-	CompareTo(o Ref) int
+	CompareTo(o PathRef) int
 }
 
-type defaultRef struct {
+type defaultPathRef struct {
 	parent interface{}
 }
 
-func (*defaultRef) GetAccessor() interface{} {
+func (*defaultPathRef) GetAccessor() interface{} {
 	return nil
 }
-func (*defaultRef) Set(newVal interface{}, configuration *common.Configuration) error {
-	return nil
-}
-
-func (*defaultRef) Convert(mapFunction common.MapFunction, configuration *common.Configuration) error {
-	return nil
-}
-func (*defaultRef) Delete(configuration *common.Configuration) error {
-	return nil
-}
-func (*defaultRef) Add(newVal interface{}, configuration *common.Configuration) error {
-	return nil
-}
-func (*defaultRef) Put(key string, newVal interface{}, configuration *common.Configuration) error {
-	return nil
-}
-func (*defaultRef) RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error {
+func (*defaultPathRef) Set(newVal interface{}, configuration *common.Configuration) error {
 	return nil
 }
 
-func (r *defaultRef) renameInMap(targetMap interface{}, oldKeyName string, newKeyName string, config *common.Configuration) error {
+func (*defaultPathRef) Convert(mapFunction common.MapFunction, configuration *common.Configuration) error {
+	return nil
+}
+func (*defaultPathRef) Delete(configuration *common.Configuration) error {
+	return nil
+}
+func (*defaultPathRef) Add(newVal interface{}, configuration *common.Configuration) error {
+	return nil
+}
+func (*defaultPathRef) Put(key string, newVal interface{}, configuration *common.Configuration) error {
+	return nil
+}
+func (*defaultPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error {
+	return nil
+}
+
+func (r *defaultPathRef) renameInMap(targetMap interface{}, oldKeyName string, newKeyName string, config *common.Configuration) error {
 	if config.JsonProvider().IsMap(targetMap) {
 		if config.JsonProvider().GetMapValue(targetMap, oldKeyName) == common.JsonProviderUndefined {
 			return &common.PathNotFoundError{Message: "No results for Key " + oldKeyName + " found in map!"}
@@ -66,45 +65,45 @@ func (r *defaultRef) renameInMap(targetMap interface{}, oldKeyName string, newKe
 	return nil
 }
 
-func (r *defaultRef) targetInvalid(target interface{}) bool {
+func (r *defaultPathRef) targetInvalid(target interface{}) bool {
 	return target == common.JsonProviderUndefined || target == nil
 }
 
-func (r *defaultRef) CompareTo(o Ref) int {
+func (r *defaultPathRef) CompareTo(o PathRef) int {
 	return strings.Compare(common.UtilsToString(r.GetAccessor()), common.UtilsToString(o.GetAccessor())) * -1
 }
 
-var PathRefNoOp Ref = &defaultRef{}
+var PathRefNoOp PathRef = &defaultPathRef{}
 
-func CreateObjectPropertyPathRef(obj interface{}, property string) Ref {
+func CreateObjectPropertyPathRef(obj interface{}, property string) PathRef {
 	om := &objectPropertyPathRef{}
 	om.parent = obj
 	om.property = property
 	return om
 }
 
-func CreateObjectMultiPropertyPathRef(obj interface{}, properties []string) Ref {
+func CreateObjectMultiPropertyPathRef(obj interface{}, properties []string) PathRef {
 	om := &objectMultiPropertyPathRef{}
 	om.parent = obj
 	om.properties = properties
 	return om
 }
 
-func CreateArrayIndexPathRef(array interface{}, index int) Ref {
+func CreateArrayIndexPathRef(array interface{}, index int) PathRef {
 	a := &arrayIndexPathRef{}
 	a.parent = array
 	a.index = index
 	return a
 }
 
-func CreateRootPathRef(root interface{}) Ref {
-	d := &defaultRef{parent: root}
+func CreateRootPathRef(root interface{}) PathRef {
+	d := &defaultPathRef{parent: root}
 	return d
 }
 
 // rootPathRef -----------
 type rootPathRef struct {
-	*defaultRef
+	*defaultPathRef
 }
 
 func (*rootPathRef) GetAccessor() interface{} {
@@ -151,7 +150,7 @@ func (r *rootPathRef) RenameKey(oldKeyName string, newKeyName string, configurat
 
 // arrayIndexPathRef
 type arrayIndexPathRef struct {
-	*defaultRef
+	*defaultPathRef
 	index int
 }
 
@@ -209,7 +208,7 @@ func (r *arrayIndexPathRef) RenameKey(oldKeyName string, newKeyName string, conf
 	return r.renameInMap(target, oldKeyName, newKeyName, configuration)
 }
 
-func (r *arrayIndexPathRef) CompareTo(o Ref) int {
+func (r *arrayIndexPathRef) CompareTo(o PathRef) int {
 	switch o.(type) {
 	case *arrayIndexPathRef:
 		pf, _ := o.(*arrayIndexPathRef)
@@ -221,7 +220,7 @@ func (r *arrayIndexPathRef) CompareTo(o Ref) int {
 
 // objectPropertyPathRef
 type objectPropertyPathRef struct {
-	*defaultRef
+	*defaultPathRef
 	property string
 }
 
@@ -281,7 +280,7 @@ func (r *objectPropertyPathRef) RenameKey(oldKeyName string, newKeyName string, 
 
 // objectMultiPropertyPathRef
 type objectMultiPropertyPathRef struct {
-	*defaultRef
+	*defaultPathRef
 	properties []string
 }
 

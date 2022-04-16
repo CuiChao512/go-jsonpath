@@ -2,7 +2,7 @@ package filter
 
 import (
 	errors2 "cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/predicate"
+	"cuichao.com/go-jsonpath/jsonpath/path"
 	"errors"
 	"fmt"
 	"log"
@@ -435,7 +435,7 @@ func (*Compiler) isRelationalOperatorChar(c rune) bool {
 	return c == LT || c == GT || c == EQ || c == TILDE || c == NOT
 }
 
-func (c *Compiler) Compile() (predicate.Predicate, error) {
+func (c *Compiler) Compile() (path.Predicate, error) {
 	result, err := c.readLogicalOR()
 	if err != nil {
 		return nil, err
@@ -492,10 +492,10 @@ func Compile(filterString string) (*CompiledFilter, error) {
 }
 
 type CompiledFilter struct {
-	predicate predicate.Predicate
+	predicate path.Predicate
 }
 
-func (cf *CompiledFilter) Apply(ctx predicate.PredicateContext) bool {
+func (cf *CompiledFilter) Apply(ctx path.PredicateContext) bool {
 	return cf.predicate.Apply(ctx)
 }
 

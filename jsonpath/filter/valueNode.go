@@ -2,12 +2,12 @@ package filter
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/predicate"
+	"cuichao.com/go-jsonpath/jsonpath/path"
 	"reflect"
 )
 
 type ValueNode interface {
-	TypeOf(ctx predicate.PredicateContext) reflect.Kind
+	TypeOf(ctx path.PredicateContext) reflect.Kind
 	IsPatternNode() bool
 	AsPatternNode() (*PatternNode, error)
 	IsPathNode() bool
@@ -39,7 +39,7 @@ type ValueNode interface {
 type ValueNodeDefault struct {
 }
 
-func (n *ValueNodeDefault) TypeOf(ctx predicate.PredicateContext) reflect.Kind {
+func (n *ValueNodeDefault) TypeOf(ctx path.PredicateContext) reflect.Kind {
 	return reflect.Invalid
 }
 

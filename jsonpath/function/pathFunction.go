@@ -2,12 +2,11 @@ package function
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/evaluationContext"
 	"cuichao.com/go-jsonpath/jsonpath/path"
 )
 
 type PathFunction interface {
-	Invoke(currentPath string, parent path.Ref, model interface{}, ctx evaluationContext.EvaluationContext, parameters *[]*Parameter) (interface{}, error)
+	Invoke(currentPath string, parent path.PathRef, model interface{}, ctx path.EvaluationContext, parameters *[]*Parameter) (interface{}, error)
 }
 
 var functions map[string]PathFunction
