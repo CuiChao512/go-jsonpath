@@ -131,8 +131,8 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 	} else {
 		var res interface{}
 		switch ctx.(type) {
-		case *path.PredicateContextImpl:
-			ctxi, _ := ctx.(*path.PredicateContextImpl)
+		case *common.PredicateContextImpl:
+			ctxi, _ := ctx.(*common.PredicateContextImpl)
 			var err error
 			res, err = ctxi.Evaluate(pn.path)
 			if err != nil {

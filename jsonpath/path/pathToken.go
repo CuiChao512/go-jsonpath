@@ -1006,7 +1006,7 @@ func (p *PredicatePathToken) evaluate(currentPath string, ref common.PathRef, mo
 }
 
 func (p *PredicatePathToken) accept(obj interface{}, root interface{}, configuration *common.Configuration, evaluationContext *EvaluationContextImpl) bool {
-	ctx := CreatePredicateContextImpl(obj, root, configuration, evaluationContext.DocumentEvalCache())
+	ctx := common.CreatePredicateContextImpl(obj, root, configuration, evaluationContext.DocumentEvalCache())
 
 	for _, predicate := range p.predicates {
 

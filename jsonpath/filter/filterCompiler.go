@@ -317,7 +317,7 @@ func (c *Compiler) readPattern() (*PatternNode, error) {
 	}
 	pattern := filter.SubSequence(begin, filter.Position())
 	log.Printf("PatternNode from %d to %d -> [%s]", begin, filter.Position(), pattern)
-	return CreatePatternNodeByString(pattern), nil
+	return CreatePatternNodeByString(pattern)
 }
 
 func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {

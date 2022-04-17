@@ -1,14 +1,10 @@
-package path
-
-import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
-)
+package common
 
 type PredicateContextImpl struct {
 	contextDocument   interface{}
 	rootDocument      interface{}
-	configuration     *common.Configuration
-	documentPathCache map[common.Path]interface{}
+	configuration     *Configuration
+	documentPathCache map[Path]interface{}
 }
 
 func (pc *PredicateContextImpl) Item() interface{} {
@@ -19,11 +15,11 @@ func (pc *PredicateContextImpl) Root() interface{} {
 	return pc.rootDocument
 }
 
-func (pc *PredicateContextImpl) Configuration() *common.Configuration {
+func (pc *PredicateContextImpl) Configuration() *Configuration {
 	return pc.configuration
 }
 
-func (pc *PredicateContextImpl) Evaluate(path2 common.Path) (interface{}, error) {
+func (pc *PredicateContextImpl) Evaluate(path2 Path) (interface{}, error) {
 	var result interface{}
 	if path2.IsRootPath() {
 		if pc.documentPathCache[path2] != nil {
@@ -45,7 +41,7 @@ func (pc *PredicateContextImpl) Evaluate(path2 common.Path) (interface{}, error)
 	return result, nil
 }
 
-func CreatePredicateContextImpl(contextDocument interface{}, rootDocument interface{}, configuration *common.Configuration, documentPathCache map[common.Path]interface{}) common.PredicateContext {
+func CreatePredicateContextImpl(contextDocument interface{}, rootDocument interface{}, configuration *Configuration, documentPathCache map[Path]interface{}) PredicateContext {
 	return &PredicateContextImpl{
 		contextDocument:   contextDocument,
 		rootDocument:      rootDocument,
