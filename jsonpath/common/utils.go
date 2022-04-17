@@ -9,16 +9,18 @@ import (
 )
 
 func UtilsJoin(delimiter string, warp string, values interface{}) string {
-	r := ""
 	s := reflect.ValueOf(values)
 	if s.Kind() == reflect.Slice {
+		stringBuilder := new(strings.Builder)
 		for i := 0; i < s.Len(); i++ {
-			r += delimiter + warp + UtilsToString(s.Index(i).Interface())
+			stringBuilder.WriteString(delimiter)
+			stringBuilder.WriteString(warp)
+			stringBuilder.WriteString(UtilsToString(s.Index(i).Interface()))
 		}
+		return stringBuilder.String()
 	} else {
 		return delimiter + warp + UtilsToString(values)
 	}
-	return r
 }
 
 func UtilsSliceContains(slice interface{}, item interface{}) bool {

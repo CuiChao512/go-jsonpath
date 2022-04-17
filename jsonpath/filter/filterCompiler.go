@@ -276,7 +276,7 @@ func (c *Compiler) readJsonLiteral() (*JsonNode, error) {
 	}
 
 	json := filter.SubSequence(begin, filter.Position())
-	return NewJsonNode(json), err
+	return CreateJsonNodeByString(json), err
 }
 
 func parsePatternFlags(c [1]rune) int {
@@ -317,7 +317,7 @@ func (c *Compiler) readPattern() (*PatternNode, error) {
 	}
 	pattern := filter.SubSequence(begin, filter.Position())
 	log.Printf("PatternNode from %d to %d -> [%s]", begin, filter.Position(), pattern)
-	return NewPatternNode(pattern), nil
+	return CreatePatternNodeByString(pattern), nil
 }
 
 func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
@@ -332,7 +332,7 @@ func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
 	}
 	stringLiteral := filter.SubSequence(begin, filter.Position())
 	log.Printf("StringLiteral from %d to %d -> [%s]", begin, filter.Position(), stringLiteral)
-	return NewStringNode(stringLiteral, true), nil
+	return CreateStringNode(stringLiteral, true), nil
 }
 
 func (c *Compiler) readNumberLiteral() *NumberNode {
@@ -344,7 +344,7 @@ func (c *Compiler) readNumberLiteral() *NumberNode {
 	}
 	numberLiteral := filter.SubSequence(begin, filter.Position())
 	log.Printf("NumberLiteral from %d to %d -> [%s]", begin, filter.Position(), numberLiteral)
-	return NewNumberNodeByString(numberLiteral)
+	return CreateNumberNodeByString(numberLiteral)
 }
 
 func (c *Compiler) readBooleanLiteral() (*BooleanNode, error) {
@@ -368,7 +368,7 @@ func (c *Compiler) readBooleanLiteral() (*BooleanNode, error) {
 	if boolString == "true" {
 		boolValue = true
 	}
-	return NewBooleanNode(boolValue), nil
+	return CreateBooleanNode(boolValue), nil
 }
 
 func (c *Compiler) readPath() (*PathNode, error) {
@@ -494,7 +494,7 @@ type CompiledFilter struct {
 	predicate common.Predicate
 }
 
-func (cf *CompiledFilter) Apply(ctx common.PredicateContext) bool {
+func (cf *CompiledFilter) Apply(ctx common.PredicateContext) (bool, error) {
 	return cf.predicate.Apply(ctx)
 }
 

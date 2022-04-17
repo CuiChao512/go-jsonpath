@@ -28,7 +28,7 @@ type EvaluationContext interface {
 }
 
 type Predicate interface {
-	Apply(ctx PredicateContext) bool
+	Apply(ctx PredicateContext) (bool, error)
 	String() string
 }
 

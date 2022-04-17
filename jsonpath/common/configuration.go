@@ -11,8 +11,9 @@ const (
 )
 
 type Configuration struct {
-	jsonProvider JsonProvider
-	options      []Option
+	jsonProvider    JsonProvider
+	options         []Option
+	mappingProvider MappingProvider
 }
 
 func (c *Configuration) JsonProvider() JsonProvider {
@@ -21,6 +22,10 @@ func (c *Configuration) JsonProvider() JsonProvider {
 
 func (c *Configuration) Options() []Option {
 	return c.options
+}
+
+func (c *Configuration) MappingProvider() MappingProvider {
+	return c.mappingProvider
 }
 
 var JsonProviderUndefined interface{}
@@ -42,4 +47,9 @@ type JsonProvider interface {
 	IsMap(obj interface{}) bool
 	Unwrap(obj interface{}) interface{}
 	ToIterable(obj interface{}) []interface{}
+}
+
+type MappingProvider interface {
+	MapSlice(data interface{}, configuration *Configuration) interface{}
+	MapMap(data interface{}, configuration *Configuration) interface{}
 }

@@ -404,7 +404,7 @@ func (*predicateMatchEvaluator) Evaluate(left ValueNode, right ValueNode, ctx co
 	if err != nil {
 		return false, err
 	}
-	return rightNode.GetPredicate().Apply(ctx), nil
+	return rightNode.GetPredicate().Apply(ctx)
 }
 
 type regexpEvaluator struct{}
@@ -689,6 +689,10 @@ const (
 	LogicalOperator_OR  = "||"
 )
 
+func CreateEvaluator(operator string) Evaluator {
+	return evaluators[operator]
+}
+
 type ExpressionNode interface {
 	common.Predicate
 	ExpressionNodeLabel()
@@ -718,24 +722,36 @@ func (e *LogicalExpressionNode) GetOperator() string {
 	return e.operator
 }
 
-func (e *LogicalExpressionNode) Apply(ctx common.PredicateContext) bool {
+func (e *LogicalExpressionNode) Apply(ctx common.PredicateContext) (bool, error) {
 	if e.operator == LogicalOperator_OR {
 		for _, expression := range e.chain {
-			if expression.Apply(ctx) {
-				return true
+			result, err := expression.Apply(ctx)
+			if err != nil {
+				return false, err
+			}
+			if result {
+				return true, nil
 			}
 		}
-		return false
+		return false, nil
 	} else if e.operator == LogicalOperator_AND {
 		for _, expression := range e.chain {
-			if !expression.Apply(ctx) {
-				return false
+			result, err := expression.Apply(ctx)
+			if err != nil {
+				return false, err
+			}
+			if !result {
+				return false, nil
 			}
 		}
-		return true
+		return true, nil
 	} else {
 		expression := e.chain[0]
-		return !expression.Apply(ctx)
+		result, err := expression.Apply(ctx)
+		if err != nil {
+			return false, err
+		}
+		return !result, nil
 	}
 }
 func (e *LogicalExpressionNode) String() string {
@@ -786,18 +802,52 @@ func CreateLogicalNot(op ExpressionNode) *LogicalExpressionNode {
 //RelationExpressionNode -----
 
 type RelationExpressionNode struct {
+	left               ValueNode
+	relationalOperator string
+	right              ValueNode
 }
 
 func (e *RelationExpressionNode) ExpressionNodeLabel() {
 	return
 }
-func (e *RelationExpressionNode) Apply(ctx common.PredicateContext) bool {
-	return false
+func (e *RelationExpressionNode) Apply(ctx common.PredicateContext) (bool, error) {
+	l := e.left
+	r := e.right
+
+	if e.left.IsPathNode() {
+		pathNode, err := e.left.AsPathNode()
+		if err != nil {
+			return false, err
+		}
+		l, err = pathNode.Evaluate(ctx)
+		if err != nil {
+			return false, err
+		}
+	}
+	if e.right.IsPathNode() {
+		pathNode, err := e.right.AsPathNode()
+		if err != nil {
+			return false, err
+		}
+		r, err = pathNode.Evaluate(ctx)
+		if err != nil {
+			return false, err
+		}
+	}
+	evaluator := CreateEvaluator(e.relationalOperator)
+	if evaluator != nil {
+		return evaluator.Evaluate(l, r, ctx)
+	}
+	return false, nil
 }
 func (e *RelationExpressionNode) String() string {
-	return "nil"
+	if e.relationalOperator == RelationalOperator_EXISTS {
+		return e.left.String()
+	} else {
+		return e.left.String() + " " + e.relationalOperator + " " + e.right.String()
+	}
 }
 
 func CreateRelationExpressionNode(valueNode1 ValueNode, operator string, valueNode2 ValueNode) *RelationExpressionNode {
-	return &RelationExpressionNode{}
+	return &RelationExpressionNode{left: valueNode1, relationalOperator: operator, right: valueNode2}
 }

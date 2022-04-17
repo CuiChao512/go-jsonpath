@@ -12,8 +12,8 @@ import (
 )
 
 var NULL_NODE = NewNullNode()
-var TRUE_NODE = NewBooleanNode(true)
-var FALSE_NODE = NewBooleanNode(false)
+var TRUE_NODE = CreateBooleanNode(true)
+var FALSE_NODE = CreateBooleanNode(false)
 var UNDEFINED_NODE = &UndefinedNode{}
 
 // PatternNode -------patternNode------
@@ -23,13 +23,20 @@ type PatternNode struct {
 	compiledPattern *regexp.Regexp
 }
 
-func NewPatternNode(pattern string) *PatternNode {
+func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 
 	begin := strings.Index(pattern, "/")
 	end := strings.LastIndex(pattern, "/")
 	purePattern := pattern[begin:end]
-	compiledPattern, _ := regexp.Compile(purePattern)
-	return &PatternNode{pattern: purePattern, compiledPattern: compiledPattern}
+	compiledPattern, err := regexp.Compile(purePattern)
+	if err != nil {
+		return nil, err
+	}
+	return &PatternNode{pattern: purePattern, compiledPattern: compiledPattern}, nil
+}
+
+func CreatePatternNodeByRegexp(pattern *regexp.Regexp) *PatternNode {
+	return &PatternNode{pattern: pattern.String(), compiledPattern: pattern}
 }
 
 func (pn *PatternNode) GetCompiledPattern() *regexp.Regexp {
@@ -126,7 +133,11 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 		switch ctx.(type) {
 		case *path.PredicateContextImpl:
 			ctxi, _ := ctx.(*path.PredicateContextImpl)
-			res = ctxi.Evaluate(pn.path)
+			var err error
+			res, err = ctxi.Evaluate(pn.path)
+			if err != nil {
+				return UNDEFINED_NODE, nil
+			}
 		default:
 			var doc interface{}
 			if pn.path.IsRootPath() {
@@ -140,32 +151,42 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 		}
 
 		res = ctx.Configuration().JsonProvider().Unwrap(res)
-		resString := ""
+		resString := common.UtilsToString(res)
 		if res == nil {
 			return NULL_NODE, nil
 		} else if ctx.Configuration().JsonProvider().IsArray(res) {
-			return NewJsonNode(resString), nil
+			return CreateJsonNodeByString(resString), nil
 		} else if ctx.Configuration().JsonProvider().IsMap(res) {
-			return NewJsonNode(resString), nil
+			return CreateJsonNodeByString(resString), nil
 		}
 		switch res.(type) {
 		case int:
-			return NewNumberNodeByString(resString), nil
+			return CreateNumberNodeByString(resString), nil
 		case float32:
+			return CreateNumberNodeByString(resString), nil
 		case float64:
+			return CreateNumberNodeByString(resString), nil
 		case string:
+			return CreateStringNode(resString, false), nil
 		case bool:
 			resBool := false
 			if resString == "true" {
 				resBool = true
 			}
-			return NewBooleanNode(resBool), nil
+			return CreateBooleanNode(resBool), nil
 		case *OffsetDateTimeNode:
-		default:
-			return nil, &common.JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
+			return CreateOffsetDateTimeNode(resString), nil
 		}
 
-		return UNDEFINED_NODE, nil
+		if res == nil {
+			return NULL_NODE, nil
+		} else if ctx.Configuration().JsonProvider().IsArray(res) {
+			return CreateJsonNodeByObject(ctx.Configuration().MappingProvider().MapSlice(res, ctx.Configuration())), nil
+		} else if ctx.Configuration().JsonProvider().IsMap(res) {
+			return CreateJsonNodeByObject(ctx.Configuration().MappingProvider().MapMap(res, ctx.Configuration())), nil
+		} else {
+			return nil, &common.JsonPathError{Message: fmt.Sprintf("Could not convert %t: %s to a ValueNode", res, resString)}
+		}
 	}
 }
 
@@ -176,7 +197,7 @@ type NumberNode struct {
 }
 
 func (n *NumberNode) AsStringNode() (*StringNode, error) {
-	return NewStringNode(n.number.String(), false), nil
+	return CreateStringNode(n.number.String(), false), nil
 }
 
 func (n *NumberNode) GetNumber() *decimal.Decimal {
@@ -224,13 +245,13 @@ func (n *NumberNode) Equals(o interface{}) bool {
 	}
 }
 
-func NewNumberNode(decimal2 *decimal.Decimal) *NumberNode {
+func CreateNumberNode(decimal2 *decimal.Decimal) *NumberNode {
 	return &NumberNode{
 		number: decimal2,
 	}
 }
 
-func NewNumberNodeByString(str string) *NumberNode {
+func CreateNumberNodeByString(str string) *NumberNode {
 	decimal2, err := decimal.NewFromString(str)
 	if err == nil {
 		return &NumberNode{
@@ -254,7 +275,7 @@ func (n *StringNode) AsNumberNode() (*NumberNode, error) {
 	if err != nil {
 		return nil, nil
 	} else {
-		return NewNumberNode(&number), nil
+		return CreateNumberNode(&number), nil
 	}
 }
 
@@ -286,7 +307,7 @@ func (n *StringNode) AsStringNode() (*StringNode, error) {
 	return n, nil
 }
 
-func NewStringNode(str string, escape bool) *StringNode {
+func CreateStringNode(str string, escape bool) *StringNode {
 	return &StringNode{}
 }
 
@@ -367,7 +388,7 @@ func (n *BooleanNode) Equals(o interface{}) bool {
 	}
 }
 
-func NewBooleanNode(value bool) *BooleanNode {
+func CreateBooleanNode(value bool) *BooleanNode {
 	return &BooleanNode{
 		value: value,
 	}
@@ -523,7 +544,7 @@ type OffsetDateTimeNode struct {
 }
 
 func (n *OffsetDateTimeNode) AsStringNode() (*StringNode, error) {
-	return NewStringNode(n.dateTime.String(), false), nil
+	return CreateStringNode(n.dateTime.String(), false), nil
 }
 
 func (n *OffsetDateTimeNode) GetDate() *OffsetDateTime {
@@ -567,6 +588,11 @@ func (n *OffsetDateTimeNode) Equals(o interface{}) bool {
 func OffsetDateTimeCompare(this *OffsetDateTime, that *OffsetDateTime) int {
 	//TODO:
 	return 0
+}
+
+func CreateOffsetDateTimeNode(str string) *OffsetDateTimeNode {
+	//TODO
+	return &OffsetDateTimeNode{dateTime: nil}
 }
 
 // JsonNode --------
@@ -677,6 +703,10 @@ func (n *JsonNode) AsValueListNodeByPredicateContext(ctx common.PredicateContext
 	}
 }
 
-func NewJsonNode(json string) *JsonNode {
+func CreateJsonNodeByString(json string) *JsonNode {
+	return &JsonNode{}
+}
+
+func CreateJsonNodeByObject(json interface{}) *JsonNode {
 	return &JsonNode{}
 }

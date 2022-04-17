@@ -18,8 +18,8 @@ func (filter *FilterImpl) String() string {
 	return ""
 }
 
-func (filter *FilterImpl) Apply(ctx common.PredicateContext) bool {
-	return false
+func (filter *FilterImpl) Apply(ctx common.PredicateContext) (bool, error) {
+	return false, nil
 }
 
 func (filter *FilterImpl) And(other common.Predicate) *AndFilter {
@@ -34,7 +34,7 @@ type SingleFilter struct {
 	predicate common.Predicate
 }
 
-func (filter *SingleFilter) Apply(ctx common.PredicateContext) bool {
+func (filter *SingleFilter) Apply(ctx common.PredicateContext) (bool, error) {
 	return filter.predicate.Apply(ctx)
 }
 
@@ -63,13 +63,17 @@ type AndFilter struct {
 	predicates []common.Predicate
 }
 
-func (filter *AndFilter) Apply(ctx common.PredicateContext) bool {
+func (filter *AndFilter) Apply(ctx common.PredicateContext) (bool, error) {
 	for _, predicate0 := range filter.predicates {
-		if !(predicate0).Apply(ctx) {
-			return false
+		result, err := predicate0.Apply(ctx)
+		if err != nil {
+			return false, err
+		}
+		if !result {
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (filter *AndFilter) String() string {
