@@ -11,7 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var NULL_NODE = NewNullNode()
+var NULL_NODE = CreateNullNode()
 var TRUE_NODE = CreateBooleanNode(true)
 var FALSE_NODE = CreateBooleanNode(false)
 var UNDEFINED_NODE = &UndefinedNode{}
@@ -424,6 +424,10 @@ func (n *PredicateNode) String() string {
 	return n.predicate.String()
 }
 
+func CreatePredicateNode(p common.Predicate) *PredicateNode {
+	return &PredicateNode{predicate: p}
+}
+
 // ValueListNode -----------
 type ValueListNode struct {
 	*ValueNodeDefault
@@ -459,7 +463,7 @@ func (v *ValueListNode) IsValueListNode() bool {
 	return true
 }
 
-func NewValueListNode(list []interface{}) *ValueListNode {
+func CreateValueListNode(list interface{}) *ValueListNode {
 	return nil
 }
 
@@ -496,7 +500,7 @@ func (n *NullNode) Equals(o interface{}) bool {
 	}
 }
 
-func NewNullNode() *NullNode {
+func CreateNullNode() *NullNode {
 	return &NullNode{}
 }
 
@@ -699,7 +703,7 @@ func (n *JsonNode) AsValueListNodeByPredicateContext(ctx common.PredicateContext
 	} else {
 		parsedObj, _ := n.Parse(ctx)
 		list, _ := parsedObj.([]interface{})
-		return NewValueListNode(list), nil
+		return CreateValueListNode(list), nil
 	}
 }
 
@@ -709,4 +713,8 @@ func CreateJsonNodeByString(json string) *JsonNode {
 
 func CreateJsonNodeByObject(json interface{}) *JsonNode {
 	return &JsonNode{}
+}
+
+func CreateValueNode(key interface{}) ValueNode {
+	return nil
 }

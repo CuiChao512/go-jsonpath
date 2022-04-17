@@ -241,7 +241,7 @@ func (c *Compiler) readNullLiteral() (*NullNode, error) {
 		if "null" == nullValue {
 			log.Printf("NullLiteral from %d to %d -> [%s]", begin, filter.Position()+3, nullValue)
 			filter.IncrementPosition(len(nullValue))
-			return NewNullNode(), nil
+			return CreateNullNode(), nil
 		}
 	}
 
