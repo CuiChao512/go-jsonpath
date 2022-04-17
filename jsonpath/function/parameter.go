@@ -74,14 +74,21 @@ func ParametersToList(typeName common.Type, ctx common.EvaluationContext, parame
 		if err != nil {
 			return nil, err
 		}
-		parameterConsume(typeName, ctx, values, value)
+		err = parameterConsume(typeName, ctx, values, value)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return *values, nil
 }
 
-func parameterConsume(expectedType common.Type, ctx common.EvaluationContext, collection *[]interface{}, value interface{}) {
+func parameterConsume(expectedType common.Type, ctx common.EvaluationContext, collection *[]interface{}, value interface{}) error {
 	if ctx.Configuration().JsonProvider().IsArray(value) {
-		for _, o := range ctx.Configuration().JsonProvider().ToIterable(value) {
+		array, err := ctx.Configuration().JsonProvider().ToArray(value)
+		if err != nil {
+			return err
+		}
+		for _, o := range array {
 			if expectedType == common.TYPE_NUMBER {
 				*collection = append(*collection, o)
 			} else {
@@ -95,4 +102,5 @@ func parameterConsume(expectedType common.Type, ctx common.EvaluationContext, co
 			*collection = append(*collection, common.UtilsToString(value))
 		}
 	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -38,22 +39,21 @@ func (c *Configuration) MappingProvider() MappingProvider {
 var JsonProviderUndefined interface{}
 
 type JsonProvider interface {
+	IsArray(obj interface{}) bool
+	IsMap(obj interface{}) bool
+	GetArrayIndex(obj interface{}, idx int) interface{}
+	GetMapValue(obj interface{}, key string) interface{}
+	SetArrayIndex(array interface{}, idx int, newValue interface{}) error
+	SetProperty(obj interface{}, key interface{}, value interface{}) error
 	Parse(json string) (interface{}, error)
 	ToJson(obj interface{}) (string, error)
 	CreateArray() interface{}
 	CreateMap() interface{}
-	IsArray(obj interface{}) bool
-	Length(obj interface{}) int
-	ToArray(obj interface{}) []interface{}
+	Length(obj interface{}) (int, error)
+	ToArray(obj interface{}) ([]interface{}, error)
 	GetPropertyKeys(obj interface{}) ([]string, error)
-	GetArrayIndex(obj interface{}, idx int) interface{}
-	SetArrayIndex(array interface{}, idx int, newValue interface{})
-	GetMapValue(obj interface{}, key string) interface{}
-	SetProperty(obj interface{}, key interface{}, value interface{})
-	RemoveProperty(obj interface{}, key interface{})
-	IsMap(obj interface{}) bool
+	RemoveProperty(obj interface{}, key interface{}) error
 	Unwrap(obj interface{}) interface{}
-	ToIterable(obj interface{}) []interface{}
 }
 
 type MappingProvider interface {
@@ -63,18 +63,57 @@ type MappingProvider interface {
 
 // defaultJsonProvider -----
 
-type defaultJsonProvider struct {
+type NativeJsonProvider struct {
 }
 
-func (*defaultJsonProvider) IsArray(obj interface{}) bool {
+func (*NativeJsonProvider) IsArray(obj interface{}) bool {
 	return reflect.TypeOf(obj).Kind() == reflect.Slice
 }
 
-func (*defaultJsonProvider) IsMap(obj interface{}) bool {
+func (*NativeJsonProvider) IsMap(obj interface{}) bool {
 	return reflect.TypeOf(obj).Kind() == reflect.Map
 }
 
-func (d *defaultJsonProvider) GetPropertyKeys(obj interface{}) ([]string, error) {
+func (*NativeJsonProvider) GetArrayIndex(obj interface{}, idx int) interface{} {
+	l, ok := obj.([]interface{})
+	if !ok {
+		return nil
+	}
+	return l[idx]
+}
+
+func (d *NativeJsonProvider) GetArrayIndexByUnwrap(obj interface{}, idx int, unwrap bool) interface{} {
+	return d.GetArrayIndex(obj, idx)
+}
+
+func (d *NativeJsonProvider) SetArrayIndex(array interface{}, index int, newValue interface{}) error {
+	if !d.IsArray(array) {
+		return errors.New("unsupported operation")
+	} else {
+		l, _ := array.([]interface{})
+		if index == len(l) {
+			l = append(l, newValue)
+		} else {
+			l[index] = newValue
+		}
+		return nil
+	}
+}
+
+func (d *NativeJsonProvider) GetMapValue(obj interface{}, key string) interface{} {
+	m, ok := obj.(map[string]interface{})
+	if !ok {
+		return JsonProviderUndefined
+	}
+	value := m[key]
+	if value == nil {
+		return JsonProviderUndefined
+	} else {
+		return value
+	}
+}
+
+func (d *NativeJsonProvider) GetPropertyKeys(obj interface{}) ([]string, error) {
 	if d.IsArray(obj) {
 		return nil, errors.New("slice dose not support getPropertyKeys operation")
 	} else {
@@ -90,7 +129,7 @@ func (d *defaultJsonProvider) GetPropertyKeys(obj interface{}) ([]string, error)
 	}
 }
 
-func (d *defaultJsonProvider) SetProperty(obj interface{}, key interface{}, value interface{}) error {
+func (d *NativeJsonProvider) SetProperty(obj interface{}, key interface{}, value interface{}) error {
 	if d.IsMap(obj) {
 		m, _ := obj.(map[string]interface{})
 		m[UtilsToString(key)] = value
@@ -100,7 +139,7 @@ func (d *defaultJsonProvider) SetProperty(obj interface{}, key interface{}, valu
 	}
 }
 
-func (d *defaultJsonProvider) RemoveProperty(obj interface{}, key interface{}) error {
+func (d *NativeJsonProvider) RemoveProperty(obj interface{}, key interface{}) error {
 	if d.IsMap(obj) {
 		m, _ := obj.(map[string]interface{})
 		delete(m, UtilsToString(key))
@@ -126,15 +165,16 @@ func (d *defaultJsonProvider) RemoveProperty(obj interface{}, key interface{}) e
 	return nil
 }
 
-func (d *defaultJsonProvider) ToIterable(obj interface{}) (interface{}, error) {
+func (d *NativeJsonProvider) ToArray(obj interface{}) ([]interface{}, error) {
 	if d.IsArray(obj) {
-		return obj, nil
+		s, _ := obj.([]interface{})
+		return s, nil
 	} else {
 		return nil, &JsonPathError{Message: fmt.Sprintf("%s is not a slice", getTypeString(obj))}
 	}
 }
 
-func (d *defaultJsonProvider) Length(obj interface{}) (int, error) {
+func (d *NativeJsonProvider) Length(obj interface{}) (int, error) {
 	if d.IsArray(obj) || d.IsMap(obj) {
 		return reflect.ValueOf(obj).Len(), nil
 	} else {
@@ -154,10 +194,60 @@ func getTypeString(obj interface{}) string {
 	}
 }
 
-func (*defaultJsonProvider) Unwrap(obj interface{}) interface{} {
+func (*NativeJsonProvider) Unwrap(obj interface{}) interface{} {
 	return obj
 }
 
-type NativeJsonProvider struct {
-	*defaultJsonProvider
+func (*NativeJsonProvider) isPrimitiveNumber(n interface{}) bool {
+	switch n.(type) {
+	case int:
+		return true
+	case int8:
+		return true
+	case int16:
+		return true
+	case int32:
+		return true
+	case int64:
+		return true
+	case float32:
+		return true
+	case float64:
+		return true
+	default:
+		return false
+	}
+}
+
+func (d *NativeJsonProvider) unwrapNumber(number interface{}) interface{} {
+	var unwrapNumber interface{}
+	if d.isPrimitiveNumber(d) {
+		unwrapNumber = number
+	}
+	return unwrapNumber
+}
+
+func (*NativeJsonProvider) Parse(jsonString string) (interface{}, error) {
+	var result interface{}
+	err := json.Unmarshal([]byte(jsonString), result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (*NativeJsonProvider) ToJson(obj interface{}) (string, error) {
+	bytes, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
+func (*NativeJsonProvider) CreateArray() interface{} {
+	return []interface{}{}
+}
+
+func (*NativeJsonProvider) CreateMap() interface{} {
+	return map[string]interface{}{}
 }

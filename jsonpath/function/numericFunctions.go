@@ -16,7 +16,10 @@ func (a *abstractAggregation) Invoke(currentPath string, parent common.PathRef, 
 	count := 0
 	if ctx.Configuration().JsonProvider().IsArray(model) {
 
-		objects := ctx.Configuration().JsonProvider().ToIterable(model)
+		objects, err := ctx.Configuration().JsonProvider().ToArray(model)
+		if err != nil {
+			return nil, err
+		}
 		for _, obj := range objects {
 			isNumber := false
 			switch obj.(type) {
