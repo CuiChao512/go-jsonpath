@@ -101,7 +101,11 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 		}
 		if t.isLeaf() {
 			idx := "[" + common.UtilsToString(t.upstreamArrayIndex) + "]"
-			if idx == "[-1]" || ctx.GetRoot().GetTail().prevToken().GetPathFragment() == idx {
+			root, err := ctx.GetRoot()
+			if err != nil {
+				return err
+			}
+			if idx == "[-1]" || root.GetTail().prevToken().GetPathFragment() == idx {
 				ctx.AddResult(evalPath, ref, propertyVal)
 			}
 		} else {

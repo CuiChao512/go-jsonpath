@@ -33,7 +33,7 @@ func (c *Criteria) String() string {
 }
 
 func (c *Criteria) toRelationalExpressionNodes() []*filter.RelationExpressionNode {
-	nodes := make([]*filter.RelationExpressionNode, len(c.criteriaChain))
+	nodes := make([]*filter.RelationExpressionNode, 0, len(c.criteriaChain))
 	for _, criteria := range c.criteriaChain {
 		nodes = append(nodes, filter.CreateRelationExpressionNode(criteria.left, criteria.criteriaType, criteria.right))
 	}
@@ -44,8 +44,12 @@ func WherePath(key common.Path) *Criteria {
 	return createCriteriaByValueNode(filter.CreatePathNode(key, false, false))
 }
 
-func WhereString(key string) *Criteria {
-	return createCriteriaByValueNode(filter.CreateValueNode(prefixPath(key)))
+func WhereString(key string) (*Criteria, error) {
+	vn, err := filter.CreateValueNode(prefixPath(key))
+	if err != nil {
+		return nil, err
+	}
+	return createCriteriaByValueNode(vn), nil
 }
 
 func (c *Criteria) And(key string) (*Criteria, error) {
@@ -54,51 +58,78 @@ func (c *Criteria) And(key string) (*Criteria, error) {
 		return nil, err
 	}
 	criteria := &Criteria{}
-	valueNode := filter.CreateValueNode(key)
+	valueNode, err := filter.CreateValueNode(key)
+	if err != nil {
+		return nil, err
+	}
 	criteria.left = valueNode
 	criteria.criteriaChain = c.criteriaChain
 	criteria.criteriaChain = append(c.criteriaChain, c)
 	return criteria, nil
 }
 
-func (c *Criteria) Is(o interface{}) *Criteria {
+func (c *Criteria) Is(o interface{}) (*Criteria, error) {
 	return c.Eq(o)
 }
 
-func (c *Criteria) Eq(o interface{}) *Criteria {
+func (c *Criteria) Eq(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_EQ
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
-func (c *Criteria) Ne(o interface{}) *Criteria {
+func (c *Criteria) Ne(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_NE
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
-func (c *Criteria) Lt(o interface{}) *Criteria {
+func (c *Criteria) Lt(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_LT
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
-func (c *Criteria) Lte(o interface{}) *Criteria {
+func (c *Criteria) Lte(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_LTE
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
-func (c *Criteria) Gt(o interface{}) *Criteria {
+func (c *Criteria) Gt(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_GT
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
-func (c *Criteria) Gte(o interface{}) *Criteria {
+func (c *Criteria) Gte(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_GTE
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
 func (c *Criteria) Regex(pattern *regexp.Regexp) (*Criteria, error) {
@@ -106,7 +137,11 @@ func (c *Criteria) Regex(pattern *regexp.Regexp) (*Criteria, error) {
 		return nil, errors.New("pattern can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_REGEX
-	c.right = filter.CreateValueNode(pattern)
+	vn, err := filter.CreateValueNode(pattern)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
 	return c, nil
 }
 
@@ -123,10 +158,14 @@ func (c *Criteria) InSlice(l interface{}) (*Criteria, error) {
 	return c, nil
 }
 
-func (c *Criteria) Contains(o interface{}) *Criteria {
+func (c *Criteria) Contains(o interface{}) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_CONTAINS
-	c.right = filter.CreateValueNode(o)
-	return c
+	vn, err := filter.CreateValueNode(o)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
 func (c *Criteria) Nin(o ...interface{}) (*Criteria, error) {
@@ -199,22 +238,34 @@ func (c *Criteria) AllSlice(l interface{}) (*Criteria, error) {
 	return c, nil
 }
 
-func (c *Criteria) Size(size int) *Criteria {
+func (c *Criteria) Size(size int) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_SIZE
-	c.right = filter.CreateValueNode(size)
-	return c
+	vn, err := filter.CreateValueNode(size)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
-func (c *Criteria) Type(typeString string) *Criteria {
+func (c *Criteria) Type(typeString string) (*Criteria, error) {
 	//TODO java class...
 	c.criteriaType = filter.RelationalOperator_TYPE
-	c.right = filter.CreateValueNode(typeString)
-	return c
+	vn, err := filter.CreateValueNode(typeString)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
+	return c, nil
 }
 
 func (c *Criteria) Exists(shouldExist bool) (*Criteria, error) {
 	c.criteriaType = filter.RelationalOperator_EXISTS
-	c.right = filter.CreateValueNode(shouldExist)
+	vn, err := filter.CreateValueNode(shouldExist)
+	if err != nil {
+		return nil, err
+	}
+	c.right = vn
 	pathNode, err := c.left.AsPathNode()
 	if err != nil {
 		return nil, err
@@ -256,9 +307,9 @@ func parseCriteria(criteria string) (*Criteria, error) {
 	}
 	split := strings.Split(strings.TrimSpace(criteria), " ")
 	if len(split) == 3 {
-		return createCriteriaByStrings(split[0], split[1], split[2]), nil
+		return createCriteriaByStrings(split[0], split[1], split[2])
 	} else if len(split) == 1 {
-		return createCriteriaByStrings(split[0], filter.RelationalOperator_EXISTS, "true"), nil
+		return createCriteriaByStrings(split[0], filter.RelationalOperator_EXISTS, "true")
 	} else {
 		return nil, &common.InvalidPathError{Message: "Could not parse criteria"}
 	}
@@ -271,13 +322,26 @@ func prefixPath(key string) string {
 	return key
 }
 
-func createCriteriaByStrings(left string, operator string, right string) *Criteria {
-	criteria := createCriteriaByValueNode(filter.CreateValueNode(left))
+func createCriteriaByStrings(left string, operator string, right string) (*Criteria, error) {
+	vn, err := filter.CreateValueNode(left)
+	if err != nil {
+		return nil, err
+	}
+	criteria := createCriteriaByValueNode(vn)
 	criteria.criteriaType = operator
-	criteria.right = filter.CreateValueNode(right)
-	return criteria
+	vn, err = filter.CreateValueNode(right)
+	if err != nil {
+		return nil, err
+	}
+	criteria.right = vn
+	criteria.criteriaChain = []*Criteria{}
+	return criteria, nil
 }
 
 func createCriteriaByValueNode(valueNode filter.ValueNode) *Criteria {
-	return &Criteria{left: valueNode}
+	criteria := &Criteria{}
+	criteria.left = valueNode
+	criteria.criteriaChain = []*Criteria{}
+	criteria.criteriaChain = append(criteria.criteriaChain, criteria)
+	return criteria
 }

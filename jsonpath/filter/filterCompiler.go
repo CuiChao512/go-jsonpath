@@ -179,7 +179,7 @@ func (c *Compiler) readLiteral() (ValueNode, error) {
 	case FALSE:
 		return c.readBooleanLiteral()
 	case MINUS:
-		return c.readNumberLiteral(), nil
+		return c.readNumberLiteral()
 	case NULL:
 		return c.readNullLiteral()
 	case OPEN_OBJECT:
@@ -189,7 +189,7 @@ func (c *Compiler) readLiteral() (ValueNode, error) {
 	case PATTERN:
 		return c.readPattern()
 	default:
-		return c.readNumberLiteral(), nil
+		return c.readNumberLiteral()
 	}
 }
 
@@ -335,7 +335,7 @@ func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
 	return CreateStringNode(stringLiteral, true), nil
 }
 
-func (c *Compiler) readNumberLiteral() *NumberNode {
+func (c *Compiler) readNumberLiteral() (*NumberNode, error) {
 	filter := c.filter
 	begin := filter.Position()
 

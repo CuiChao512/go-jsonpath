@@ -2,6 +2,7 @@ package filter
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -160,11 +161,11 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 		}
 		switch res.(type) {
 		case int:
-			return CreateNumberNodeByString(resString), nil
+			return CreateNumberNodeByString(resString)
 		case float32:
-			return CreateNumberNodeByString(resString), nil
+			return CreateNumberNodeByString(resString)
 		case float64:
-			return CreateNumberNodeByString(resString), nil
+			return CreateNumberNodeByString(resString)
 		case string:
 			return CreateStringNode(resString, false), nil
 		case bool:
@@ -250,14 +251,14 @@ func CreateNumberNode(decimal2 *decimal.Decimal) *NumberNode {
 	}
 }
 
-func CreateNumberNodeByString(str string) *NumberNode {
+func CreateNumberNodeByString(str string) (*NumberNode, error) {
 	decimal2, err := decimal.NewFromString(str)
 	if err == nil {
 		return &NumberNode{
 			number: &decimal2,
-		}
+		}, nil
 	} else {
-		return nil
+		return nil, err
 	}
 
 }
@@ -385,6 +386,13 @@ func (n *BooleanNode) Equals(o interface{}) bool {
 	default:
 		return false
 	}
+}
+
+func CreateBooleanNodeByString(str string) *BooleanNode {
+	if str == "true" {
+		return TRUE_NODE
+	}
+	return FALSE_NODE
 }
 
 func CreateBooleanNode(value bool) *BooleanNode {
@@ -718,6 +726,79 @@ func CreateJsonNodeByObject(json interface{}) *JsonNode {
 	return &JsonNode{}
 }
 
-func CreateValueNode(key interface{}) ValueNode {
-	return nil
+func isPath(o interface{}) bool {
+	if o == nil || reflect.TypeOf(o).Kind() != reflect.String {
+		return false
+	}
+	str := strings.TrimSpace(common.UtilsToString(o))
+	if len(str) <= 0 {
+		return false
+	}
+	c0 := []rune(str)[0]
+	if c0 == '@' || c0 == '$' {
+		_, err := PathCompile(str)
+		if err != nil {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func isJson(o interface{}) bool {
+	if o == nil || reflect.TypeOf(o).Kind() != reflect.String {
+		return false
+	}
+	str := strings.TrimSpace(common.UtilsToString(o))
+	if len(str) <= 1 {
+		return false
+	}
+	runes := []rune(str)
+	c0 := runes[0]
+	c1 := runes[1]
+	if (c0 == '[' && c1 == ']') || (c0 == '{' && c1 == '}') {
+		var i interface{}
+		err := json.Unmarshal([]byte(str), &i)
+		if err != nil {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func CreateValueNode(o interface{}) (ValueNode, error) {
+	if o == nil {
+		return NULL_NODE, nil
+	}
+	switch o.(type) {
+	case ValueNode:
+		vn, _ := o.(ValueNode)
+		return vn, nil
+	}
+
+	if isPath(o) {
+		return CreatePathNodeWithString(common.UtilsToString(o), false, false)
+	} else if isJson(o) {
+		return CreateJsonNodeByString(common.UtilsToString(o)), nil
+	}
+
+	switch o.(type) {
+	case string:
+		return CreateStringNode(common.UtilsToString(o), false), nil
+	case rune:
+		return CreateStringNode(common.UtilsToString(o), true), nil
+	case int:
+		return CreateNumberNodeByString(common.UtilsToString(o))
+	case float64:
+		return CreateNumberNodeByString(common.UtilsToString(o))
+	case bool:
+		return CreateBooleanNodeByString(common.UtilsToString(o)), nil
+	case regexp.Regexp:
+		r, _ := o.(*regexp.Regexp)
+		return CreatePatternNodeByRegexp(r), nil
+	case OffsetDateTime:
+		return CreateOffsetDateTimeNode(common.UtilsToString(o)), nil
+	}
+	return nil, &common.JsonPathError{Message: "Could not determine value type"}
 }

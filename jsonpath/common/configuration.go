@@ -229,7 +229,7 @@ func (d *NativeJsonProvider) unwrapNumber(number interface{}) interface{} {
 
 func (*NativeJsonProvider) Parse(jsonString string) (interface{}, error) {
 	var result interface{}
-	err := json.Unmarshal([]byte(jsonString), result)
+	err := json.Unmarshal([]byte(jsonString), &result)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package path
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
+	"errors"
 )
 
 type EvaluationContextImpl struct {
@@ -19,9 +20,12 @@ func (e *EvaluationContextImpl) DocumentEvalCache() map[common.Path]interface{} 
 	return e.documentEvalCache
 }
 
-func (e *EvaluationContextImpl) GetRoot() *RootPathToken {
-	//TODO:
-	return nil
+func (e *EvaluationContextImpl) GetRoot() (*RootPathToken, error) {
+	compiledPath, ok := e.path.(*CompiledPath)
+	if !ok {
+		return nil, errors.New("path can not cast to *CompiledPath")
+	}
+	return compiledPath.root, nil
 }
 
 func (e *EvaluationContextImpl) Configuration() *common.Configuration {

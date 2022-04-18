@@ -7,8 +7,8 @@ import (
 
 type Filter interface {
 	common.Predicate
-	Or(other common.Predicate) *OrFilter
-	And(other common.Predicate) *AndFilter
+	Or(other common.Predicate) Filter
+	And(other common.Predicate) Filter
 }
 
 type FilterImpl struct {
@@ -22,15 +22,16 @@ func (filter *FilterImpl) Apply(ctx common.PredicateContext) (bool, error) {
 	return false, nil
 }
 
-func (filter *FilterImpl) And(other common.Predicate) *AndFilter {
+func (filter *FilterImpl) And(other common.Predicate) Filter {
 	return nil
 }
 
-func (filter *FilterImpl) Or(other common.Predicate) *OrFilter {
+func (filter *FilterImpl) Or(other common.Predicate) Filter {
 	return nil
 }
 
 type SingleFilter struct {
+	*FilterImpl
 	predicate common.Predicate
 }
 
@@ -47,11 +48,11 @@ func (filter *SingleFilter) String() string {
 	}
 }
 
-func NewAndFilterByPredicates(predicates []common.Predicate) *AndFilter {
+func CreateAndFilterByPredicates(predicates []common.Predicate) *AndFilter {
 	return &AndFilter{predicates: predicates}
 }
 
-func NewAndFilter(left common.Predicate, right common.Predicate) *AndFilter {
+func createAndFilter(left common.Predicate, right common.Predicate) *AndFilter {
 	predicates := []common.Predicate{
 		left, right,
 	}
@@ -77,21 +78,69 @@ func (filter *AndFilter) Apply(ctx common.PredicateContext) (bool, error) {
 }
 
 func (filter *AndFilter) String() string {
-	string_ := ""
 	lenPredicates := len(filter.predicates)
+	sb := new(strings.Builder)
+	sb.WriteString("[?(")
 	for i := 0; i < lenPredicates; i++ {
 		p := filter.predicates[i]
 		pString := (p).String()
 		if strings.HasPrefix(pString, "[?(") {
-			pString = pString[3:]
+			pString = pString[3 : len(pString)-2]
 		}
-		string_ = string_ + pString
+		sb.WriteString(pString)
 		if i < lenPredicates {
-			string_ = string_ + "&&"
+			sb.WriteString("&&")
 		}
 	}
-	return string_
+	sb.WriteString(")]")
+	return sb.String()
 }
 
 type OrFilter struct {
+	*FilterImpl
+	left  common.Predicate
+	right common.Predicate
+}
+
+func (o *OrFilter) And(other common.Predicate) Filter {
+	return createOrFilter(o.left, createAndFilter(o.right, other))
+}
+
+func (o *OrFilter) Apply(ctx common.PredicateContext) (bool, error) {
+	l, err := o.left.Apply(ctx)
+	if err != nil {
+		return false, err
+	}
+	r, err := o.right.Apply(ctx)
+	return l || r, err
+}
+
+func (o *OrFilter) String() string {
+	sb := new(strings.Builder)
+	sb.WriteString("[?(")
+
+	l := o.left.String()
+	r := o.right.String()
+
+	if strings.HasPrefix(l, "[?(") {
+		l = l[3 : len(l)-2]
+	}
+
+	if strings.HasPrefix(r, "[?(") {
+		r = r[3 : len(r)-2]
+	}
+
+	sb.WriteString(l)
+	sb.WriteString(" || ")
+	sb.WriteString(r)
+	sb.WriteString(")]")
+	return sb.String()
+}
+
+func createOrFilter(left common.Predicate, right common.Predicate) *OrFilter {
+	return &OrFilter{left: left, right: right}
+}
+
+func CreateSingleFilter(p common.Predicate) Filter {
+	return &SingleFilter{predicate: p}
 }

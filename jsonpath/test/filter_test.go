@@ -3,6 +3,7 @@ package test
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/common"
+	"fmt"
 	"regexp"
 	"testing"
 )
@@ -65,7 +66,7 @@ var testDataTable = []testDataRow{
 		Key:      "int-key",
 		Operator: eq,
 		Value:    "666",
-		Expected: true,
+		Expected: false,
 	},
 	{
 		Expression: "[?(1 == '1')]",
@@ -97,7 +98,7 @@ var testDataTable = []testDataRow{
 		Key:      "long-key",
 		Operator: eq,
 		Value:    666,
-		Expected: true,
+		Expected: false,
 	},
 	{
 		Key:      "float-key",
@@ -119,25 +120,29 @@ var testDataTable = []testDataRow{
 	},
 }
 
-func TestIntEqEvals(t *testing.T) {
+func TestFilterEvals(t *testing.T) {
 	for _, row := range testDataTable {
 		if row.Type == "parse" {
 
 		} else {
-			criteria := jsonpath.WhereString(row.Key)
+			fmt.Println(row.Key)
+			criteria, err := jsonpath.WhereString(row.Key)
+			if err != nil {
+				t.Errorf(err.Error())
+			}
 			switch row.Operator {
 			case eq:
-				criteria = criteria.Eq(row.Value)
+				criteria, err = criteria.Eq(row.Value)
 			case lt:
-				criteria = criteria.Lt(row.Value)
+				criteria, err = criteria.Lt(row.Value)
 			case lte:
-				criteria = criteria.Lte(row.Value)
+				criteria, err = criteria.Lte(row.Value)
 			case gt:
-				criteria = criteria.Gt(row.Value)
+				criteria, err = criteria.Gt(row.Value)
 			case gte:
-				criteria = criteria.Gte(row.Value)
+				criteria, err = criteria.Gte(row.Value)
 			case ne:
-				criteria = criteria.Ne(row.Value)
+				criteria, err = criteria.Ne(row.Value)
 			case regex:
 				compiledRegexp, err := regexp.Compile(row.Expression)
 				if err != nil {
@@ -148,13 +153,13 @@ func TestIntEqEvals(t *testing.T) {
 					t.Errorf("expreesion=%s not a regex string", row.Expression)
 				}
 			}
-
-			result, err := criteria.Apply(createPredicateContext(FilterTestJson))
+			filter := jsonpath.CreateSingleFilter(criteria)
+			result, err := filter.Apply(createPredicateContext(FilterTestJson))
 			if err != nil {
 				t.Errorf("filter by key failed, err: %s", err)
 			}
 			if result != row.Expected {
-				t.Errorf("%s = %t; expected %t", row.Key, result, row.Expected)
+				t.Errorf("filter by key %s = %s actual %t expected %t", row.Key, row.Value, result, row.Expected)
 			}
 		}
 	}
