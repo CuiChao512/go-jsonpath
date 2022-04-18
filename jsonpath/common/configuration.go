@@ -251,3 +251,17 @@ func (*NativeJsonProvider) CreateArray() interface{} {
 func (*NativeJsonProvider) CreateMap() interface{} {
 	return map[string]interface{}{}
 }
+
+type NativeMappingProvider struct{}
+
+func (n *NativeMappingProvider) MapSlice(data interface{}, configuration *Configuration) interface{} {
+	return data
+}
+
+func (*NativeMappingProvider) MapMap(data interface{}, configuration *Configuration) interface{} {
+	return data
+}
+
+func DefaultConfiguration() *Configuration {
+	return &Configuration{jsonProvider: &NativeJsonProvider{}, mappingProvider: &NativeMappingProvider{}}
+}
