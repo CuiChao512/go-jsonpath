@@ -1,6 +1,7 @@
 package test
 
 import (
+	"cuichao.com/go-jsonpath/jsonpath/common"
 	"math"
 	"strconv"
 )
@@ -82,3 +83,7 @@ var TestJsonBookStoreDocument = "{\n" +
 	"    },\n" +
 	"    \"expensive\": 10\n" +
 	"}"
+
+func createPredicateContext(check interface{}) common.PredicateContext {
+	return common.CreatePredicateContextImpl(check, check, common.DefaultConfiguration(), map[common.Path]interface{}{})
+}

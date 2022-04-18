@@ -2,7 +2,6 @@ package filter
 
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/path"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -68,7 +67,7 @@ type PathNode struct {
 }
 
 func CreatePathNodeWithString(pathString string, existsCheck bool, shouldExist bool) (*PathNode, error) {
-	compiledPath, err := path.Compile(pathString)
+	compiledPath, err := PathCompile(pathString)
 	if err != nil {
 		return nil, err
 	}
@@ -685,15 +684,19 @@ func (n *JsonNode) Parse(ctx common.PredicateContext) (interface{}, error) {
 	}
 }
 
-func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx common.PredicateContext) bool {
+func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx common.PredicateContext) (bool, error) {
 	if n == jsonNode {
-		return true
+		return true, nil
 	}
 
 	if n.json != nil {
-		return n.json != jsonNode.Parse(ctx)
+		parseResult, err := jsonNode.Parse(ctx)
+		if err != nil {
+			return false, err
+		}
+		return n.json != parseResult, nil
 	} else {
-		return jsonNode.json != nil
+		return jsonNode.json != nil, nil
 	}
 }
 

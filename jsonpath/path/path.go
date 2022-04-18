@@ -37,8 +37,14 @@ func (r *defaultPathRef) renameInMap(targetMap interface{}, oldKeyName string, n
 		if config.JsonProvider().GetMapValue(targetMap, oldKeyName) == common.JsonProviderUndefined {
 			return &common.PathNotFoundError{Message: "No results for Key " + oldKeyName + " found in map!"}
 		}
-		config.JsonProvider().SetProperty(targetMap, newKeyName, config.JsonProvider().GetMapValue(targetMap, oldKeyName))
-		config.JsonProvider().RemoveProperty(targetMap, oldKeyName)
+		err := config.JsonProvider().SetProperty(targetMap, newKeyName, config.JsonProvider().GetMapValue(targetMap, oldKeyName))
+		if err != nil {
+			return err
+		}
+		err = config.JsonProvider().RemoveProperty(targetMap, oldKeyName)
+		if err != nil {
+			return err
+		}
 	} else {
 		return &common.InvalidModificationError{Message: "Can only rename properties in a map"}
 	}
@@ -141,19 +147,16 @@ func (r *arrayIndexPathRef) GetAccessor() interface{} {
 }
 
 func (r *arrayIndexPathRef) Set(newVal interface{}, configuration *common.Configuration) error {
-	configuration.JsonProvider().SetArrayIndex(r.parent, r.index, newVal)
-	return nil
+	return configuration.JsonProvider().SetArrayIndex(r.parent, r.index, newVal)
 }
 
 func (r *arrayIndexPathRef) Convert(mapFunction common.MapFunction, configuration *common.Configuration) error {
 	currentValue := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
-	configuration.JsonProvider().SetArrayIndex(r.parent, r.index, mapFunction.Map(currentValue, configuration))
-	return nil
+	return configuration.JsonProvider().SetArrayIndex(r.parent, r.index, mapFunction.Map(currentValue, configuration))
 }
 
 func (r *arrayIndexPathRef) Delete(configuration *common.Configuration) error {
-	configuration.JsonProvider().RemoveProperty(r.parent, r.index)
-	return nil
+	return configuration.JsonProvider().RemoveProperty(r.parent, r.index)
 }
 
 func (r *arrayIndexPathRef) Add(value interface{}, configuration *common.Configuration) error {
@@ -162,11 +165,10 @@ func (r *arrayIndexPathRef) Add(value interface{}, configuration *common.Configu
 		return nil
 	}
 	if configuration.JsonProvider().IsArray(target) {
-		configuration.JsonProvider().SetProperty(target, nil, value)
+		return configuration.JsonProvider().SetProperty(target, nil, value)
 	} else {
 		return &common.InvalidModificationError{Message: "Can only add to an array"}
 	}
-	return nil
 }
 
 func (r *arrayIndexPathRef) Put(key string, value interface{}, configuration *common.Configuration) error {
@@ -175,11 +177,10 @@ func (r *arrayIndexPathRef) Put(key string, value interface{}, configuration *co
 		return nil
 	}
 	if configuration.JsonProvider().IsMap(target) {
-		configuration.JsonProvider().SetProperty(target, key, value)
+		return configuration.JsonProvider().SetProperty(target, key, value)
 	} else {
 		return &common.InvalidModificationError{Message: "Can only add properties to a map"}
 	}
-	return nil
 }
 
 func (r *arrayIndexPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error {
@@ -211,19 +212,16 @@ func (r *objectPropertyPathRef) GetAccessor() interface{} {
 }
 
 func (r *objectPropertyPathRef) Set(newVal interface{}, configuration *common.Configuration) error {
-	configuration.JsonProvider().SetProperty(r.parent, r.property, newVal)
-	return nil
+	return configuration.JsonProvider().SetProperty(r.parent, r.property, newVal)
 }
 
 func (r *objectPropertyPathRef) Convert(mapFunction common.MapFunction, configuration *common.Configuration) error {
 	currentValue := configuration.JsonProvider().GetMapValue(r.parent, r.property)
-	configuration.JsonProvider().SetProperty(r.parent, r.property, mapFunction.Map(currentValue, configuration))
-	return nil
+	return configuration.JsonProvider().SetProperty(r.parent, r.property, mapFunction.Map(currentValue, configuration))
 }
 
 func (r *objectPropertyPathRef) Delete(configuration *common.Configuration) error {
-	configuration.JsonProvider().RemoveProperty(r.parent, r.property)
-	return nil
+	return configuration.JsonProvider().RemoveProperty(r.parent, r.property)
 }
 
 func (r *objectPropertyPathRef) Add(value interface{}, configuration *common.Configuration) error {

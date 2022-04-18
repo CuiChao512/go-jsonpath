@@ -9,7 +9,7 @@ type KeySetFunction struct {
 
 func (*KeySetFunction) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
 	if ctx.Configuration().JsonProvider().IsMap(model) {
-		return ctx.Configuration().JsonProvider().GetPropertyKeys(model), nil
+		return ctx.Configuration().JsonProvider().GetPropertyKeys(model)
 	}
 	return nil, nil
 }

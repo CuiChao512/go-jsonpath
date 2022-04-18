@@ -60,7 +60,7 @@ func (*equalsEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.Pre
 		if err != nil {
 			return false, err
 		}
-		return leftNode.EqualsByPredicateContext(rightNode, ctx), nil
+		return leftNode.EqualsByPredicateContext(rightNode, ctx)
 	} else {
 		return left.Equals(right), nil
 	}
@@ -656,7 +656,7 @@ const (
 	RelationalOperator_NONEOF   = "NONEOF"
 )
 
-var evaluators map[string]Evaluator
+var evaluators = map[string]Evaluator{}
 
 func init() {
 	evaluators[RelationalOperator_EXISTS] = &existsEvaluator{}

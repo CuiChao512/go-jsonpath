@@ -40,11 +40,11 @@ func (c *Criteria) toRelationalExpressionNodes() []*filter.RelationExpressionNod
 	return nodes
 }
 
-func (c *Criteria) WherePath(key common.Path) *Criteria {
+func WherePath(key common.Path) *Criteria {
 	return createCriteriaByValueNode(filter.CreatePathNode(key, false, false))
 }
 
-func (c *Criteria) WhereString(key string) *Criteria {
+func WhereString(key string) *Criteria {
 	return createCriteriaByValueNode(filter.CreateValueNode(prefixPath(key)))
 }
 

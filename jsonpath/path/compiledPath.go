@@ -36,3 +36,7 @@ func (cp *CompiledPath) IsRootPath() bool {
 func (cp *CompiledPath) GetRoot() *RootPathToken {
 	return cp.root
 }
+
+func CreateCompiledPath(rootPathToken *RootPathToken, isRootPath bool) *CompiledPath {
+	return &CompiledPath{root: rootPathToken, isRootPath: isRootPath}
+}
