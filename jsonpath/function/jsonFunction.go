@@ -22,12 +22,18 @@ func (*Append) Invoke(currentPath string, parent common.PathRef, model interface
 	if parameters != nil && len(*parameters) > 0 {
 		for _, param := range *parameters {
 			if jsonProvider.IsArray(model) {
-				l := jsonProvider.Length(model)
+				l, err := jsonProvider.Length(model)
+				if err != nil {
+					return nil, err
+				}
 				val, err := param.GetValue()
 				if err != nil {
 					return nil, err
 				}
-				jsonProvider.SetArrayIndex(model, l, val)
+				err = jsonProvider.SetArrayIndex(model, l, val)
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}

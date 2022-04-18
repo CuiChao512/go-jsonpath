@@ -179,7 +179,11 @@ func (t *defaultToken) handleArrayIndex(index int, currentPath string, model int
 
 	var effectiveIndex int
 	if index < 0 {
-		effectiveIndex = ctx.JsonProvider().Length(model) + index
+		length, err := ctx.JsonProvider().Length(model)
+		if err != nil {
+			return err
+		}
+		effectiveIndex = length + index
 	} else {
 		effectiveIndex = index
 	}
@@ -598,7 +602,12 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent common.PathRef, 
 			}
 		}
 	} else if ctx.JsonProvider().IsArray(model) {
-		for idx := 0; idx < ctx.JsonProvider().Length(model); idx++ {
+		length, err := ctx.JsonProvider().Length(model)
+		if err != nil {
+			return err
+		}
+
+		for idx := 0; idx < length; idx++ {
 			err := w.handleArrayIndex(idx, currentPath, model, ctx)
 
 			if err != nil && common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) {
@@ -908,7 +917,10 @@ func (a *ArraySlicePathToken) Evaluate(currentPath string, parent common.PathRef
 }
 
 func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
-	length := ctx.JsonProvider().Length(model)
+	length, err := ctx.JsonProvider().Length(model)
+	if err != nil {
+		return err
+	}
 	from := a.operation.From()
 	if from < 0 {
 		//calculate slice start from array length
@@ -931,7 +943,10 @@ func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent common.PathRe
 }
 
 func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
-	length := ctx.JsonProvider().Length(model)
+	length, err := ctx.JsonProvider().Length(model)
+	if err != nil {
+		return err
+	}
 	from := a.operation.From()
 	to := a.operation.To()
 
@@ -954,7 +969,10 @@ func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent common.Pat
 }
 
 func (a *ArraySlicePathToken) sliceTo(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
-	length := ctx.JsonProvider().Length(model)
+	length, err := ctx.JsonProvider().Length(model)
+	if err != nil {
+		return err
+	}
 	if length == 0 {
 		return nil
 	}

@@ -103,8 +103,11 @@ func (*rootPathRef) Delete(configuration *common.Configuration) error {
 
 func (r *rootPathRef) Add(newVal interface{}, config *common.Configuration) error {
 	if config.JsonProvider().IsArray(r.parent) {
-		config.JsonProvider().SetArrayIndex(r.parent, config.JsonProvider().Length(r.parent), newVal)
-		return nil
+		length, err := config.JsonProvider().Length(r.parent)
+		if err != nil {
+			return err
+		}
+		return config.JsonProvider().SetArrayIndex(r.parent, length, newVal)
 	} else {
 		return &common.InvalidModificationError{Message: "Invalid add operation. $ is not an array"}
 	}
@@ -112,8 +115,7 @@ func (r *rootPathRef) Add(newVal interface{}, config *common.Configuration) erro
 
 func (r *rootPathRef) Put(key string, newVal interface{}, configuration *common.Configuration) error {
 	if configuration.JsonProvider().IsMap(r.parent) {
-		configuration.JsonProvider().SetProperty(r.parent, key, newVal)
-		return nil
+		return configuration.JsonProvider().SetProperty(r.parent, key, newVal)
 	} else {
 		return &common.InvalidModificationError{Message: "Invalid put operation. $ is not a map"}
 	}
@@ -230,11 +232,14 @@ func (r *objectPropertyPathRef) Add(value interface{}, configuration *common.Con
 		return nil
 	}
 	if configuration.JsonProvider().IsArray(target) {
-		configuration.JsonProvider().SetArrayIndex(target, configuration.JsonProvider().Length(target), value)
+		length, err := configuration.JsonProvider().Length(target)
+		if err != nil {
+			return err
+		}
+		return configuration.JsonProvider().SetArrayIndex(target, length, value)
 	} else {
 		return &common.InvalidModificationError{Message: "Can only add to an array"}
 	}
-	return nil
 }
 
 func (r *objectPropertyPathRef) Put(keyStr string, value interface{}, configuration *common.Configuration) error {
@@ -243,11 +248,10 @@ func (r *objectPropertyPathRef) Put(keyStr string, value interface{}, configurat
 		return nil
 	}
 	if configuration.JsonProvider().IsMap(target) {
-		configuration.JsonProvider().SetProperty(target, keyStr, value)
+		return configuration.JsonProvider().SetProperty(target, keyStr, value)
 	} else {
 		return &common.InvalidModificationError{Message: "Can only add properties to a map"}
 	}
-	return nil
 }
 
 func (r *objectPropertyPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error {
@@ -270,7 +274,10 @@ func (r *objectMultiPropertyPathRef) GetAccessor() interface{} {
 
 func (r *objectMultiPropertyPathRef) Set(newVal interface{}, configuration *common.Configuration) error {
 	for _, property := range r.properties {
-		configuration.JsonProvider().SetProperty(r.parent, property, newVal)
+		err := configuration.JsonProvider().SetProperty(r.parent, property, newVal)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -279,7 +286,10 @@ func (r *objectMultiPropertyPathRef) Convert(mapFunction common.MapFunction, con
 	for _, property := range r.properties {
 		currentValue := config.JsonProvider().GetMapValue(r.parent, property)
 		if currentValue != common.JsonProviderUndefined {
-			config.JsonProvider().SetProperty(r.parent, property, mapFunction.Map(currentValue, config))
+			err := config.JsonProvider().SetProperty(r.parent, property, mapFunction.Map(currentValue, config))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -287,7 +297,10 @@ func (r *objectMultiPropertyPathRef) Convert(mapFunction common.MapFunction, con
 
 func (r *objectMultiPropertyPathRef) Delete(configuration *common.Configuration) error {
 	for _, property := range r.properties {
-		configuration.JsonProvider().RemoveProperty(r.parent, property)
+		err := configuration.JsonProvider().RemoveProperty(r.parent, property)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

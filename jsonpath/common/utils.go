@@ -226,3 +226,36 @@ func UtilsStringUnescape(str string) (string, error) {
 	}
 	return writer.String(), nil
 }
+
+func ConvertToAnySlice(obj interface{}) ([]interface{}, error) {
+	objVal := reflect.ValueOf(obj)
+	if objVal.Kind() == reflect.Slice {
+		var result = make([]interface{}, 0, objVal.Len())
+		for i := 0; i < reflect.ValueOf(obj).Len(); i++ {
+			val := reflect.ValueOf(obj).Index(i).Interface()
+			result = append(result, val)
+		}
+		return result, nil
+	}
+	return nil, errors.New("not a slice0")
+}
+
+func ConvertToStringAnyMap(obj interface{}) (map[string]interface{}, error) {
+	objVal := reflect.ValueOf(obj)
+	if objVal.Kind() == reflect.Map {
+		var result = make(map[string]interface{}, objVal.Len())
+		iter := objVal.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			v := iter.Value()
+
+			kString, ok := k.Interface().(string)
+			if !ok {
+				return nil, errors.New(fmt.Sprintf(" map key %t is not a string", k.Interface()))
+			}
+			result[kString] = v.Interface()
+		}
+		return result, nil
+	}
+	return nil, errors.New("not a map0")
+}
