@@ -30,6 +30,7 @@ type Token interface {
 }
 
 type defaultToken struct {
+	Token
 	prev               Token
 	next               Token
 	definite           bool
@@ -106,7 +107,9 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 				return err
 			}
 			if idx == "[-1]" || root.GetTail().prevToken().GetPathFragment() == idx {
-				ctx.AddResult(evalPath, ref, propertyVal)
+				if err = ctx.AddResult(evalPath, ref, propertyVal); err != nil {
+					return err
+				}
 			}
 		} else {
 			next, _ := t.nextToken()
@@ -147,7 +150,9 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 					continue
 				}
 			}
-			ctx.JsonProvider().SetProperty(merged, property, propertyVal)
+			if err = ctx.JsonProvider().SetProperty(merged, property, propertyVal); err != nil {
+				return err
+			}
 		}
 		var pathRef common.PathRef
 		if ctx.ForUpdate() {
@@ -155,7 +160,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 		} else {
 			pathRef = PathRefNoOp
 		}
-		ctx.AddResult(evalPath, pathRef, merged)
+		return ctx.AddResult(evalPath, pathRef, merged)
 	}
 	return nil
 }
@@ -195,7 +200,9 @@ func (t *defaultToken) handleArrayIndex(index int, currentPath string, model int
 	evalHit := ctx.JsonProvider().GetArrayIndex(model, effectiveIndex)
 
 	if t.isLeaf() {
-		ctx.AddResult(evalPath, pathRef, evalHit)
+		if err := ctx.AddResult(evalPath, pathRef, evalHit); err != nil {
+			return err
+		}
 	} else {
 		next, err := t.nextToken()
 		if err != nil {
@@ -218,16 +225,13 @@ func (t *defaultToken) isRoot() bool {
 	return t.prev == nil
 }
 
-func (t *defaultToken) IsTokenDefinite() bool {
-	return false
-}
-
 func (t *defaultToken) IsPathDefinite() bool {
-	if !t.definiteUpdated {
+	if t.definiteUpdated {
 		return t.definite
 	}
 
 	isDefinite := t.IsTokenDefinite()
+	//isDefinite := true
 	if isDefinite && !t.isLeaf() {
 		isDefinite = t.next.IsPathDefinite()
 	}
@@ -273,8 +277,7 @@ func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath st
 	if err != nil {
 		return err
 	}
-	ctx.AddResult(currentPath, parent, result)
-	return nil
+	return ctx.AddResult(currentPath, parent, result)
 }
 
 func (t *defaultToken) nextToken() (Token, error) {
@@ -282,10 +285,6 @@ func (t *defaultToken) nextToken() (Token, error) {
 		return nil, &common.IllegalStateException{Message: "Current path token is a leaf"}
 	}
 	return t.next, nil
-}
-
-func (t *defaultToken) GetPathFragment() string {
-	return ""
 }
 
 func (t *defaultToken) SetPrev(prev Token) {
@@ -298,10 +297,6 @@ func (t *defaultToken) SetNext(next Token) {
 
 func (t *defaultToken) GetNext() Token {
 	return t.next
-}
-
-func (t *defaultToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
-	return nil
 }
 
 //RootPathToken ----
@@ -343,7 +338,7 @@ func (r *RootPathToken) Evaluate(currentPath string, ref common.PathRef, model i
 		} else {
 			op = PathRefNoOp
 		}
-		ctx.AddResult(r.rootToken, op, model)
+		return ctx.AddResult(r.rootToken, op, model)
 	} else {
 		next, _ := r.nextToken()
 		err := next.Evaluate(r.rootToken, ref, model, ctx)
@@ -412,7 +407,9 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent common.PathRef, 
 	if err != nil {
 		return err
 	}
-	ctx.AddResult(currentPath+"."+f.functionName, parent, result)
+	if err = ctx.AddResult(currentPath+"."+f.functionName, parent, result); err != nil {
+		return err
+	}
 	f.cleanWildcardPathToken()
 	if !f.isLeaf() {
 		next, _ := f.nextToken()

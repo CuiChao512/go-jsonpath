@@ -50,74 +50,74 @@ var testDataTable = []testDataRow{
 		Value:    1,
 		Expected: true,
 	},
-	{
-		Key:      "int-key",
-		Operator: eq,
-		Value:    666,
-		Expected: false,
-	},
-	{
-		Key:      "int-key",
-		Operator: eq,
-		Value:    "1",
-		Expected: true,
-	},
-	{
-		Key:      "int-key",
-		Operator: eq,
-		Value:    "666",
-		Expected: false,
-	},
-	{
-		Expression: "[?(1 == '1')]",
-		Expected:   true,
-	},
-	{
-		Expression: "[?('1' == 1)]",
-		Expected:   true,
-	},
-	{
-		Expression: "[?(1 === '1')]",
-		Expected:   false,
-	},
-	{
-		Expression: "[?('1' === 1)]",
-		Expected:   false,
-	},
-	{
-		Expression: "[?(1 === 1)]",
-		Expected:   true,
-	},
-	{
-		Key:      "long-key",
-		Operator: eq,
-		Value:    3000000000,
-		Expected: true,
-	},
-	{
-		Key:      "long-key",
-		Operator: eq,
-		Value:    666,
-		Expected: false,
-	},
-	{
-		Key:      "float-key",
-		Operator: eq,
-		Value:    10.1,
-		Expected: true,
-	},
-	{
-		Key:      "float-key",
-		Operator: eq,
-		Value:    10.10,
-		Expected: true,
-	},
-	{
-		Key:      "float-key",
-		Operator: eq,
-		Value:    10.11,
-		Expected: false,
-	},
+	//{
+	//	Key:      "int-key",
+	//	Operator: eq,
+	//	Value:    666,
+	//	Expected: false,
+	//},
+	//{
+	//	Key:      "int-key",
+	//	Operator: eq,
+	//	Value:    "1",
+	//	Expected: true,
+	//},
+	//{
+	//	Key:      "int-key",
+	//	Operator: eq,
+	//	Value:    "666",
+	//	Expected: false,
+	//},
+	//{
+	//	Expression: "[?(1 == '1')]",
+	//	Expected:   true,
+	//},
+	//{
+	//	Expression: "[?('1' == 1)]",
+	//	Expected:   true,
+	//},
+	//{
+	//	Expression: "[?(1 === '1')]",
+	//	Expected:   false,
+	//},
+	//{
+	//	Expression: "[?('1' === 1)]",
+	//	Expected:   false,
+	//},
+	//{
+	//	Expression: "[?(1 === 1)]",
+	//	Expected:   true,
+	//},
+	//{
+	//	Key:      "long-key",
+	//	Operator: eq,
+	//	Value:    3000000000,
+	//	Expected: true,
+	//},
+	//{
+	//	Key:      "long-key",
+	//	Operator: eq,
+	//	Value:    666,
+	//	Expected: false,
+	//},
+	//{
+	//	Key:      "float-key",
+	//	Operator: eq,
+	//	Value:    10.1,
+	//	Expected: true,
+	//},
+	//{
+	//	Key:      "float-key",
+	//	Operator: eq,
+	//	Value:    10.10,
+	//	Expected: true,
+	//},
+	//{
+	//	Key:      "float-key",
+	//	Operator: eq,
+	//	Value:    10.11,
+	//	Expected: false,
+	//},
 }
 
 func TestFilterEvals(t *testing.T) {
