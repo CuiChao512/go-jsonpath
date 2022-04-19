@@ -10,27 +10,35 @@ type CompiledPath struct {
 }
 
 func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (common.EvaluationContext, error) {
-	return nil, nil
+	return cp.EvaluateForUpdate(document, rootDocument, configuration, false), nil
 }
 
 func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) common.EvaluationContext {
-	return nil
+	ctx := CreateEvaluationContextImpl(cp, rootDocument, configuration, forUpdate)
+	var op common.PathRef
+	if ctx.ForUpdate() {
+		op = CreateRootPathRef(rootDocument)
+	} else {
+		op = PathRefNoOp
+	}
+	cp.root.Evaluate("", op, document, ctx)
+	return ctx
 }
 
 func (cp *CompiledPath) String() string {
-	return ""
+	return cp.root.String()
 }
 
 func (cp *CompiledPath) IsDefinite() bool {
-	return false
+	return cp.root.IsPathDefinite()
 }
 
 func (cp *CompiledPath) IsFunctionPath() bool {
-	return false
+	return cp.root.IsFunctionPath()
 }
 
 func (cp *CompiledPath) IsRootPath() bool {
-	return false
+	return cp.isRootPath
 }
 
 func (cp *CompiledPath) GetRoot() *RootPathToken {

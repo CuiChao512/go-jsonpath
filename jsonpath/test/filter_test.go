@@ -153,6 +153,9 @@ func TestFilterEvals(t *testing.T) {
 					t.Errorf("expreesion=%s not a regex string", row.Expression)
 				}
 			}
+			if err != nil {
+				t.Errorf("%s", err)
+			}
 			filter := jsonpath.CreateSingleFilter(criteria)
 			result, err := filter.Apply(createPredicateContext(FilterTestJson))
 			if err != nil {

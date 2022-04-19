@@ -41,7 +41,7 @@ type PathCompiler struct {
 func (c *PathCompiler) readWhitespace() {
 	for c.path.InBounds() {
 		char := c.path.CurrentChar()
-		if c.isWhitespace(char) {
+		if !c.isWhitespace(char) {
 			break
 		}
 		c.path.IncrementPosition(1)
@@ -231,11 +231,14 @@ func (c *PathCompiler) readPropertyOrFunctionToken(appender pathPkg.TokenAppende
 	} else {
 		appender.AppendPathToken(pathPkg.CreatePropertyPathToken([]string{property}, string(PATH_SINGLE_QUOTE)))
 	}
+	if path.CurrentIsTail() {
+		return true, nil
+	}
 	readResult, err := c.readNextToken(appender)
 	if err != nil {
 		return false, err
 	}
-	return path.CurrentIsTail() || readResult, nil
+	return readResult, nil
 }
 
 func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Parameter, error) {
@@ -396,12 +399,15 @@ func (c *PathCompiler) readPlaceholderToken(appender pathPkg.TokenAppender) (boo
 	appender.AppendPathToken(pathPkg.CreatePredicatePathToken(predicates))
 
 	path.SetPosition(expressionEndIndex + 1)
+	if path.CurrentIsTail() {
+		return true, nil
+	}
 
 	readResult, err := c.readNextToken(appender)
 	if err != nil {
 		return false, err
 	}
-	return path.CurrentIsTail() || readResult, nil
+	return readResult, nil
 }
 
 func (c *PathCompiler) readFilterToken(appender pathPkg.TokenAppender) (bool, error) {
@@ -440,11 +446,14 @@ func (c *PathCompiler) readFilterToken(appender pathPkg.TokenAppender) (bool, er
 	appender.AppendPathToken(pathPkg.CreatePredicatePathToken([]common.Predicate{predicate0}))
 
 	path.SetPosition(closeStatementBracketIndex + 1)
+	if path.CurrentIsTail() {
+		return true, nil
+	}
 	readResult, e := c.readNextToken(appender)
 	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult, nil
+	return readResult, nil
 }
 
 func (c *PathCompiler) readWildCardToken(appender pathPkg.TokenAppender) (bool, error) {
@@ -470,11 +479,14 @@ func (c *PathCompiler) readWildCardToken(appender pathPkg.TokenAppender) (bool, 
 	}
 
 	appender.AppendPathToken(pathPkg.CreateWildcardPathToken())
+	if path.CurrentIsTail() {
+		return true, nil
+	}
 	readResult, e := c.readNextToken(appender)
 	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult, nil
+	return readResult, nil
 }
 
 func (c *PathCompiler) readArrayToken(appender pathPkg.TokenAppender) (bool, error) {
@@ -525,11 +537,14 @@ func (c *PathCompiler) readArrayToken(appender pathPkg.TokenAppender) (bool, err
 	}
 
 	path.SetPosition(expressionEndIndex + 1)
+	if path.CurrentIsTail() {
+		return true, nil
+	}
 	readResult, e := c.readNextToken(appender)
 	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult, nil
+	return readResult, nil
 
 }
 
@@ -602,11 +617,14 @@ func (c *PathCompiler) readBracketPropertyToken(appender pathPkg.TokenAppender) 
 
 	appender.AppendPathToken(pathPkg.CreatePropertyPathToken(properties, string(potentialStringDelimiter)))
 
+	if path.CurrentIsTail() {
+		return true, nil
+	}
 	readResult, e := c.readNextToken(appender)
 	if e != nil {
 		return false, e
 	}
-	return path.CurrentIsTail() || readResult, nil
+	return readResult, nil
 
 }
 

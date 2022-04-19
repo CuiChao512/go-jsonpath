@@ -29,14 +29,20 @@ func (pc *PredicateContextImpl) Evaluate(path2 Path) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			result = r.GetValue()
+			result, err = r.GetValue()
+			if err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		r, err := path2.Evaluate(pc.rootDocument, pc.rootDocument, pc.configuration)
 		if err != nil {
 			return nil, err
 		}
-		result = r.GetValue()
+		result, err = r.GetValue()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return result, nil
 }

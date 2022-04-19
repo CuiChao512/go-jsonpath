@@ -19,9 +19,10 @@ const (
 )
 
 type Configuration struct {
-	jsonProvider    JsonProvider
-	options         []Option
-	mappingProvider MappingProvider
+	jsonProvider        JsonProvider
+	options             []Option
+	mappingProvider     MappingProvider
+	evaluationListeners []EvaluationListener
 }
 
 func (c *Configuration) JsonProvider() JsonProvider {
@@ -36,6 +37,10 @@ func (c *Configuration) MappingProvider() MappingProvider {
 	return c.mappingProvider
 }
 
+func (c *Configuration) GetEvaluationListeners() []EvaluationListener {
+	return c.evaluationListeners
+}
+
 var JsonProviderUndefined interface{}
 
 type JsonProvider interface {
@@ -47,8 +52,8 @@ type JsonProvider interface {
 	SetProperty(obj interface{}, key interface{}, value interface{}) error
 	Parse(json string) (interface{}, error)
 	ToJson(obj interface{}) (string, error)
-	CreateArray() interface{}
-	CreateMap() interface{}
+	CreateArray() []interface{}
+	CreateMap() map[string]interface{}
 	Length(obj interface{}) (int, error)
 	ToArray(obj interface{}) ([]interface{}, error)
 	GetPropertyKeys(obj interface{}) ([]string, error)
@@ -244,11 +249,11 @@ func (*NativeJsonProvider) ToJson(obj interface{}) (string, error) {
 	return string(bytes), nil
 }
 
-func (*NativeJsonProvider) CreateArray() interface{} {
+func (*NativeJsonProvider) CreateArray() []interface{} {
 	return []interface{}{}
 }
 
-func (*NativeJsonProvider) CreateMap() interface{} {
+func (*NativeJsonProvider) CreateMap() map[string]interface{} {
 	return map[string]interface{}{}
 }
 

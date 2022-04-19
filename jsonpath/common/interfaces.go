@@ -23,8 +23,8 @@ type PathRef interface {
 type EvaluationContext interface {
 	Configuration() *Configuration
 	RootDocument() interface{}
-	GetValue() interface{}
-	GetValueUnwrap(unwrap bool) interface{}
+	GetValue() (interface{}, error)
+	GetValueUnwrap(unwrap bool) (interface{}, error)
 }
 
 type Predicate interface {

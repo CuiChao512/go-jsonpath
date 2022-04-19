@@ -36,7 +36,7 @@ func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 }
 
 func CreatePatternNodeByRegexp(pattern *regexp.Regexp) *PatternNode {
-	return &PatternNode{pattern: pattern.String(), compiledPattern: pattern}
+	return &PatternNode{ValueNodeDefault: &ValueNodeDefault{}, pattern: pattern.String(), compiledPattern: pattern}
 }
 
 func (pn *PatternNode) GetCompiledPattern() *regexp.Regexp {
@@ -72,11 +72,11 @@ func CreatePathNodeWithString(pathString string, existsCheck bool, shouldExist b
 	if err != nil {
 		return nil, err
 	}
-	return &PathNode{path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}, nil
+	return &PathNode{ValueNodeDefault: &ValueNodeDefault{}, path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}, nil
 }
 
 func CreatePathNode(path common.Path, existsCheck bool, shouldExist bool) *PathNode {
-	return &PathNode{path: path, existsCheck: existsCheck, shouldExist: shouldExist}
+	return &PathNode{ValueNodeDefault: &ValueNodeDefault{}, path: path, existsCheck: existsCheck, shouldExist: shouldExist}
 }
 
 func (pn *PathNode) IsExistsCheck() bool {
@@ -147,7 +147,11 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 			}
 
 			evaCtx, _ := pn.path.Evaluate(doc, ctx.Root(), ctx.Configuration())
-			res = evaCtx.GetValue()
+			var err error
+			res, err = evaCtx.GetValue()
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		res = ctx.Configuration().JsonProvider().Unwrap(res)
@@ -247,7 +251,8 @@ func (n *NumberNode) Equals(o interface{}) bool {
 
 func CreateNumberNode(decimal2 *decimal.Decimal) *NumberNode {
 	return &NumberNode{
-		number: decimal2,
+		ValueNodeDefault: &ValueNodeDefault{},
+		number:           decimal2,
 	}
 }
 
@@ -255,7 +260,8 @@ func CreateNumberNodeByString(str string) (*NumberNode, error) {
 	decimal2, err := decimal.NewFromString(str)
 	if err == nil {
 		return &NumberNode{
-			number: &decimal2,
+			ValueNodeDefault: &ValueNodeDefault{},
+			number:           &decimal2,
 		}, nil
 	} else {
 		return nil, err
@@ -308,7 +314,8 @@ func (n *StringNode) AsStringNode() (*StringNode, error) {
 }
 
 func CreateStringNode(str string, escape bool) *StringNode {
-	return &StringNode{}
+	//TODO
+	return &StringNode{ValueNodeDefault: &ValueNodeDefault{}}
 }
 
 func (n *StringNode) String() string {
@@ -397,7 +404,8 @@ func CreateBooleanNodeByString(str string) *BooleanNode {
 
 func CreateBooleanNode(value bool) *BooleanNode {
 	return &BooleanNode{
-		value: value,
+		ValueNodeDefault: &ValueNodeDefault{},
+		value:            value,
 	}
 }
 
@@ -719,11 +727,11 @@ func (n *JsonNode) AsValueListNodeByPredicateContext(ctx common.PredicateContext
 }
 
 func CreateJsonNodeByString(json string) *JsonNode {
-	return &JsonNode{}
+	return &JsonNode{ValueNodeDefault: &ValueNodeDefault{}}
 }
 
 func CreateJsonNodeByObject(json interface{}) *JsonNode {
-	return &JsonNode{}
+	return &JsonNode{ValueNodeDefault: &ValueNodeDefault{}}
 }
 
 func isPath(o interface{}) bool {

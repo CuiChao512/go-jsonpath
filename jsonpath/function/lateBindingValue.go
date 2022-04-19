@@ -46,7 +46,11 @@ func CreateLateBindingValue(path common.Path, rootDocument interface{}, configur
 	if err != nil {
 		return nil, err
 	}
-	l.result = e.GetValue()
+	l.result, err = e.GetValue()
+	if err != nil {
+		return nil, err
+	}
+
 	return l, nil
 }
 

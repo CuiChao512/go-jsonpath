@@ -74,7 +74,7 @@ func UtilsConcat(s ...string) string {
 	return result
 }
 
-func UtilsToString(obj ...interface{}) string {
+func UtilsToString(obj interface{}) string {
 	return fmt.Sprint(obj)
 }
 

@@ -5,19 +5,22 @@ import (
 	"errors"
 )
 
+var documentEvalCache = map[common.Path]interface{}{}
+
 type EvaluationContextImpl struct {
 	configuration     *common.Configuration
 	forUpdate         bool
 	path              common.Path
 	rootDocument      interface{}
 	updateOperations  []common.PathRef
-	documentEvalCache map[common.Path]interface{}
+	valueResult       []interface{}
+	pathResult        []interface{}
 	suppressException bool
 	resultIndex       int
 }
 
-func (e *EvaluationContextImpl) DocumentEvalCache() map[common.Path]interface{} {
-	return e.documentEvalCache
+func (*EvaluationContextImpl) DocumentEvalCache() map[common.Path]interface{} {
+	return documentEvalCache
 }
 
 func (e *EvaluationContextImpl) GetRoot() (*RootPathToken, error) {
@@ -44,22 +47,97 @@ func (e *EvaluationContextImpl) RootDocument() interface{} {
 	return e.rootDocument
 }
 
-func (e *EvaluationContextImpl) GetValue() interface{} {
-	return nil
+func (e *EvaluationContextImpl) GetValue() (interface{}, error) {
+	return e.GetValueUnwrap(true)
 }
 
-func (e *EvaluationContextImpl) ToIterable(model interface{}) []interface{} {
-	return nil
-}
+func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) (interface{}, error) {
+	if e.path.IsDefinite() {
+		if e.resultIndex == 0 {
+			if e.suppressException {
+				return nil, nil
+			}
+			return nil, &common.PathNotFoundError{Message: "No results for path: " + e.path.String()}
+		}
+		if length, err := e.JsonProvider().Length(e.valueResult); err != nil {
+			return nil, err
+		} else {
+			var value interface{}
+			if length > 0 {
+				value = e.JsonProvider().GetArrayIndex(e.valueResult, length-1)
+			}
 
-func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) interface{} {
-	return nil
+			if value != nil && unwrap {
+				value = e.JsonProvider().Unwrap(value)
+			}
+			return value, nil
+		}
+	}
+	return e.valueResult, nil
 }
 
 func (e *EvaluationContextImpl) ForUpdate() bool {
-	return false
+	return e.forUpdate
 }
 
-func (e *EvaluationContextImpl) AddResult(pathString string, operation common.PathRef, model interface{}) {
+func (e *EvaluationContextImpl) AddResult(pathString string, operation common.PathRef, model interface{}) error {
+	if e.forUpdate {
+		e.updateOperations = append(e.updateOperations, operation)
+	}
 
+	if err := e.configuration.JsonProvider().SetArrayIndex(e.valueResult, e.resultIndex, model); err != nil {
+		return err
+	}
+
+	if err := e.configuration.JsonProvider().SetArrayIndex(e.pathResult, e.resultIndex, pathString); err != nil {
+		return err
+	}
+
+	e.resultIndex++
+
+	if len(e.configuration.GetEvaluationListeners()) == 0 {
+		idx := e.resultIndex - 1
+		for _, listener := range e.configuration.GetEvaluationListeners() {
+			continuation := listener.ResultFound(createFoundResultImpl(idx, pathString, model))
+			if continuation == common.ABORT {
+				return &common.EvaluationAbortError{}
+			}
+		}
+	}
+	return nil
+}
+
+func CreateEvaluationContextImpl(path common.Path, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) *EvaluationContextImpl {
+	e := &EvaluationContextImpl{}
+	e.forUpdate = forUpdate
+	e.path = path
+	e.rootDocument = rootDocument
+	e.configuration = configuration
+	e.valueResult = configuration.JsonProvider().CreateArray()
+	e.pathResult = configuration.JsonProvider().CreateArray()
+	e.updateOperations = []common.PathRef{}
+	e.suppressException = common.UtilsSliceContains(configuration.Options(), common.OPTION_SUPPRESS_EXCEPTIONS)
+	return e
+}
+
+type FoundResultImpl struct {
+	index  int
+	path   string
+	result interface{}
+}
+
+func (f *FoundResultImpl) Index() int {
+	return f.index
+}
+
+func (f *FoundResultImpl) Path() string {
+	return f.path
+}
+
+func (f *FoundResultImpl) Result() interface{} {
+	return f.result
+}
+
+func createFoundResultImpl(idx int, path string, model interface{}) common.FoundResult {
+	return &FoundResultImpl{index: idx, path: path, result: model}
 }

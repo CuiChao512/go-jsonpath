@@ -377,6 +377,7 @@ func (r *RootPathToken) SetTail(token Token) {
 
 func CreateRootPathToken(token rune) *RootPathToken {
 	root := &RootPathToken{}
+	root.defaultToken = &defaultToken{}
 	root.rootToken = string(token)
 	root.tail = root
 	root.tokenCount = 1
@@ -478,6 +479,8 @@ func (f *FunctionPathToken) cleanWildcardPathToken() {
 
 func CreateFunctionPathToken(pathFragment string, parameters []*function.Parameter) *FunctionPathToken {
 	functionPathToken := &FunctionPathToken{}
+	functionPathToken.defaultToken = &defaultToken{}
+
 	if parameters != nil && len(parameters) > 0 {
 		functionPathToken.pathFragment = pathFragment + "(...)"
 	} else {
@@ -576,7 +579,7 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent common.PathRef, 
 }
 
 func CreatePropertyPathToken(properties []string, stringDelimiter string) *PropertyPathToken {
-	return &PropertyPathToken{properties: properties, stringDelimiter: stringDelimiter}
+	return &PropertyPathToken{defaultToken: &defaultToken{}, properties: properties, stringDelimiter: stringDelimiter}
 }
 
 //WildCardPathToken
@@ -623,7 +626,7 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent common.PathRef, 
 }
 
 func CreateWildcardPathToken() *WildcardPathToken {
-	return &WildcardPathToken{}
+	return &WildcardPathToken{defaultToken: &defaultToken{}}
 }
 
 // ScanPathToken -----
@@ -892,7 +895,7 @@ func (a *ArrayIndexPathToken) IsTokenDefinite() bool {
 }
 
 func CreateArrayIndexPathToken(arrayIndexOperation *ArrayIndexOperation) *ArrayIndexPathToken {
-	return &ArrayIndexPathToken{arrayIndexOperation: arrayIndexOperation}
+	return &ArrayIndexPathToken{arrayPathToken: &arrayPathToken{defaultToken: &defaultToken{}}, arrayIndexOperation: arrayIndexOperation}
 }
 
 // ArraySlicePathToken -----
@@ -1008,7 +1011,8 @@ func (*ArraySlicePathToken) IsTokenDefinite() bool {
 
 func CreateArraySlicePathToken(operation *ArraySliceOperation) *ArraySlicePathToken {
 	return &ArraySlicePathToken{
-		operation: operation,
+		arrayPathToken: &arrayPathToken{defaultToken: &defaultToken{}},
+		operation:      operation,
 	}
 }
 
@@ -1102,5 +1106,5 @@ func (p *PredicatePathToken) IsTokenDefinite() bool {
 }
 
 func CreatePredicatePathToken(predicates []common.Predicate) *PredicatePathToken {
-	return &PredicatePathToken{predicates: predicates}
+	return &PredicatePathToken{defaultToken: &defaultToken{}, predicates: predicates}
 }
