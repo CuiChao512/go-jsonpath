@@ -106,6 +106,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			if err != nil {
 				return err
 			}
+
 			if idx == "[-1]" || root.GetTail().prevToken().GetPathFragment() == idx {
 				if err = ctx.AddResult(evalPath, ref, propertyVal); err != nil {
 					return err
@@ -233,7 +234,7 @@ func (t *defaultToken) IsPathDefinite() bool {
 	isDefinite := t.IsTokenDefinite()
 	//isDefinite := true
 	if isDefinite && !t.isLeaf() {
-		isDefinite = t.next.IsPathDefinite()
+		isDefinite = t.GetNext().IsPathDefinite()
 	}
 	t.definite = isDefinite
 	t.definiteUpdated = true
@@ -1034,7 +1035,9 @@ func (p *PredicatePathToken) evaluate(currentPath string, ref common.PathRef, mo
 				op = PathRefNoOp
 			}
 			if p.isLeaf() {
-				ctx.AddResult(currentPath, op, model)
+				if err = ctx.AddResult(currentPath, op, model); err != nil {
+					return err
+				}
 			} else {
 				next, err := p.nextToken()
 				if err != nil {
