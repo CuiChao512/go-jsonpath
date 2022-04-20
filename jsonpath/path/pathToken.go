@@ -27,10 +27,18 @@ type Token interface {
 	GetPathFragment() string
 	appendTailToken(next Token) Token
 	SetUpstreamArrayIndex(idx int)
+	getUpstreamArrayIndex() int
+	setDefinite(definite bool)
+	isDefinite() bool
+	setDefiniteUpdated(definiteUpdated bool)
+	isDefiniteUpdated() bool
+	setUpstreamUpdated(upstreamUpdated bool)
+	isUpstreamUpdated() bool
+	setUpstreamDefinite(upstreamDefinite bool)
+	isRoot() bool
 }
 
 type defaultToken struct {
-	Token
 	prev               Token
 	next               Token
 	definite           bool
@@ -40,17 +48,17 @@ type defaultToken struct {
 	upstreamArrayIndex int
 }
 
-func (t *defaultToken) appendTailToken(next Token) Token {
-	t.next = next
-	t.next.SetPrev(t)
+func tokenAppendTailToken(dt Token, next Token) Token {
+	dt.SetNext(next)
+	dt.GetNext().SetPrev(dt)
 	return next
 }
 
-func (t *defaultToken) SetUpstreamArrayIndex(idx int) {
-	t.upstreamArrayIndex = idx
+func tokenSetUpstreamArrayIndex(dt Token, idx int) {
+	dt.SetUpstreamArrayIndex(idx)
 }
 
-func (t *defaultToken) handleObjectProperty(currentPath string, model interface{}, ctx *EvaluationContextImpl, properties []string) error {
+func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, ctx *EvaluationContextImpl, properties []string) error {
 
 	if len(properties) == 1 {
 		property := properties[0]
@@ -61,13 +69,13 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 			// so this code is quite dangerous (I'd rather rewrite it & move to PropertyPathToken and implemented
 			// WildcardPathToken as a dynamic multi prop case of PropertyPathToken).
 			// Better safe than sorry.
-			switch common.UtilsGetPtrElem(t).(type) {
+			switch common.UtilsGetPtrElem(dt).(type) {
 			case PropertyPathToken:
 			default:
 				return errors.New("only PropertyPathToken is supported")
 			}
 
-			if t.isLeaf() {
+			if dt.isLeaf() {
 
 				if common.UtilsSliceContains(ctx.Options(), common.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
 					propertyVal = nil
@@ -80,7 +88,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 					}
 				}
 			} else {
-				if !(t.IsUpstreamDefinite() && t.IsTokenDefinite()) &&
+				if !(dt.IsUpstreamDefinite() && dt.IsTokenDefinite()) &&
 					!common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) ||
 					common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 					// If there is some indefiniteness in the path and properties are not required - we'll ignore
@@ -100,8 +108,8 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 		} else {
 			ref = PathRefNoOp
 		}
-		if t.isLeaf() {
-			idx := "[" + common.UtilsToString(t.upstreamArrayIndex) + "]"
+		if dt.isLeaf() {
+			idx := "[" + common.UtilsToString(dt.getUpstreamArrayIndex()) + "]"
 			root, err := ctx.GetRoot()
 			if err != nil {
 				return err
@@ -113,7 +121,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 				}
 			}
 		} else {
-			next, _ := t.nextToken()
+			next, _ := dt.nextToken()
 			err := next.Evaluate(evalPath, ref, propertyVal, ctx)
 			if err != nil {
 				return err
@@ -122,7 +130,7 @@ func (t *defaultToken) handleObjectProperty(currentPath string, model interface{
 	} else {
 		evalPath := currentPath + "[" + common.UtilsJoin(", ", "'", properties) + "]"
 
-		if !t.isLeaf() {
+		if !dt.isLeaf() {
 			return errors.New("non-leaf multi props handled elsewhere")
 		}
 
@@ -178,7 +186,7 @@ func pathTokenReadObjectProperty(property string, model interface{}, ctx *Evalua
 	return ctx.JsonProvider().GetMapValue(model, property)
 }
 
-func (t *defaultToken) handleArrayIndex(index int, currentPath string, model interface{}, ctx *EvaluationContextImpl) error {
+func tokenHandleArrayIndex(dt Token, index int, currentPath string, model interface{}, ctx *EvaluationContextImpl) error {
 	evalPath := common.UtilsConcat(currentPath, "[", strconv.FormatInt(int64(index), 10), "]")
 	var pathRef common.PathRef
 	if ctx.ForUpdate() {
@@ -200,12 +208,12 @@ func (t *defaultToken) handleArrayIndex(index int, currentPath string, model int
 
 	evalHit := ctx.JsonProvider().GetArrayIndex(model, effectiveIndex)
 
-	if t.isLeaf() {
+	if dt.isLeaf() {
 		if err := ctx.AddResult(evalPath, pathRef, evalHit); err != nil {
 			return err
 		}
 	} else {
-		next, err := t.nextToken()
+		next, err := dt.nextToken()
 		if err != nil {
 			return err
 		}
@@ -214,45 +222,33 @@ func (t *defaultToken) handleArrayIndex(index int, currentPath string, model int
 	return nil
 }
 
-func (t *defaultToken) prevToken() Token {
-	return t.prev
-}
-
-func (t *defaultToken) isLeaf() bool {
-	return t.next == nil
-}
-
-func (t *defaultToken) isRoot() bool {
-	return t.prev == nil
-}
-
-func (t *defaultToken) IsPathDefinite() bool {
-	if t.definiteUpdated {
-		return t.definite
+func tokenIsPathDefinite(dt Token) bool {
+	if dt.isDefiniteUpdated() {
+		return dt.isDefinite()
 	}
 
-	isDefinite := t.IsTokenDefinite()
+	isDefinite := dt.IsTokenDefinite()
 	//isDefinite := true
-	if isDefinite && !t.isLeaf() {
-		isDefinite = t.GetNext().IsPathDefinite()
+	if isDefinite && !dt.isLeaf() {
+		isDefinite = dt.GetNext().IsPathDefinite()
 	}
-	t.definite = isDefinite
-	t.definiteUpdated = true
+	dt.setDefinite(isDefinite)
+	dt.setDefiniteUpdated(true)
 	return isDefinite
 }
 
-func (t *defaultToken) IsUpstreamDefinite() bool {
-	if t.upstreamUpdated == false {
-		t.upstreamUpdated = true
-		t.upstreamDefinite = t.isRoot() || t.prev.IsPathDefinite() && t.prev.IsUpstreamDefinite()
+func tokenIsUpstreamDefinite(dt Token) bool {
+	if dt.isUpstreamUpdated() == false {
+		dt.setUpstreamUpdated(true)
+		dt.setUpstreamDefinite(dt.isRoot() || dt.prevToken().IsPathDefinite() && dt.prevToken().IsUpstreamDefinite())
 	}
-	return t.upstreamDefinite
+	return dt.IsUpstreamDefinite()
 }
 
-func (t *defaultToken) GetTokenCount() (int, error) {
+func tokenGetTokenCount(dt Token) (int, error) {
 	cnt := 1
 	var token Token
-	token = t
+	token = dt
 	for token.isLeaf() {
 		next1, err := token.nextToken()
 		if err != nil {
@@ -264,16 +260,16 @@ func (t *defaultToken) GetTokenCount() (int, error) {
 	return cnt, nil
 }
 
-func (t *defaultToken) String() string {
-	if t.isLeaf() {
-		return t.GetPathFragment()
+func tokenString(dt Token) string {
+	if dt.isLeaf() {
+		return dt.GetPathFragment()
 	} else {
-		token, _ := t.nextToken()
-		return t.GetPathFragment() + token.String()
+		token, _ := dt.nextToken()
+		return dt.GetPathFragment() + token.String()
 	}
 }
 
-func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func tokenInvoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, nil)
 	if err != nil {
 		return err
@@ -281,23 +277,11 @@ func (t *defaultToken) Invoke(pathFunction function.PathFunction, currentPath st
 	return ctx.AddResult(currentPath, parent, result)
 }
 
-func (t *defaultToken) nextToken() (Token, error) {
-	if t.isLeaf() {
+func tokenNextToken(dt Token) (Token, error) {
+	if dt.isLeaf() {
 		return nil, &common.IllegalStateException{Message: "Current path token is a leaf"}
 	}
-	return t.next, nil
-}
-
-func (t *defaultToken) SetPrev(prev Token) {
-	t.prev = prev
-}
-
-func (t *defaultToken) SetNext(next Token) {
-	t.next = next
-}
-
-func (t *defaultToken) GetNext() Token {
-	return t.next
+	return dt.GetNext(), nil
 }
 
 //RootPathToken ----
@@ -308,8 +292,92 @@ type RootPathToken struct {
 	rootToken  string
 }
 
+func (r *RootPathToken) SetPrev(prev Token) {
+	r.prev = prev
+}
+
+func (r *RootPathToken) SetNext(next Token) {
+	r.next = next
+}
+
+func (r *RootPathToken) GetNext() Token {
+	return r.next
+}
+
 func (r *RootPathToken) GetTail() Token {
 	return r.tail
+}
+
+func (r *RootPathToken) isLeaf() bool {
+	return r.next == nil
+}
+
+func (r *RootPathToken) isRoot() bool {
+	return r.prev == nil
+}
+
+func (r *RootPathToken) nextToken() (Token, error) {
+	return tokenNextToken(r)
+}
+
+func (r *RootPathToken) prevToken() Token {
+	return r.prev
+}
+
+func (r *RootPathToken) setDefiniteUpdated(definiteUpdated bool) {
+	r.definiteUpdated = definiteUpdated
+}
+
+func (r *RootPathToken) isDefiniteUpdated() bool {
+	return r.definiteUpdated
+}
+
+func (r *RootPathToken) setDefinite(definite bool) {
+	r.definite = definite
+}
+
+func (r *RootPathToken) isDefinite() bool {
+	return r.definite
+}
+
+func (r *RootPathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	r.upstreamUpdated = upstreamUpdated
+}
+
+func (r *RootPathToken) isUpstreamUpdated() bool {
+	return r.upstreamUpdated
+}
+
+func (r *RootPathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	r.upstreamDefinite = upstreamDefinite
+}
+
+func (r *RootPathToken) IsUpstreamDefinite() bool {
+	return r.upstreamDefinite
+}
+
+func (r *RootPathToken) String() string {
+	return tokenString(r)
+}
+
+func (r *RootPathToken) getUpstreamArrayIndex() int {
+	return r.upstreamArrayIndex
+}
+
+func (r *RootPathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (r *RootPathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(r)
+}
+
+func (r *RootPathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(r, idx)
+}
+
+func (r *RootPathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(r, next)
 }
 
 func (r *RootPathToken) GetTokenCount() (int, error) {
@@ -393,6 +461,102 @@ type FunctionPathToken struct {
 	functionName   string
 	pathFragment   string
 	functionParams []*function.Parameter
+}
+
+func (f *FunctionPathToken) SetPrev(prev Token) {
+	f.prev = prev
+}
+
+func (f *FunctionPathToken) SetNext(next Token) {
+	f.next = next
+}
+
+func (f *FunctionPathToken) GetNext() Token {
+	return f.next
+}
+
+func (f *FunctionPathToken) isLeaf() bool {
+	return f.next == nil
+}
+
+func (f *FunctionPathToken) isRoot() bool {
+	return f.prev == nil
+}
+
+func (f *FunctionPathToken) nextToken() (Token, error) {
+	return tokenNextToken(f)
+}
+
+func (f *FunctionPathToken) prevToken() Token {
+	return f.prev
+}
+
+func (f *FunctionPathToken) setDefiniteUpdated(definiteUpdated bool) {
+	f.definiteUpdated = definiteUpdated
+}
+
+func (f *FunctionPathToken) isDefiniteUpdated() bool {
+	return f.definiteUpdated
+}
+
+func (f *FunctionPathToken) setDefinite(definite bool) {
+	f.definite = definite
+}
+
+func (f *FunctionPathToken) isDefinite() bool {
+	return f.definite
+}
+
+func (f *FunctionPathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	f.upstreamUpdated = upstreamUpdated
+}
+
+func (f *FunctionPathToken) isUpstreamUpdated() bool {
+	return f.upstreamUpdated
+}
+
+func (f *FunctionPathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	f.upstreamDefinite = upstreamDefinite
+}
+
+func (f *FunctionPathToken) IsUpstreamDefinite() bool {
+	return f.upstreamDefinite
+}
+
+func (f *FunctionPathToken) String() string {
+	return tokenString(f)
+}
+
+func (f *FunctionPathToken) getUpstreamArrayIndex() int {
+	return f.upstreamArrayIndex
+}
+
+func (f *FunctionPathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (f *FunctionPathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(f)
+}
+
+func (f *FunctionPathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(f, idx)
+}
+
+func (f *FunctionPathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(f, next)
+}
+
+func (f *FunctionPathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(f)
+}
+
+func (f *FunctionPathToken) IsTokenDefinite() bool {
+	return true
+}
+
+func (f *FunctionPathToken) GetPathFragment() string {
+	return "." + f.pathFragment
 }
 
 func (f *FunctionPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
@@ -502,6 +666,94 @@ type PropertyPathToken struct {
 	stringDelimiter string
 }
 
+func (p *PropertyPathToken) SetPrev(prev Token) {
+	p.prev = prev
+}
+
+func (p *PropertyPathToken) SetNext(next Token) {
+	p.next = next
+}
+
+func (p *PropertyPathToken) GetNext() Token {
+	return p.next
+}
+
+func (p *PropertyPathToken) isLeaf() bool {
+	return p.next == nil
+}
+
+func (p *PropertyPathToken) isRoot() bool {
+	return p.prev == nil
+}
+
+func (p *PropertyPathToken) nextToken() (Token, error) {
+	return tokenNextToken(p)
+}
+
+func (p *PropertyPathToken) prevToken() Token {
+	return p.prev
+}
+
+func (p *PropertyPathToken) setDefiniteUpdated(definiteUpdated bool) {
+	p.definiteUpdated = definiteUpdated
+}
+
+func (p *PropertyPathToken) isDefiniteUpdated() bool {
+	return p.definiteUpdated
+}
+
+func (p *PropertyPathToken) setDefinite(definite bool) {
+	p.definite = definite
+}
+
+func (p *PropertyPathToken) isDefinite() bool {
+	return p.definite
+}
+
+func (p *PropertyPathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	p.upstreamUpdated = upstreamUpdated
+}
+
+func (p *PropertyPathToken) isUpstreamUpdated() bool {
+	return p.upstreamUpdated
+}
+
+func (p *PropertyPathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	p.upstreamDefinite = upstreamDefinite
+}
+
+func (p *PropertyPathToken) IsUpstreamDefinite() bool {
+	return p.upstreamDefinite
+}
+
+func (p *PropertyPathToken) String() string {
+	return tokenString(p)
+}
+
+func (p *PropertyPathToken) getUpstreamArrayIndex() int {
+	return p.upstreamArrayIndex
+}
+
+func (p *PropertyPathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (p *PropertyPathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(p)
+}
+
+func (p *PropertyPathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(p, idx)
+}
+
+func (p *PropertyPathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(p, next)
+}
+
+func (p *PropertyPathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(p)
+}
+
 func (p *PropertyPathToken) GetProperties() []string {
 	return p.properties
 }
@@ -559,7 +811,7 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent common.PathRef, 
 	}
 
 	if p.SinglePropertyCase() || p.MultiPropertyMergeCase() {
-		return p.handleObjectProperty(currentPath, model, ctx, p.properties)
+		return tokenHandleObjectProperty(p, currentPath, model, ctx, p.properties)
 	}
 
 	if !p.MultiPropertyIterationCase() {
@@ -567,7 +819,7 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent common.PathRef, 
 	}
 
 	for _, property := range p.properties {
-		err := p.handleObjectProperty(currentPath, model, ctx, []string{property})
+		err := tokenHandleObjectProperty(p, currentPath, model, ctx, []string{property})
 		if err != nil {
 			return err
 		}
@@ -586,6 +838,94 @@ type WildcardPathToken struct {
 	*defaultToken
 }
 
+func (w *WildcardPathToken) SetPrev(prev Token) {
+	w.prev = prev
+}
+
+func (w *WildcardPathToken) SetNext(next Token) {
+	w.next = next
+}
+
+func (w *WildcardPathToken) GetNext() Token {
+	return w.next
+}
+
+func (w *WildcardPathToken) isLeaf() bool {
+	return w.next == nil
+}
+
+func (w *WildcardPathToken) isRoot() bool {
+	return w.prev == nil
+}
+
+func (w *WildcardPathToken) nextToken() (Token, error) {
+	return tokenNextToken(w)
+}
+
+func (w *WildcardPathToken) prevToken() Token {
+	return w.prev
+}
+
+func (w *WildcardPathToken) setDefiniteUpdated(definiteUpdated bool) {
+	w.definiteUpdated = definiteUpdated
+}
+
+func (w *WildcardPathToken) isDefiniteUpdated() bool {
+	return w.definiteUpdated
+}
+
+func (w *WildcardPathToken) setDefinite(definite bool) {
+	w.definite = definite
+}
+
+func (w *WildcardPathToken) isDefinite() bool {
+	return w.definite
+}
+
+func (w *WildcardPathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	w.upstreamUpdated = upstreamUpdated
+}
+
+func (w *WildcardPathToken) isUpstreamUpdated() bool {
+	return w.upstreamUpdated
+}
+
+func (w *WildcardPathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	w.upstreamDefinite = upstreamDefinite
+}
+
+func (w *WildcardPathToken) IsUpstreamDefinite() bool {
+	return w.upstreamDefinite
+}
+
+func (w *WildcardPathToken) String() string {
+	return tokenString(w)
+}
+
+func (w *WildcardPathToken) getUpstreamArrayIndex() int {
+	return w.upstreamArrayIndex
+}
+
+func (w *WildcardPathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (w *WildcardPathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(w)
+}
+
+func (w *WildcardPathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(w, idx)
+}
+
+func (w *WildcardPathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(w, next)
+}
+
+func (w *WildcardPathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(w)
+}
+
 func (w *WildcardPathToken) IsTokenDefinite() bool {
 	return false
 }
@@ -601,7 +941,7 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent common.PathRef, 
 			return err
 		}
 		for _, property := range propertyKeys {
-			err := w.handleObjectProperty(currentPath, model, ctx, []string{property})
+			err := tokenHandleObjectProperty(w, currentPath, model, ctx, []string{property})
 			if err != nil {
 				return err
 			}
@@ -613,7 +953,7 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent common.PathRef, 
 		}
 
 		for idx := 0; idx < length; idx++ {
-			err := w.handleArrayIndex(idx, currentPath, model, ctx)
+			err := tokenHandleArrayIndex(w, idx, currentPath, model, ctx)
 
 			if err != nil && common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) {
 				return err
@@ -629,15 +969,15 @@ func CreateWildcardPathToken() *WildcardPathToken {
 
 // ScanPathToken -----
 
-type ScanPredicate interface {
-	matches(model interface{}) (bool, error)
-}
-
 type defaultScanPredicate struct {
 }
 
 func (*defaultScanPredicate) matches(model interface{}) (bool, error) {
 	return false, nil
+}
+
+type ScanPredicate interface {
+	matches(model interface{}) (bool, error)
 }
 
 type filterPathTokenPredicate struct {
@@ -658,7 +998,6 @@ func createFilterPathTokenPredicate(target Token, ctx *EvaluationContextImpl) *f
 }
 
 type wildCardPathTokenPredicate struct {
-	*defaultScanPredicate
 }
 
 func (*wildCardPathTokenPredicate) matches(model interface{}) (bool, error) {
@@ -666,7 +1005,6 @@ func (*wildCardPathTokenPredicate) matches(model interface{}) (bool, error) {
 }
 
 type arrayPathTokenPredicate struct {
-	*defaultScanPredicate
 	ctx *EvaluationContextImpl
 }
 
@@ -675,7 +1013,6 @@ func (a *arrayPathTokenPredicate) matches(model interface{}) (bool, error) {
 }
 
 type propertyPathTokenPredicate struct {
-	*defaultScanPredicate
 	ctx               *EvaluationContextImpl
 	propertyPathToken *PropertyPathToken
 }
@@ -707,6 +1044,94 @@ var falseScanPredicate = &defaultScanPredicate{}
 
 type ScanPathToken struct {
 	*defaultToken
+}
+
+func (s *ScanPathToken) SetPrev(prev Token) {
+	s.prev = prev
+}
+
+func (s *ScanPathToken) SetNext(next Token) {
+	s.next = next
+}
+
+func (s *ScanPathToken) GetNext() Token {
+	return s.next
+}
+
+func (s *ScanPathToken) isLeaf() bool {
+	return s.next == nil
+}
+
+func (s *ScanPathToken) isRoot() bool {
+	return s.prev == nil
+}
+
+func (s *ScanPathToken) nextToken() (Token, error) {
+	return tokenNextToken(s)
+}
+
+func (s *ScanPathToken) prevToken() Token {
+	return s.prev
+}
+
+func (s *ScanPathToken) setDefiniteUpdated(definiteUpdated bool) {
+	s.definiteUpdated = definiteUpdated
+}
+
+func (s *ScanPathToken) isDefiniteUpdated() bool {
+	return s.definiteUpdated
+}
+
+func (s *ScanPathToken) setDefinite(definite bool) {
+	s.definite = definite
+}
+
+func (s *ScanPathToken) isDefinite() bool {
+	return s.definite
+}
+
+func (s *ScanPathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	s.upstreamUpdated = upstreamUpdated
+}
+
+func (s *ScanPathToken) isUpstreamUpdated() bool {
+	return s.upstreamUpdated
+}
+
+func (s *ScanPathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	s.upstreamDefinite = upstreamDefinite
+}
+
+func (s *ScanPathToken) IsUpstreamDefinite() bool {
+	return s.upstreamDefinite
+}
+
+func (s *ScanPathToken) String() string {
+	return tokenString(s)
+}
+
+func (s *ScanPathToken) getUpstreamArrayIndex() int {
+	return s.upstreamArrayIndex
+}
+
+func (s *ScanPathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (s *ScanPathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(s)
+}
+
+func (s *ScanPathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(s, idx)
+}
+
+func (s *ScanPathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(s, next)
+}
+
+func (s *ScanPathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(s)
 }
 
 func (s *ScanPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
@@ -808,7 +1233,9 @@ func (*ScanPathToken) createScanPredicate(target Token, ctx *EvaluationContextIm
 	case *PropertyPathToken:
 		p, _ := target.(*PropertyPathToken)
 		return createPropertyPathTokenPredicate(p, ctx)
-	case *arrayPathToken:
+	case *ArrayIndexPathToken:
+		return &arrayPathTokenPredicate{ctx: ctx}
+	case *ArraySlicePathToken:
 		return &arrayPathTokenPredicate{ctx: ctx}
 	case *WildcardPathToken:
 		return &wildCardPathTokenPredicate{}
@@ -831,13 +1258,100 @@ func CreateScanPathToken() *ScanPathToken {
 	return &ScanPathToken{}
 }
 
-// ArrayPathToken
-
-type arrayPathToken struct {
+type ArrayIndexPathToken struct {
 	*defaultToken
+	arrayIndexOperation *ArrayIndexOperation
 }
 
-func (a *arrayPathToken) checkArrayModel(currentPath string, model interface{}, ctx *EvaluationContextImpl) (bool, error) {
+func (a *ArrayIndexPathToken) SetPrev(prev Token) {
+	a.prev = prev
+}
+
+func (a *ArrayIndexPathToken) SetNext(next Token) {
+	a.next = next
+}
+
+func (a *ArrayIndexPathToken) GetNext() Token {
+	return a.next
+}
+
+func (a *ArrayIndexPathToken) isLeaf() bool {
+	return a.next == nil
+}
+
+func (a *ArrayIndexPathToken) isRoot() bool {
+	return a.prev == nil
+}
+
+func (a *ArrayIndexPathToken) nextToken() (Token, error) {
+	return tokenNextToken(a)
+}
+
+func (a *ArrayIndexPathToken) prevToken() Token {
+	return a.prev
+}
+
+func (a *ArrayIndexPathToken) setDefiniteUpdated(definiteUpdated bool) {
+	a.definiteUpdated = definiteUpdated
+}
+
+func (a *ArrayIndexPathToken) isDefiniteUpdated() bool {
+	return a.definiteUpdated
+}
+
+func (a *ArrayIndexPathToken) setDefinite(definite bool) {
+	a.definite = definite
+}
+
+func (a *ArrayIndexPathToken) isDefinite() bool {
+	return a.definite
+}
+
+func (a *ArrayIndexPathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	a.upstreamUpdated = upstreamUpdated
+}
+
+func (a *ArrayIndexPathToken) isUpstreamUpdated() bool {
+	return a.upstreamUpdated
+}
+
+func (a *ArrayIndexPathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	a.upstreamDefinite = upstreamDefinite
+}
+
+func (a *ArrayIndexPathToken) IsUpstreamDefinite() bool {
+	return a.upstreamDefinite
+}
+
+func (a *ArrayIndexPathToken) String() string {
+	return tokenString(a)
+}
+
+func (a *ArrayIndexPathToken) getUpstreamArrayIndex() int {
+	return a.upstreamArrayIndex
+}
+
+func (a *ArrayIndexPathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (a *ArrayIndexPathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(a)
+}
+
+func (a *ArrayIndexPathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(a, idx)
+}
+
+func (a *ArrayIndexPathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(a, next)
+}
+
+func (a *ArrayIndexPathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(a)
+}
+
+func (a *ArrayIndexPathToken) checkArrayModel(currentPath string, model interface{}, ctx *EvaluationContextImpl) (bool, error) {
 	if model == nil {
 		if !a.IsTokenDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
@@ -856,11 +1370,6 @@ func (a *arrayPathToken) checkArrayModel(currentPath string, model interface{}, 
 	return true, nil
 }
 
-type ArrayIndexPathToken struct {
-	*arrayPathToken
-	arrayIndexOperation *ArrayIndexOperation
-}
-
 func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	checkResult, err := a.checkArrayModel(currentPath, model, ctx)
 	if err != nil {
@@ -872,10 +1381,10 @@ func (a *ArrayIndexPathToken) Evaluate(currentPath string, parent common.PathRef
 	}
 
 	if a.arrayIndexOperation.IsSingleIndexOperation() {
-		return a.handleArrayIndex(a.arrayIndexOperation.Indexes()[0], currentPath, model, ctx)
+		return tokenHandleArrayIndex(a, a.arrayIndexOperation.Indexes()[0], currentPath, model, ctx)
 	} else {
 		for _, idx := range a.arrayIndexOperation.Indexes() {
-			err = a.handleArrayIndex(idx, currentPath, model, ctx)
+			err = tokenHandleArrayIndex(a, idx, currentPath, model, ctx)
 			if err != nil {
 				return err
 			}
@@ -893,13 +1402,120 @@ func (a *ArrayIndexPathToken) IsTokenDefinite() bool {
 }
 
 func CreateArrayIndexPathToken(arrayIndexOperation *ArrayIndexOperation) *ArrayIndexPathToken {
-	return &ArrayIndexPathToken{arrayPathToken: &arrayPathToken{defaultToken: &defaultToken{}}, arrayIndexOperation: arrayIndexOperation}
+	return &ArrayIndexPathToken{defaultToken: &defaultToken{}, arrayIndexOperation: arrayIndexOperation}
 }
 
 // ArraySlicePathToken -----
 type ArraySlicePathToken struct {
-	*arrayPathToken
+	*defaultToken
 	operation *ArraySliceOperation
+}
+
+func (a *ArraySlicePathToken) SetPrev(prev Token) {
+	a.prev = prev
+}
+
+func (a *ArraySlicePathToken) SetNext(next Token) {
+	a.next = next
+}
+
+func (a *ArraySlicePathToken) GetNext() Token {
+	return a.next
+}
+
+func (a *ArraySlicePathToken) isLeaf() bool {
+	return a.next == nil
+}
+
+func (a *ArraySlicePathToken) isRoot() bool {
+	return a.prev == nil
+}
+
+func (a *ArraySlicePathToken) nextToken() (Token, error) {
+	return tokenNextToken(a)
+}
+
+func (a *ArraySlicePathToken) prevToken() Token {
+	return a.prev
+}
+
+func (a *ArraySlicePathToken) setDefiniteUpdated(definiteUpdated bool) {
+	a.definiteUpdated = definiteUpdated
+}
+
+func (a *ArraySlicePathToken) isDefiniteUpdated() bool {
+	return a.definiteUpdated
+}
+
+func (a *ArraySlicePathToken) setDefinite(definite bool) {
+	a.definite = definite
+}
+
+func (a *ArraySlicePathToken) isDefinite() bool {
+	return a.definite
+}
+
+func (a *ArraySlicePathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	a.upstreamUpdated = upstreamUpdated
+}
+
+func (a *ArraySlicePathToken) isUpstreamUpdated() bool {
+	return a.upstreamUpdated
+}
+
+func (a *ArraySlicePathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	a.upstreamDefinite = upstreamDefinite
+}
+
+func (a *ArraySlicePathToken) IsUpstreamDefinite() bool {
+	return a.upstreamDefinite
+}
+
+func (a *ArraySlicePathToken) String() string {
+	return tokenString(a)
+}
+
+func (a *ArraySlicePathToken) getUpstreamArrayIndex() int {
+	return a.upstreamArrayIndex
+}
+
+func (a *ArraySlicePathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (a *ArraySlicePathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(a)
+}
+
+func (a *ArraySlicePathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(a, idx)
+}
+
+func (a *ArraySlicePathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(a, next)
+}
+
+func (a *ArraySlicePathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(a)
+}
+
+func (a *ArraySlicePathToken) checkArrayModel(currentPath string, model interface{}, ctx *EvaluationContextImpl) (bool, error) {
+	if model == nil {
+		if !a.IsTokenDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
+			return false, nil
+		} else {
+			return false, &common.PathNotFoundError{Message: "The path " + currentPath + " is null"}
+		}
+	}
+
+	if ctx.JsonProvider().IsArray(model) {
+		if a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
+			return false, nil
+		} else {
+			return false, &common.PathNotFoundError{Message: fmt.Sprintf("Filter: %s can only be applied to arrays. Current context is: %s", a, model)}
+		}
+	}
+	return true, nil
 }
 
 func (a *ArraySlicePathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
@@ -939,7 +1555,7 @@ func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent common.PathRe
 		return nil
 	}
 	for i := from; i < length; i++ {
-		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		err := tokenHandleArrayIndex(a, i, currentPath, model, ctx)
 		if err != nil {
 			return err
 		}
@@ -964,7 +1580,7 @@ func (a *ArraySlicePathToken) sliceBetween(currentPath string, parent common.Pat
 	log.Printf("Slice between indexes on array with length: %d. From index: %d to: %d. Input: %s", length, from, to, common.UtilsToString(a))
 
 	for i := from; i < to; i++ {
-		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		err := tokenHandleArrayIndex(a, i, currentPath, model, ctx)
 		if err != nil {
 			return err
 		}
@@ -991,7 +1607,7 @@ func (a *ArraySlicePathToken) sliceTo(currentPath string, parent common.PathRef,
 	log.Printf("Slice to index on array with length: %d. From index: 0 to: %d. Input: %s", length, to, common.UtilsToString(a))
 
 	for i := 0; i < to; i++ {
-		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		err := tokenHandleArrayIndex(a, i, currentPath, model, ctx)
 		if err != nil {
 			return err
 		}
@@ -1009,8 +1625,8 @@ func (*ArraySlicePathToken) IsTokenDefinite() bool {
 
 func CreateArraySlicePathToken(operation *ArraySliceOperation) *ArraySlicePathToken {
 	return &ArraySlicePathToken{
-		arrayPathToken: &arrayPathToken{defaultToken: &defaultToken{}},
-		operation:      operation,
+		defaultToken: &defaultToken{},
+		operation:    operation,
 	}
 }
 
@@ -1021,7 +1637,95 @@ type PredicatePathToken struct {
 	predicates []common.Predicate
 }
 
-func (p *PredicatePathToken) evaluate(currentPath string, ref common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (p *PredicatePathToken) SetPrev(prev Token) {
+	p.prev = prev
+}
+
+func (p *PredicatePathToken) SetNext(next Token) {
+	p.next = next
+}
+
+func (p *PredicatePathToken) GetNext() Token {
+	return p.next
+}
+
+func (p *PredicatePathToken) isLeaf() bool {
+	return p.next == nil
+}
+
+func (p *PredicatePathToken) isRoot() bool {
+	return p.prev == nil
+}
+
+func (p *PredicatePathToken) nextToken() (Token, error) {
+	return tokenNextToken(p)
+}
+
+func (p *PredicatePathToken) prevToken() Token {
+	return p.prev
+}
+
+func (p *PredicatePathToken) setDefiniteUpdated(definiteUpdated bool) {
+	p.definiteUpdated = definiteUpdated
+}
+
+func (p *PredicatePathToken) isDefiniteUpdated() bool {
+	return p.definiteUpdated
+}
+
+func (p *PredicatePathToken) setDefinite(definite bool) {
+	p.definite = definite
+}
+
+func (p *PredicatePathToken) isDefinite() bool {
+	return p.definite
+}
+
+func (p *PredicatePathToken) setUpstreamUpdated(upstreamUpdated bool) {
+	p.upstreamUpdated = upstreamUpdated
+}
+
+func (p *PredicatePathToken) isUpstreamUpdated() bool {
+	return p.upstreamUpdated
+}
+
+func (p *PredicatePathToken) setUpstreamDefinite(upstreamDefinite bool) {
+	p.upstreamDefinite = upstreamDefinite
+}
+
+func (p *PredicatePathToken) IsUpstreamDefinite() bool {
+	return p.upstreamDefinite
+}
+
+func (p *PredicatePathToken) String() string {
+	return tokenString(p)
+}
+
+func (p *PredicatePathToken) getUpstreamArrayIndex() int {
+	return p.upstreamArrayIndex
+}
+
+func (p *PredicatePathToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
+}
+
+func (p *PredicatePathToken) IsPathDefinite() bool {
+	return tokenIsPathDefinite(p)
+}
+
+func (p *PredicatePathToken) SetUpstreamArrayIndex(idx int) {
+	tokenSetUpstreamArrayIndex(p, idx)
+}
+
+func (p *PredicatePathToken) appendTailToken(next Token) Token {
+	return tokenAppendTailToken(p, next)
+}
+
+func (p *PredicatePathToken) GetTokenCount() (int, error) {
+	return tokenGetTokenCount(p)
+}
+
+func (p *PredicatePathToken) Evaluate(currentPath string, ref common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	if ctx.JsonProvider().IsMap(model) {
 		acceptResult, err := p.accept(model, ctx.RootDocument(), ctx.Configuration(), ctx)
 		if err != nil {
@@ -1058,7 +1762,7 @@ func (p *PredicatePathToken) evaluate(currentPath string, ref common.PathRef, mo
 				return err
 			}
 			if acceptResult {
-				err = p.handleArrayIndex(idx, currentPath, model, ctx)
+				err = tokenHandleArrayIndex(p, idx, currentPath, model, ctx)
 				if err != nil {
 					return err
 				}
