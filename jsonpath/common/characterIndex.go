@@ -173,7 +173,7 @@ func (ci *CharacterIndex) NextIndexOfUnescapedFromStartPosition(startPosition in
 	readPosition := startPosition + 1
 	inEscape := false
 
-	for ci.IsOutOfBounds(readPosition) {
+	for !ci.IsOutOfBounds(readPosition) {
 		if inEscape {
 			inEscape = false
 		} else if '\\' == ci.CharAt(readPosition) {

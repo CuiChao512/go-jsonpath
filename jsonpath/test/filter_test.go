@@ -1,6 +1,7 @@
 package test
 
 import (
+	"encoding/json"
 	"github.com/CuiChao512/go-jsonpath/jsonpath"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/filter"
@@ -43,6 +44,11 @@ type testDataRow struct {
 	Expected   bool
 }
 
+func (t testDataRow) String() string {
+	str, _ := json.Marshal(t)
+	return string(str)
+}
+
 var testMetaData = []testDataRow{
 	//equals
 	//{
@@ -73,22 +79,22 @@ var testMetaData = []testDataRow{
 		Expression: "[?(1 == '1')]",
 		Expected:   true,
 	},
-	//{
-	//	Expression: "[?('1' == 1)]",
-	//	Expected:   true,
-	//},
-	//{
-	//	Expression: "[?(1 === '1')]",
-	//	Expected:   false,
-	//},
-	//{
-	//	Expression: "[?('1' === 1)]",
-	//	Expected:   false,
-	//},
-	//{
-	//	Expression: "[?(1 === 1)]",
-	//	Expected:   true,
-	//},
+	{
+		Expression: "[?('1' == 1)]",
+		Expected:   true,
+	},
+	{
+		Expression: "[?(1 === '1')]",
+		Expected:   false,
+	},
+	{
+		Expression: "[?('1' === 1)]",
+		Expected:   false,
+	},
+	{
+		Expression: "[?(1 === 1)]",
+		Expected:   true,
+	},
 	//{
 	//	Key:      "long-key",
 	//	Operator: eq,
