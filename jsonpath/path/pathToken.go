@@ -64,6 +64,7 @@ func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, 
 		property := properties[0]
 		evalPath := common.UtilsConcat(currentPath, "['", property, "']")
 		propertyVal := pathTokenReadObjectProperty(property, model, ctx)
+		fmt.Println("propertyVal:", common.UtilsToString(propertyVal))
 		if propertyVal == common.JsonProviderUndefined {
 			// Conditions below heavily depend on current token type (and its logic) and are not "universal",
 			// so this code is quite dangerous (I'd rather rewrite it & move to PropertyPathToken and implemented
@@ -159,7 +160,8 @@ func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, 
 					continue
 				}
 			}
-			if err = ctx.JsonProvider().SetProperty(merged, property, propertyVal); err != nil {
+			var m interface{} = merged
+			if err = ctx.JsonProvider().SetProperty(&m, property, propertyVal); err != nil {
 				return err
 			}
 		}
@@ -441,7 +443,7 @@ func (r *RootPathToken) SetTail(token Token) {
 
 func CreateRootPathToken(token rune) *RootPathToken {
 	root := &RootPathToken{}
-	root.defaultToken = &defaultToken{}
+	root.defaultToken = &defaultToken{upstreamArrayIndex: -1}
 	root.rootToken = string(token)
 	root.tail = root
 	root.tokenCount = 1
@@ -641,7 +643,7 @@ func (f *FunctionPathToken) cleanWildcardPathToken() {
 
 func CreateFunctionPathToken(pathFragment string, parameters []*function.Parameter) *FunctionPathToken {
 	functionPathToken := &FunctionPathToken{}
-	functionPathToken.defaultToken = &defaultToken{}
+	functionPathToken.defaultToken = &defaultToken{upstreamArrayIndex: -1}
 
 	if parameters != nil && len(parameters) > 0 {
 		functionPathToken.pathFragment = pathFragment + "(...)"
@@ -829,7 +831,7 @@ func (p *PropertyPathToken) Evaluate(currentPath string, parent common.PathRef, 
 }
 
 func CreatePropertyPathToken(properties []string, stringDelimiter string) *PropertyPathToken {
-	return &PropertyPathToken{defaultToken: &defaultToken{}, properties: properties, stringDelimiter: stringDelimiter}
+	return &PropertyPathToken{defaultToken: &defaultToken{upstreamArrayIndex: -1}, properties: properties, stringDelimiter: stringDelimiter}
 }
 
 //WildCardPathToken
@@ -964,7 +966,7 @@ func (w *WildcardPathToken) Evaluate(currentPath string, parent common.PathRef, 
 }
 
 func CreateWildcardPathToken() *WildcardPathToken {
-	return &WildcardPathToken{defaultToken: &defaultToken{}}
+	return &WildcardPathToken{defaultToken: &defaultToken{upstreamArrayIndex: -1}}
 }
 
 // ScanPathToken -----
@@ -1402,7 +1404,7 @@ func (a *ArrayIndexPathToken) IsTokenDefinite() bool {
 }
 
 func CreateArrayIndexPathToken(arrayIndexOperation *ArrayIndexOperation) *ArrayIndexPathToken {
-	return &ArrayIndexPathToken{defaultToken: &defaultToken{}, arrayIndexOperation: arrayIndexOperation}
+	return &ArrayIndexPathToken{defaultToken: &defaultToken{upstreamArrayIndex: -1}, arrayIndexOperation: arrayIndexOperation}
 }
 
 // ArraySlicePathToken -----
@@ -1625,7 +1627,7 @@ func (*ArraySlicePathToken) IsTokenDefinite() bool {
 
 func CreateArraySlicePathToken(operation *ArraySliceOperation) *ArraySlicePathToken {
 	return &ArraySlicePathToken{
-		defaultToken: &defaultToken{},
+		defaultToken: &defaultToken{upstreamArrayIndex: -1},
 		operation:    operation,
 	}
 }
@@ -1810,5 +1812,5 @@ func (p *PredicatePathToken) IsTokenDefinite() bool {
 }
 
 func CreatePredicatePathToken(predicates []common.Predicate) *PredicatePathToken {
-	return &PredicatePathToken{defaultToken: &defaultToken{}, predicates: predicates}
+	return &PredicatePathToken{defaultToken: &defaultToken{upstreamArrayIndex: -1}, predicates: predicates}
 }

@@ -92,14 +92,18 @@ func (d *NativeJsonProvider) GetArrayIndexByUnwrap(obj interface{}, idx int, unw
 }
 
 func (d *NativeJsonProvider) SetArrayIndex(array interface{}, index int, newValue interface{}) error {
-	if !d.IsArray(array) {
+	l, ok := array.(*[]interface{})
+	if !ok {
+		return errors.New("unsupported operation")
+	}
+
+	if !d.IsArray(*l) {
 		return errors.New("unsupported operation")
 	} else {
-		l, _ := array.([]interface{})
-		if index == len(l) {
-			l = append(l, newValue)
+		if index == len(*l) {
+			*l = append(*l, newValue)
 		} else {
-			l[index] = newValue
+			(*l)[index] = newValue
 		}
 		return nil
 	}
@@ -135,9 +139,12 @@ func (d *NativeJsonProvider) GetPropertyKeys(obj interface{}) ([]string, error) 
 }
 
 func (d *NativeJsonProvider) SetProperty(obj interface{}, key interface{}, value interface{}) error {
-	if d.IsMap(obj) {
-		m, _ := obj.(map[string]interface{})
-		m[UtilsToString(key)] = value
+	m, ok := obj.(*map[string]interface{})
+	if !ok {
+		return errors.New("unsupported operation")
+	}
+	if d.IsMap(*m) {
+		(*m)[UtilsToString(key)] = value
 		return nil
 	} else {
 		return &JsonPathError{Message: "setProperty operation cannot be used with " + getTypeString(obj)}
@@ -145,9 +152,13 @@ func (d *NativeJsonProvider) SetProperty(obj interface{}, key interface{}, value
 }
 
 func (d *NativeJsonProvider) RemoveProperty(obj interface{}, key interface{}) error {
-	if d.IsMap(obj) {
-		m, _ := obj.(map[string]interface{})
-		delete(m, UtilsToString(key))
+	m, ok := obj.(*map[string]interface{})
+	if !ok {
+		return errors.New("unsupported operation")
+	}
+	if d.IsMap(*m) {
+		delete(*m, UtilsToString(key))
+		return nil
 	} else {
 		s, _ := obj.([]interface{})
 

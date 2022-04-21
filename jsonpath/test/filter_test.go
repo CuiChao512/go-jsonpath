@@ -3,7 +3,6 @@ package test
 import (
 	"cuichao.com/go-jsonpath/jsonpath"
 	"cuichao.com/go-jsonpath/jsonpath/common"
-	"fmt"
 	"regexp"
 	"testing"
 )
@@ -44,24 +43,24 @@ type testDataRow struct {
 }
 
 var testDataTable = []testDataRow{
-	{
-		Key:      "int-key",
-		Operator: eq,
-		Value:    1,
-		Expected: true,
-	},
+	//{
+	//	Key:      "int-key",
+	//	Operator: eq,
+	//	Value:    1,
+	//	Expected: true,
+	//},
 	//{
 	//	Key:      "int-key",
 	//	Operator: eq,
 	//	Value:    666,
 	//	Expected: false,
 	//},
-	//{
-	//	Key:      "int-key",
-	//	Operator: eq,
-	//	Value:    "1",
-	//	Expected: true,
-	//},
+	{
+		Key:      "int-key",
+		Operator: eq,
+		Value:    "1",
+		Expected: true,
+	},
 	//{
 	//	Key:      "int-key",
 	//	Operator: eq,
@@ -125,7 +124,7 @@ func TestFilterEvals(t *testing.T) {
 		if row.Type == "parse" {
 
 		} else {
-			fmt.Println(row.Key)
+			//fmt.Println(row.Key)
 			criteria, err := jsonpath.WhereString(row.Key)
 			if err != nil {
 				t.Errorf(err.Error())

@@ -3,6 +3,7 @@ package path
 import (
 	"cuichao.com/go-jsonpath/jsonpath/common"
 	"errors"
+	"fmt"
 )
 
 var documentEvalCache = map[common.Path]interface{}{}
@@ -57,7 +58,7 @@ func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) (interface{}, error)
 			if e.suppressException {
 				return nil, nil
 			}
-			return nil, &common.PathNotFoundError{Message: "No results for path: " + e.path.String()}
+			return nil, fmt.Errorf("no result:%s", &common.PathNotFoundError{Message: "No results for path: " + e.path.String()})
 		}
 		if length, err := e.JsonProvider().Length(e.valueResult); err != nil {
 			return nil, err
@@ -85,11 +86,10 @@ func (e *EvaluationContextImpl) AddResult(pathString string, operation common.Pa
 		e.updateOperations = append(e.updateOperations, operation)
 	}
 
-	if err := e.configuration.JsonProvider().SetArrayIndex(e.valueResult, e.resultIndex, model); err != nil {
+	if err := e.configuration.JsonProvider().SetArrayIndex(&e.valueResult, e.resultIndex, model); err != nil {
 		return err
 	}
-
-	if err := e.configuration.JsonProvider().SetArrayIndex(e.pathResult, e.resultIndex, pathString); err != nil {
+	if err := e.configuration.JsonProvider().SetArrayIndex(&e.pathResult, e.resultIndex, pathString); err != nil {
 		return err
 	}
 
