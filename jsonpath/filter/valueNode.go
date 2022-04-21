@@ -5,143 +5,211 @@ import (
 	"reflect"
 )
 
-type ValueNode interface {
-	TypeOf(ctx common.PredicateContext) reflect.Kind
+type iPatternNode interface {
 	IsPatternNode() bool
 	AsPatternNode() (*PatternNode, error)
+}
+
+type iPathNode interface {
 	IsPathNode() bool
 	AsPathNode() (*PathNode, error)
+}
+
+type iNumberNode interface {
 	IsNumberNode() bool
 	AsNumberNode() (*NumberNode, error)
+}
+
+type iStringNode interface {
 	IsStringNode() bool
 	AsStringNode() (*StringNode, error)
+}
+
+type iBooleanNode interface {
 	IsBooleanNode() bool
 	AsBooleanNode() (*BooleanNode, error)
+}
+
+type iPredicateNode interface {
 	IsPredicateNode() bool
 	AsPredicateNode() (*PredicateNode, error)
+}
+
+type iValueListNode interface {
 	IsValueListNode() bool
 	AsValueListNode() (*ValueListNode, error)
+}
+
+type iNullNode interface {
 	IsNullNode() bool
 	AsNullNode() (*NullNode, error)
+}
+
+type iUndefinedNode interface {
 	IsUndefinedNode() bool
 	AsUndefinedNode() (*UndefinedNode, error)
+}
+
+type iClassNode interface {
 	IsClassNode() bool
 	AsClassNode() (*ClassNode, error)
+}
+
+type iOffsetDateTimeNode interface {
 	IsOffsetDateTimeNode() bool
 	AsOffsetDateTimeNode() (*OffsetDateTimeNode, error)
+}
+type iJsonNode interface {
 	IsJsonNode() bool
 	AsJsonNode() (*JsonNode, error)
+}
+
+type ValueNode interface {
+	TypeOf(ctx common.PredicateContext) reflect.Kind
+	iPatternNode
+	iPathNode
+	iNumberNode
+	iStringNode
+	iBooleanNode
+	iPredicateNode
+	iValueListNode
+	iNullNode
+	iUndefinedNode
+	iClassNode
+	iOffsetDateTimeNode
+	iJsonNode
 	String() string
 	Equals(o interface{}) bool
 }
 
-type ValueNodeDefault struct {
+type defaultPatternNode struct {
 }
 
-func (n *ValueNodeDefault) TypeOf(ctx common.PredicateContext) reflect.Kind {
-	return reflect.Invalid
-}
-
-func (n *ValueNodeDefault) IsPatternNode() bool {
+func (n *defaultPatternNode) IsPatternNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsPatternNode() (*PatternNode, error) {
+func (_ *defaultPatternNode) AsPatternNode() (*PatternNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected regexp node"}
 }
 
-func (n *ValueNodeDefault) IsPathNode() bool {
+type defaultPathNode struct {
+}
+
+func (n *defaultPathNode) IsPathNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsPathNode() (*PathNode, error) {
+func (_ *defaultPathNode) AsPathNode() (*PathNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected path node"}
 }
 
-func (n *ValueNodeDefault) IsNumberNode() bool {
+type defaultNumberNode struct {
+}
+
+func (n *defaultNumberNode) IsNumberNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsNumberNode() (*NumberNode, error) {
+func (_ *defaultNumberNode) AsNumberNode() (*NumberNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected number node"}
 }
 
-func (n *ValueNodeDefault) IsStringNode() bool {
+type defaultStringNode struct {
+}
+
+func (n *defaultStringNode) IsStringNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsStringNode() (*StringNode, error) {
+func (_ *defaultStringNode) AsStringNode() (*StringNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected string node"}
 }
 
-func (n *ValueNodeDefault) IsBooleanNode() bool {
+type defaultBooleanNode struct {
+}
+
+func (n *defaultBooleanNode) IsBooleanNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsBooleanNode() (*BooleanNode, error) {
+func (_ *defaultBooleanNode) AsBooleanNode() (*BooleanNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected boolean node"}
 }
 
-func (n *ValueNodeDefault) IsPredicateNode() bool {
+type defaultPredicateNode struct {
+}
+
+func (n *defaultPredicateNode) IsPredicateNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsPredicateNode() (*PredicateNode, error) {
+func (_ *defaultPredicateNode) AsPredicateNode() (*PredicateNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected predicate node"}
 }
 
-func (n *ValueNodeDefault) IsValueListNode() bool {
+type defaultValueListNode struct {
+}
+
+func (n *defaultValueListNode) IsValueListNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsValueListNode() (*ValueListNode, error) {
+func (_ *defaultValueListNode) AsValueListNode() (*ValueListNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected value list node"}
 }
 
-func (n *ValueNodeDefault) IsNullNode() bool {
+type defaultNullNode struct {
+}
+
+func (n *defaultNullNode) IsNullNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsNullNode() (*NullNode, error) {
+func (_ *defaultNullNode) AsNullNode() (*NullNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected null node"}
 }
 
-func (n *ValueNodeDefault) IsUndefinedNode() bool {
+type defaultUndefinedNode struct {
+}
+
+func (n *defaultUndefinedNode) IsUndefinedNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsUndefinedNode() (*UndefinedNode, error) {
+func (_ *defaultUndefinedNode) AsUndefinedNode() (*UndefinedNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected undefined node"}
 }
 
-func (n *ValueNodeDefault) IsJsonNode() bool {
+type defaultJsonNode struct {
+}
+
+func (n *defaultJsonNode) IsJsonNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsJsonNode() (*JsonNode, error) {
+func (_ *defaultJsonNode) AsJsonNode() (*JsonNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected json node"}
 }
 
-func (n *ValueNodeDefault) IsClassNode() bool {
+type defaultClassNode struct {
+}
+
+func (n *defaultClassNode) IsClassNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsClassNode() (*ClassNode, error) {
+func (_ *defaultClassNode) AsClassNode() (*ClassNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected class node"}
 }
 
-func (n *ValueNodeDefault) IsOffsetDateTimeNode() bool {
+type defaultOffsetDateTimeNode struct {
+}
+
+func (n *defaultOffsetDateTimeNode) IsOffsetDateTimeNode() bool {
 	return false
 }
 
-func (_ *ValueNodeDefault) AsOffsetDateTimeNode() (*OffsetDateTimeNode, error) {
+func (_ *defaultOffsetDateTimeNode) AsOffsetDateTimeNode() (*OffsetDateTimeNode, error) {
 	return nil, &common.InvalidPathError{Message: "Expected offset date time node"}
-}
-
-func (n *ValueNodeDefault) String() string {
-	return ""
-}
-
-func (n *ValueNodeDefault) Equals(o interface{}) bool {
-	return false
 }

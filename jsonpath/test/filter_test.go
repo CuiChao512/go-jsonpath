@@ -55,22 +55,22 @@ var testDataTable = []testDataRow{
 	//	Value:    666,
 	//	Expected: false,
 	//},
-	{
-		Key:      "int-key",
-		Operator: eq,
-		Value:    "1",
-		Expected: true,
-	},
+	//{
+	//	Key:      "int-key",
+	//	Operator: eq,
+	//	Value:    "1",
+	//	Expected: true,
+	//},
 	//{
 	//	Key:      "int-key",
 	//	Operator: eq,
 	//	Value:    "666",
 	//	Expected: false,
 	//},
-	//{
-	//	Expression: "[?(1 == '1')]",
-	//	Expected:   true,
-	//},
+	{
+		Expression: "[?(1 == '1')]",
+		Expected:   true,
+	},
 	//{
 	//	Expression: "[?('1' == 1)]",
 	//	Expected:   true,

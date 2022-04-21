@@ -154,7 +154,11 @@ func (c *Criteria) InSlice(l interface{}) (*Criteria, error) {
 		return nil, errors.New("collection can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_IN
-	c.right = filter.CreateValueListNode(l)
+	var err error
+	c.right, err = filter.CreateValueListNode(l)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 
@@ -177,7 +181,11 @@ func (c *Criteria) NinSlice(l interface{}) (*Criteria, error) {
 		return nil, errors.New("collection can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_NIN
-	c.right = filter.CreateValueListNode(l)
+	var err error
+	c.right, err = filter.CreateValueListNode(l)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 
@@ -190,7 +198,11 @@ func (c *Criteria) SubSetOfSlice(l interface{}) (*Criteria, error) {
 		return nil, errors.New("collection can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_SUBSETOF
-	c.right = filter.CreateValueListNode(l)
+	var err error
+	c.right, err = filter.CreateValueListNode(l)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 
 }
@@ -205,7 +217,11 @@ func (c *Criteria) AnyOfSlice(l interface{}) (*Criteria, error) {
 		return nil, errors.New("collection can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_ANYOF
-	c.right = filter.CreateValueListNode(l)
+	var err error
+	c.right, err = filter.CreateValueListNode(l)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 
 }
@@ -220,7 +236,11 @@ func (c *Criteria) NoneOfSlice(l interface{}) (*Criteria, error) {
 		return nil, errors.New("collection can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_NONEOF
-	c.right = filter.CreateValueListNode(l)
+	var err error
+	c.right, err = filter.CreateValueListNode(l)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 
 }
@@ -234,7 +254,11 @@ func (c *Criteria) AllSlice(l interface{}) (*Criteria, error) {
 		return nil, errors.New("collection can not be null")
 	}
 	c.criteriaType = filter.RelationalOperator_ALL
-	c.right = filter.CreateValueListNode(l)
+	var err error
+	c.right, err = filter.CreateValueListNode(l)
+	if err != nil {
+		return nil, err
+	}
 	return c, nil
 }
 

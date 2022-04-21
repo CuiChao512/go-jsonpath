@@ -259,3 +259,16 @@ func ConvertToStringAnyMap(obj interface{}) (map[string]interface{}, error) {
 	}
 	return nil, errors.New("not a map0")
 }
+
+func UtilsSliceEquals(slice1 interface{}, slice2 interface{}) bool {
+	if slice1 == slice2 {
+		return true
+	}
+
+	if reflect.ValueOf(slice1).Kind() == reflect.Slice && reflect.ValueOf(slice2).Kind() == reflect.Slice {
+		if reflect.ValueOf(slice1).Len() == reflect.ValueOf(slice2).Len() {
+			return true
+		}
+	}
+	return false
+}

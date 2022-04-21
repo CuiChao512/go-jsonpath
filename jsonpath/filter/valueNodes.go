@@ -18,7 +18,17 @@ var UNDEFINED_NODE = &UndefinedNode{}
 
 // PatternNode -------patternNode------
 type PatternNode struct {
-	*ValueNodeDefault
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	pattern         string
 	compiledPattern *regexp.Regexp
 }
@@ -36,11 +46,15 @@ func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 }
 
 func CreatePatternNodeByRegexp(pattern *regexp.Regexp) *PatternNode {
-	return &PatternNode{ValueNodeDefault: &ValueNodeDefault{}, pattern: pattern.String(), compiledPattern: pattern}
+	return &PatternNode{pattern: pattern.String(), compiledPattern: pattern}
 }
 
 func (pn *PatternNode) GetCompiledPattern() *regexp.Regexp {
 	return pn.compiledPattern
+}
+
+func (pn *PatternNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
+	return reflect.Invalid
 }
 
 func (pn *PatternNode) IsPatternNode() bool {
@@ -59,9 +73,34 @@ func (pn *PatternNode) String() string {
 	}
 }
 
+func (pn *PatternNode) Equals(o interface{}) bool {
+	if pn == o {
+		return true
+	}
+	switch o.(type) {
+	case *PatternNode:
+		that, _ := o.(*PatternNode)
+		return pn.compiledPattern == that.compiledPattern
+	default:
+		return false
+	}
+
+}
+
 // PathNode ------PathNode-----
 type PathNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	path        common.Path
 	existsCheck bool
 	shouldExist bool
@@ -72,11 +111,15 @@ func CreatePathNodeWithString(pathString string, existsCheck bool, shouldExist b
 	if err != nil {
 		return nil, err
 	}
-	return &PathNode{ValueNodeDefault: &ValueNodeDefault{}, path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}, nil
+	return &PathNode{path: compiledPath, existsCheck: existsCheck, shouldExist: shouldExist}, nil
 }
 
 func CreatePathNode(path common.Path, existsCheck bool, shouldExist bool) *PathNode {
-	return &PathNode{ValueNodeDefault: &ValueNodeDefault{}, path: path, existsCheck: existsCheck, shouldExist: shouldExist}
+	return &PathNode{path: path, existsCheck: existsCheck, shouldExist: shouldExist}
+}
+
+func (pn *PathNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
+	return reflect.Invalid
 }
 
 func (pn *PathNode) IsExistsCheck() bool {
@@ -171,7 +214,7 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 		case float64:
 			return CreateNumberNodeByString(resString)
 		case string:
-			return CreateStringNode(resString, false), nil
+			return CreateStringNode(resString, false)
 		case bool:
 			resBool := false
 			if resString == "true" {
@@ -194,14 +237,30 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 	}
 }
 
+func (pn *PathNode) Equals(o interface{}) bool {
+	return false
+}
+
 // NumberNode -----------
 type NumberNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	number *decimal.Decimal
 }
 
+func (n *NumberNode) IsStringNode() bool {
+	return false
+}
 func (n *NumberNode) AsStringNode() (*StringNode, error) {
-	return CreateStringNode(n.number.String(), false), nil
+	return CreateStringNode(n.number.String(), false)
 }
 
 func (n *NumberNode) GetNumber() *decimal.Decimal {
@@ -251,8 +310,7 @@ func (n *NumberNode) Equals(o interface{}) bool {
 
 func CreateNumberNode(decimal2 *decimal.Decimal) *NumberNode {
 	return &NumberNode{
-		ValueNodeDefault: &ValueNodeDefault{},
-		number:           decimal2,
+		number: decimal2,
 	}
 }
 
@@ -260,8 +318,7 @@ func CreateNumberNodeByString(str string) (*NumberNode, error) {
 	decimal2, err := decimal.NewFromString(str)
 	if err == nil {
 		return &NumberNode{
-			ValueNodeDefault: &ValueNodeDefault{},
-			number:           &decimal2,
+			number: &decimal2,
 		}, nil
 	} else {
 		return nil, err
@@ -271,15 +328,28 @@ func CreateNumberNodeByString(str string) (*NumberNode, error) {
 
 // StringNode -----------
 type StringNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	str            string
 	useSingleQuote bool
+}
+
+func (n *StringNode) IsNumberNode() bool {
+	return false
 }
 
 func (n *StringNode) AsNumberNode() (*NumberNode, error) {
 	number, err := decimal.NewFromString(n.str)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	} else {
 		return CreateNumberNode(&number), nil
 	}
@@ -313,9 +383,26 @@ func (n *StringNode) AsStringNode() (*StringNode, error) {
 	return n, nil
 }
 
-func CreateStringNode(str string, escape bool) *StringNode {
-	//TODO
-	return &StringNode{ValueNodeDefault: &ValueNodeDefault{}}
+func CreateStringNode(str string, escape bool) (*StringNode, error) {
+	runes := []rune(str)
+	useSingleQuote := true
+	if escape && len(str) > 1 {
+		open := runes[0]
+		closeC := runes[len(runes)-1]
+		if open == '\'' && closeC == '\'' {
+			str = str[1 : len(str)-1]
+		} else if open == '"' && closeC == '"' {
+			str = str[1 : len(str)-1]
+			useSingleQuote = false
+		}
+		var err error
+		str, err = common.UtilsStringUnescape(str)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &StringNode{str: str, useSingleQuote: useSingleQuote}, nil
 }
 
 func (n *StringNode) String() string {
@@ -354,7 +441,17 @@ func (n *StringNode) Equals(o interface{}) bool {
 
 // BooleanNode -----------
 type BooleanNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	value bool
 }
 
@@ -404,14 +501,23 @@ func CreateBooleanNodeByString(str string) *BooleanNode {
 
 func CreateBooleanNode(value bool) *BooleanNode {
 	return &BooleanNode{
-		ValueNodeDefault: &ValueNodeDefault{},
-		value:            value,
+		value: value,
 	}
 }
 
 // PredicateNode -----------
 type PredicateNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	predicate common.Predicate
 }
 
@@ -445,7 +551,17 @@ func CreatePredicateNode(p common.Predicate) *PredicateNode {
 
 // ValueListNode -----------
 type ValueListNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 	nodes []ValueNode
 }
 
@@ -478,13 +594,52 @@ func (v *ValueListNode) IsValueListNode() bool {
 	return true
 }
 
-func CreateValueListNode(list interface{}) *ValueListNode {
-	return nil
+func (v *ValueListNode) String() string {
+	return "[" + common.UtilsJoin(",", "", v.nodes) + "]"
+}
+
+func (v *ValueListNode) Equals(o interface{}) bool {
+	if v == o {
+		return true
+	}
+	switch o.(type) {
+	case *ValueListNode:
+		that, _ := o.(ValueListNode)
+		return common.UtilsSliceEquals(v.nodes, that.nodes)
+	default:
+		return false
+	}
+}
+
+func CreateValueListNode(list interface{}) (*ValueListNode, error) {
+	l, err := common.ConvertToAnySlice(list)
+	if err != nil {
+		return nil, err
+	}
+	var nodes = make([]ValueNode, 0)
+	for _, value := range l {
+		if vn, err := CreateValueNode(value); err == nil {
+			return nil, err
+		} else {
+			nodes = append(nodes, vn)
+		}
+	}
+	return &ValueListNode{nodes: nodes}, nil
 }
 
 // NullNode -----------
 type NullNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 }
 
 func (n *NullNode) TypeOf(ctx common.PredicateContext) reflect.Kind {
@@ -521,7 +676,17 @@ func CreateNullNode() *NullNode {
 
 // UndefinedNode -----------
 type UndefinedNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 }
 
 func (n *UndefinedNode) AsUndefinedNode() (*UndefinedNode, error) {
@@ -539,13 +704,27 @@ func (n *UndefinedNode) IsUndefinedNode() bool {
 func (n *UndefinedNode) Equals(o interface{}) bool {
 	return false
 }
+
+func (n *UndefinedNode) String() string {
+	return common.UtilsToString(n)
+}
 func NewUndefinedNode() *UndefinedNode {
 	return &UndefinedNode{}
 }
 
 // ClassNode -----------
 type ClassNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultOffsetDateTimeNode
+	*defaultJsonNode
 }
 
 // OffsetDateTime -----
@@ -558,12 +737,22 @@ func (o *OffsetDateTime) String() string {
 
 // OffsetDateTimeNode -----------
 type OffsetDateTimeNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultJsonNode
 	dateTime *OffsetDateTime
 }
 
 func (n *OffsetDateTimeNode) AsStringNode() (*StringNode, error) {
-	return CreateStringNode(n.dateTime.String(), false), nil
+	return CreateStringNode(n.dateTime.String(), false)
 }
 
 func (n *OffsetDateTimeNode) GetDate() *OffsetDateTime {
@@ -616,7 +805,17 @@ func CreateOffsetDateTimeNode(str string) *OffsetDateTimeNode {
 
 // JsonNode --------
 type JsonNode struct {
-	*ValueNodeDefault
+	*defaultPatternNode
+	*defaultPathNode
+	*defaultNumberNode
+	*defaultStringNode
+	*defaultBooleanNode
+	*defaultPredicateNode
+	*defaultValueListNode
+	*defaultNullNode
+	*defaultUndefinedNode
+	*defaultClassNode
+	*defaultOffsetDateTimeNode
 	json   interface{}
 	parsed bool
 }
@@ -722,16 +921,33 @@ func (n *JsonNode) AsValueListNodeByPredicateContext(ctx common.PredicateContext
 	} else {
 		parsedObj, _ := n.Parse(ctx)
 		list, _ := parsedObj.([]interface{})
-		return CreateValueListNode(list), nil
+		return CreateValueListNode(list)
+	}
+}
+
+func (n *JsonNode) String() string {
+	return common.UtilsToString(n.json)
+}
+
+func (n *JsonNode) Equals(o interface{}) bool {
+	if n == o {
+		return true
+	}
+	switch o.(type) {
+	case *JsonNode:
+		v, _ := o.(JsonNode)
+		return n.json == v.json
+	default:
+		return false
 	}
 }
 
 func CreateJsonNodeByString(json string) *JsonNode {
-	return &JsonNode{ValueNodeDefault: &ValueNodeDefault{}}
+	return &JsonNode{}
 }
 
 func CreateJsonNodeByObject(json interface{}) *JsonNode {
-	return &JsonNode{ValueNodeDefault: &ValueNodeDefault{}}
+	return &JsonNode{}
 }
 
 func isPath(o interface{}) bool {
@@ -793,9 +1009,9 @@ func CreateValueNode(o interface{}) (ValueNode, error) {
 
 	switch o.(type) {
 	case string:
-		return CreateStringNode(common.UtilsToString(o), false), nil
+		return CreateStringNode(common.UtilsToString(o), false)
 	case rune:
-		return CreateStringNode(common.UtilsToString(o), true), nil
+		return CreateStringNode(common.UtilsToString(o), true)
 	case int:
 		return CreateNumberNodeByString(common.UtilsToString(o))
 	case float64:

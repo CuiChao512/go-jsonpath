@@ -332,7 +332,7 @@ func (c *Compiler) readStringLiteral(endChar rune) (*StringNode, error) {
 	}
 	stringLiteral := filter.SubSequence(begin, filter.Position())
 	log.Printf("StringLiteral from %d to %d -> [%s]", begin, filter.Position(), stringLiteral)
-	return CreateStringNode(stringLiteral, true), nil
+	return CreateStringNode(stringLiteral, true)
 }
 
 func (c *Compiler) readNumberLiteral() (*NumberNode, error) {
