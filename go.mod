@@ -1,4 +1,4 @@
-module cuichao.com/go-jsonpath
+module github.com/CuiChao512/go-jsonpath
 
 go 1.17
 

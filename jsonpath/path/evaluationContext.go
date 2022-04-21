@@ -1,9 +1,9 @@
 package path
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
 	"errors"
 	"fmt"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 )
 
 var documentEvalCache = map[common.Path]interface{}{}

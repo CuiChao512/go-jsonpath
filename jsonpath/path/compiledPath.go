@@ -1,7 +1,7 @@
 package path
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 )
 
 type CompiledPath struct {
@@ -10,10 +10,10 @@ type CompiledPath struct {
 }
 
 func (cp *CompiledPath) Evaluate(document interface{}, rootDocument interface{}, configuration *common.Configuration) (common.EvaluationContext, error) {
-	return cp.EvaluateForUpdate(document, rootDocument, configuration, false), nil
+	return cp.EvaluateForUpdate(document, rootDocument, configuration, false)
 }
 
-func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) common.EvaluationContext {
+func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) (common.EvaluationContext, error) {
 	ctx := CreateEvaluationContextImpl(cp, rootDocument, configuration, forUpdate)
 	var op common.PathRef
 	if ctx.ForUpdate() {
@@ -21,8 +21,10 @@ func (cp *CompiledPath) EvaluateForUpdate(document interface{}, rootDocument int
 	} else {
 		op = PathRefNoOp
 	}
-	cp.root.Evaluate("", op, document, ctx)
-	return ctx
+	if err := cp.root.Evaluate("", op, document, ctx); err != nil {
+		return nil, err
+	}
+	return ctx, nil
 }
 
 func (cp *CompiledPath) String() string {

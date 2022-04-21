@@ -1,9 +1,9 @@
 package filter
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
 	"encoding/json"
 	"fmt"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"reflect"
 	"regexp"
 	"strings"

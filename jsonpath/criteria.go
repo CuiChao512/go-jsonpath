@@ -1,9 +1,9 @@
 package jsonpath
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/filter"
 	"errors"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/filter"
 	"regexp"
 	"strings"
 )

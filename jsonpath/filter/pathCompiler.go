@@ -1,9 +1,9 @@
 package filter
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
-	"cuichao.com/go-jsonpath/jsonpath/function"
-	pathPkg "cuichao.com/go-jsonpath/jsonpath/path"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/function"
+	pathPkg "github.com/CuiChao512/go-jsonpath/jsonpath/path"
 	"strconv"
 	"strings"
 )

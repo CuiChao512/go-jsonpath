@@ -2,7 +2,7 @@ package common
 
 type Path interface {
 	Evaluate(document interface{}, rootDocument interface{}, configuration *Configuration) (EvaluationContext, error)
-	EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *Configuration, forUpdate bool) EvaluationContext
+	EvaluateForUpdate(document interface{}, rootDocument interface{}, configuration *Configuration, forUpdate bool) (EvaluationContext, error)
 	String() string
 	IsDefinite() bool
 	IsFunctionPath() bool

@@ -1,7 +1,7 @@
 package jsonpath
 
 import (
-	"cuichao.com/go-jsonpath/jsonpath/common"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 )
 
 type EvaluationListener interface {
