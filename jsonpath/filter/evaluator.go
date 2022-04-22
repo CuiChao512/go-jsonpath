@@ -246,9 +246,13 @@ func (*sizeEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.Predi
 		if err != nil {
 			return false, nil
 		}
-		return len(leftNode.String()) == int(expectedSize), nil
+		return len(leftNode.GetString()) == int(expectedSize), nil
 	} else if left.IsJsonNode() {
-
+		leftNode, err := left.AsJsonNode()
+		if err != nil {
+			return false, err
+		}
+		return leftNode.Length(ctx) == int(expectedSize), nil
 	}
 	return false, nil
 }
@@ -438,7 +442,8 @@ func (r *regexpEvaluator) Evaluate(left ValueNode, right ValueNode, ctx common.P
 }
 
 func (*regexpEvaluator) matches(patternNode *PatternNode, inputToMatch string) bool {
-	return patternNode.GetCompiledPattern().MatchString(inputToMatch)
+	matched := patternNode.GetCompiledPattern().MatchString(inputToMatch)
+	return matched
 }
 
 func (*regexpEvaluator) getInput(node ValueNode) (string, error) {
@@ -448,13 +453,13 @@ func (*regexpEvaluator) getInput(node ValueNode) (string, error) {
 		if err != nil {
 			return input, err
 		}
-		input = stringNode.String()
+		input = stringNode.GetString()
 	} else if node.IsBooleanNode() {
 		booleanNode, err := node.AsStringNode()
 		if err != nil {
 			return input, err
 		}
-		input = booleanNode.String()
+		input = booleanNode.GetString()
 	}
 	return input, nil
 }

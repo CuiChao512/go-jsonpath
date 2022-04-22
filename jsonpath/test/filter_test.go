@@ -27,13 +27,24 @@ var FilterTestJson, _ = common.DefaultConfiguration().JsonProvider().Parse("{" +
 type relationOperator int
 
 const (
-	eq    relationOperator = 1
-	ne    relationOperator = 2
-	lt    relationOperator = 3
-	lte   relationOperator = 4
-	gt    relationOperator = 5
-	gte   relationOperator = 6
-	regex relationOperator = 7
+	eq       relationOperator = 1
+	ne       relationOperator = 2
+	lt       relationOperator = 3
+	lte      relationOperator = 4
+	gt       relationOperator = 5
+	gte      relationOperator = 6
+	regex    relationOperator = 7
+	in       relationOperator = 8
+	nin      relationOperator = 9
+	all      relationOperator = 10
+	size     relationOperator = 11
+	subSetOf relationOperator = 12
+	anyOf    relationOperator = 13
+	noneOf   relationOperator = 14
+	exists   relationOperator = 15
+	typeOf   relationOperator = 16
+	notEmpty relationOperator = 17
+	empty    relationOperator = 18
 )
 
 type testDataRow struct {
@@ -497,13 +508,204 @@ var (
 			Expected: true,
 		},
 	}
+
+	testMetaDataRegex = []testDataRow{
+		{
+			Key:        "string-key",
+			Expression: "^string$",
+			Operator:   regex,
+			Expected:   true,
+		},
+		{
+			Key:        "string-key",
+			Expression: "^tring$",
+			Operator:   regex,
+			Expected:   false,
+		},
+		{
+			Key:        "null-key",
+			Expression: "^string$",
+			Operator:   regex,
+			Expected:   false,
+		},
+		{
+			Key:        "int-key",
+			Expression: "^string$",
+			Operator:   regex,
+			Expected:   false,
+		},
+	}
+
+	testMetaDataStringIn = []testDataRow{
+		{
+			Key:      "string-key",
+			Value:    []string{"a", "", "string"},
+			Operator: in,
+			Expected: true,
+		},
+		{
+			Key:      "string-key",
+			Value:    []string{"a", ""},
+			Operator: in,
+			Expected: false,
+		},
+		{
+			Key:      "null-key",
+			Value:    []interface{}{"a", nil},
+			Operator: in,
+			Expected: true,
+		},
+		{
+			Key:      "null-key",
+			Value:    []interface{}{"a", "b"},
+			Operator: in,
+			Expected: false,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a"},
+			Operator: in,
+			Expected: false,
+		},
+	}
+	testMetaDataStringNin = []testDataRow{
+		{
+			Key:      "string-key",
+			Value:    []string{"a", "", "string"},
+			Operator: nin,
+			Expected: false,
+		},
+		{
+			Key:      "string-key",
+			Value:    []string{"a", ""},
+			Operator: nin,
+			Expected: true,
+		},
+		{
+			Key:      "null-key",
+			Value:    []interface{}{"a", nil},
+			Operator: nin,
+			Expected: false,
+		},
+		{
+			Key:      "null-key",
+			Value:    []interface{}{"a", "b"},
+			Operator: nin,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a"},
+			Operator: nin,
+			Expected: true,
+		},
+	}
+
+	testMetaDataAll = []testDataRow{
+		{
+			Key:      "int-arr",
+			Value:    []interface{}{0, 1},
+			Operator: all,
+			Expected: true,
+		},
+		{
+			Key:      "int-arr",
+			Value:    []interface{}{0, 7},
+			Operator: all,
+			Expected: false,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a", "b"},
+			Operator: all,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a", "x"},
+			Operator: all,
+			Expected: false,
+		},
+		{
+			Key:      "string-key",
+			Value:    []interface{}{"a", "x"},
+			Operator: all,
+			Expected: false,
+		},
+	}
+
+	testMetaDataSize = []testDataRow{
+		{
+			Key:      "string-arr",
+			Value:    5,
+			Operator: size,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    7,
+			Operator: size,
+			Expected: false,
+		},
+		{
+			Key:      "string-key",
+			Value:    6,
+			Operator: size,
+			Expected: true,
+		},
+		{
+			Key:      "string-key",
+			Value:    7,
+			Operator: size,
+			Expected: false,
+		},
+		{
+			Key:      "int-key",
+			Value:    6,
+			Operator: size,
+			Expected: false,
+		},
+		{
+			Key:      "null-key",
+			Value:    6,
+			Operator: size,
+			Expected: false,
+		},
+	}
+
+	testMetaDataSubSetOf = []testDataRow{
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a", "b", "c", "d", "e", "f", "g"},
+			Operator: subSetOf,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"e", "d", "b", "c", "a"},
+			Operator: subSetOf,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a", "b", "c", "d"},
+			Operator: subSetOf,
+			Expected: false,
+		},
+	}
 	testMetaData = [][]testDataRow{
-		testMetaDataEqual,
-		testMetaDataNotEquals,
-		testMetaDataLt,
-		testMetaDataLte,
-		testMetaDataGt,
-		testMetaDataGte,
+		//testMetaDataEqual,
+		//testMetaDataNotEquals,
+		//testMetaDataLt,
+		//testMetaDataLte,
+		//testMetaDataGt,
+		//testMetaDataGte,
+		//testMetaDataRegex,
+		//testMetaDataStringIn,
+		//testMetaDataStringNin,
+		//testMetaDataAll,
+		//testMetaDataSize,
+		testMetaDataSubSetOf,
 	}
 )
 
@@ -513,7 +715,7 @@ func TestFilterEvaluations(t *testing.T) {
 		for _, row := range data {
 			total++
 			var predicate common.Predicate
-			if row.Expression != "" {
+			if row.Expression != "" && row.Operator == 0 {
 				var err error
 				predicate, err = filter.Compile(row.Expression)
 				if err != nil {
@@ -538,6 +740,20 @@ func TestFilterEvaluations(t *testing.T) {
 					criteria, err = criteria.Gte(row.Value)
 				case ne:
 					criteria, err = criteria.Ne(row.Value)
+				case in:
+					criteria, err = criteria.InSlice(row.Value)
+				case nin:
+					criteria, err = criteria.NinSlice(row.Value)
+				case all:
+					criteria, err = criteria.AllSlice(row.Value)
+				case size:
+					size, ok := row.Value.(int)
+					if !ok {
+						t.Errorf("size should be a int")
+					}
+					criteria, err = criteria.Size(size)
+				case subSetOf:
+					criteria, err = criteria.SubSetOfSlice(row.Value)
 				case regex:
 					compiledRegexp, err := regexp.Compile(row.Expression)
 					if err != nil {

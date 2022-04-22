@@ -561,7 +561,7 @@ type ValueListNode struct {
 }
 
 func (v *ValueListNode) Contains(node ValueNode) bool {
-	return common.UtilsSliceContains(v.nodes, node)
+	return valueNodeSliceContains(v.nodes, node)
 }
 
 func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
@@ -613,7 +613,7 @@ func CreateValueListNode(list interface{}) (*ValueListNode, error) {
 	}
 	var nodes = make([]ValueNode, 0)
 	for _, value := range l {
-		if vn, err := CreateValueNode(value); err == nil {
+		if vn, err := CreateValueNode(value); err != nil {
 			return nil, err
 		} else {
 			nodes = append(nodes, vn)
@@ -949,6 +949,18 @@ func (n *JsonNode) Equals(o interface{}) bool {
 	}
 }
 
+func (n *JsonNode) Length(ctx common.PredicateContext) int {
+	if n.IsArray(ctx) {
+		if parsed, err := n.Parse(ctx); err == nil {
+			val := reflect.ValueOf(parsed)
+			if val.Kind() == reflect.Slice {
+				return val.Len()
+			}
+		}
+	}
+	return -1
+}
+
 func CreateJsonNodeByString(json string) *JsonNode {
 	return &JsonNode{json: json}
 }
@@ -998,6 +1010,15 @@ func isJson(o interface{}) bool {
 	return false
 }
 
+func valueNodeSliceContains(valueNodes []ValueNode, node ValueNode) bool {
+	for _, vn := range valueNodes {
+		if vn.Equals(node) {
+			return true
+		}
+	}
+	return false
+}
+
 func CreateValueNode(o interface{}) (ValueNode, error) {
 	if o == nil {
 		return NULL_NODE, nil
@@ -1025,7 +1046,7 @@ func CreateValueNode(o interface{}) (ValueNode, error) {
 		return CreateNumberNodeByString(common.UtilsToString(o))
 	case bool:
 		return CreateBooleanNodeByString(common.UtilsToString(o)), nil
-	case regexp.Regexp:
+	case *regexp.Regexp:
 		r, _ := o.(*regexp.Regexp)
 		return CreatePatternNodeByRegexp(r), nil
 	case OffsetDateTime:
