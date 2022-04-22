@@ -41,7 +41,11 @@ func (c *Configuration) GetEvaluationListeners() []EvaluationListener {
 	return c.evaluationListeners
 }
 
-var JsonProviderUndefined interface{}
+type Empty struct {
+	empty bool
+}
+
+var JsonProviderUndefined interface{} = Empty{}
 
 type JsonProvider interface {
 	IsArray(obj interface{}) bool
@@ -110,15 +114,14 @@ func (d *NativeJsonProvider) SetArrayIndex(array interface{}, index int, newValu
 }
 
 func (d *NativeJsonProvider) GetMapValue(obj interface{}, key string) interface{} {
-	m, ok := obj.(map[string]interface{})
-	if !ok {
-		return JsonProviderUndefined
-	}
-	value := m[key]
-	if value == nil {
+	if m, ok := obj.(map[string]interface{}); !ok {
 		return JsonProviderUndefined
 	} else {
-		return value
+		if value, ok := m[key]; ok {
+			return value
+		} else {
+			return JsonProviderUndefined
+		}
 	}
 }
 

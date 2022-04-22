@@ -2,6 +2,7 @@ package filter
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"reflect"
@@ -199,13 +200,7 @@ func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 
 		res = ctx.Configuration().JsonProvider().Unwrap(res)
 		resString := common.UtilsToString(res)
-		if res == nil {
-			return NULL_NODE, nil
-		} else if ctx.Configuration().JsonProvider().IsArray(res) {
-			return CreateJsonNodeByString(resString), nil
-		} else if ctx.Configuration().JsonProvider().IsMap(res) {
-			return CreateJsonNodeByString(resString), nil
-		}
+
 		switch res.(type) {
 		case int:
 			return CreateNumberNodeByString(resString)
@@ -485,8 +480,8 @@ func (n *BooleanNode) Equals(o interface{}) bool {
 	}
 	switch o.(type) {
 	case *BooleanNode:
-		that, _ := o.(bool)
-		return n.value == that
+		that, _ := o.(*BooleanNode)
+		return n.value == that.value
 	default:
 		return false
 	}
@@ -740,7 +735,6 @@ type OffsetDateTimeNode struct {
 	*defaultPatternNode
 	*defaultPathNode
 	*defaultNumberNode
-	*defaultStringNode
 	*defaultBooleanNode
 	*defaultPredicateNode
 	*defaultValueListNode
@@ -749,6 +743,10 @@ type OffsetDateTimeNode struct {
 	*defaultClassNode
 	*defaultJsonNode
 	dateTime *OffsetDateTime
+}
+
+func (n *OffsetDateTimeNode) IsStringNode() bool {
+	return false
 }
 
 func (n *OffsetDateTimeNode) AsStringNode() (*StringNode, error) {
@@ -895,7 +893,16 @@ func (n *JsonNode) Parse(ctx common.PredicateContext) (interface{}, error) {
 		return n.json, nil
 	} else {
 		//TODO:new JSONParser(JSONParser.MODE_PERMISSIVE).parse(json.toString());
-		return nil, nil
+		jsonString, ok := n.json.(string)
+		if !ok {
+			return nil, errors.New("json should be a string")
+		}
+		var result interface{}
+		if err := json.Unmarshal([]byte(jsonString), &result); err == nil {
+			return result, nil
+		} else {
+			return nil, err
+		}
 	}
 }
 
@@ -909,7 +916,7 @@ func (n *JsonNode) EqualsByPredicateContext(jsonNode *JsonNode, ctx common.Predi
 		if err != nil {
 			return false, err
 		}
-		return n.json != parseResult, nil
+		return reflect.DeepEqual(n.json, parseResult), nil
 	} else {
 		return jsonNode.json != nil, nil
 	}
@@ -943,11 +950,11 @@ func (n *JsonNode) Equals(o interface{}) bool {
 }
 
 func CreateJsonNodeByString(json string) *JsonNode {
-	return &JsonNode{}
+	return &JsonNode{json: json}
 }
 
 func CreateJsonNodeByObject(json interface{}) *JsonNode {
-	return &JsonNode{}
+	return &JsonNode{json: json, parsed: true}
 }
 
 func isPath(o interface{}) bool {
@@ -979,7 +986,7 @@ func isJson(o interface{}) bool {
 	}
 	runes := []rune(str)
 	c0 := runes[0]
-	c1 := runes[1]
+	c1 := runes[len(runes)-1]
 	if (c0 == '[' && c1 == ']') || (c0 == '{' && c1 == '}') {
 		var i interface{}
 		err := json.Unmarshal([]byte(str), &i)
