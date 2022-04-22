@@ -81,8 +81,7 @@ func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, 
 				if common.UtilsSliceContains(ctx.Options(), common.OPTION_DEFAULT_PATH_LEAF_TO_NULL) {
 					propertyVal = nil
 				} else {
-					if !(dt.IsUpstreamDefinite() && dt.IsTokenDefinite()) &&
-						!common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) ||
+					if !common.UtilsSliceContains(ctx.Options(), common.OPTION_REQUIRE_PROPERTIES) ||
 						common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 						return nil
 					} else {

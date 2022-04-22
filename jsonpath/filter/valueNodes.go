@@ -162,16 +162,17 @@ func (pn *PathNode) GetPath() common.Path {
 func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 	if pn.IsExistsCheck() {
 		c := common.CreateConfiguration(ctx.Configuration().JsonProvider(), []common.Option{common.OPTION_ALWAYS_RETURN_LIST}, ctx.Configuration().MappingProvider())
-		result, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
+		evaluationCtx, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
 		if err == nil {
-			if result == common.JsonProviderUndefined {
-				return FALSE_NODE, nil
-			} else {
-				return TRUE_NODE, nil
+			if result, err := evaluationCtx.GetValueUnwrap(false); err == nil {
+				if result == common.JsonProviderUndefined {
+					return FALSE_NODE, nil
+				} else {
+					return TRUE_NODE, nil
+				}
 			}
-		} else {
-			return FALSE_NODE, nil
 		}
+		return FALSE_NODE, nil
 	} else {
 		var res interface{}
 		switch ctx.(type) {

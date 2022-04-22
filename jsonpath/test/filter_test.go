@@ -568,6 +568,7 @@ var (
 			Expected: false,
 		},
 	}
+
 	testMetaDataStringNin = []testDataRow{
 		{
 			Key:      "string-key",
@@ -763,22 +764,121 @@ var (
 		},
 	}
 
+	//TODO type_evals
+
+	testMetaDataNotEmpty = []testDataRow{
+		{
+			Key:      "string-key",
+			Value:    false,
+			Operator: empty,
+			Expected: true,
+		},
+		{
+			Key:      "string-key-empty",
+			Value:    false,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "int-arr",
+			Value:    false,
+			Operator: empty,
+			Expected: true,
+		},
+		{
+			Key:      "arr-empty",
+			Value:    false,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "null-key",
+			Value:    false,
+			Operator: empty,
+			Expected: false,
+		},
+	}
+
+	testMetaDataEmpty = []testDataRow{
+		{
+			Key:      "string-key",
+			Value:    false,
+			Operator: empty,
+			Expected: true,
+		},
+		{
+			Key:      "string-key",
+			Value:    true,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "string-key-empty",
+			Value:    true,
+			Operator: empty,
+			Expected: true,
+		},
+		{
+			Key:      "string-key-empty",
+			Value:    false,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "int-arr",
+			Value:    false,
+			Operator: empty,
+			Expected: true,
+		},
+		{
+			Key:      "int-arr",
+			Value:    true,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "arr-empty",
+			Value:    true,
+			Operator: empty,
+			Expected: true,
+		},
+		{
+			Key:      "arr-empty",
+			Value:    false,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "null-key",
+			Value:    true,
+			Operator: empty,
+			Expected: false,
+		},
+		{
+			Key:      "null-key",
+			Value:    false,
+			Operator: empty,
+			Expected: false,
+		},
+	}
 	testMetaData = [][]testDataRow{
-		//testMetaDataEqual,
-		//testMetaDataNotEquals,
-		//testMetaDataLt,
-		//testMetaDataLte,
-		//testMetaDataGt,
-		//testMetaDataGte,
-		//testMetaDataRegex,
-		//testMetaDataStringIn,
-		//testMetaDataStringNin,
-		//testMetaDataAll,
-		//testMetaDataSize,
-		//testMetaDataSubSetOf,
-		//testMetaDataAnyOf,
-		//testMetaDataNoneOf,
+		testMetaDataEqual,
+		testMetaDataNotEquals,
+		testMetaDataLt,
+		testMetaDataLte,
+		testMetaDataGt,
+		testMetaDataGte,
+		testMetaDataRegex,
+		testMetaDataStringIn,
+		testMetaDataStringNin,
+		testMetaDataAll,
+		testMetaDataSize,
+		testMetaDataSubSetOf,
+		testMetaDataAnyOf,
+		testMetaDataNoneOf,
 		testMetaDataExists,
+		testMetaDataNotEmpty,
+		testMetaDataEmpty,
 	}
 )
 
@@ -834,6 +934,9 @@ func TestFilterEvaluations(t *testing.T) {
 				case exists:
 					expected, _ := row.Value.(bool)
 					criteria, err = criteria.Exists(expected)
+				case empty:
+					expected, _ := row.Value.(bool)
+					criteria = criteria.Empty(expected)
 				case regex:
 					compiledRegexp, err := regexp.Compile(row.Expression)
 					if err != nil {
