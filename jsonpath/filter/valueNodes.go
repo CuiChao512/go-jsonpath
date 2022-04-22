@@ -161,7 +161,7 @@ func (pn *PathNode) GetPath() common.Path {
 
 func (pn *PathNode) Evaluate(ctx common.PredicateContext) (ValueNode, error) {
 	if pn.IsExistsCheck() {
-		c := &common.Configuration{} //TODO
+		c := common.CreateConfiguration(ctx.Configuration().JsonProvider(), []common.Option{common.OPTION_ALWAYS_RETURN_LIST}, ctx.Configuration().MappingProvider())
 		result, err := pn.path.Evaluate(ctx.Item(), ctx.Root(), c)
 		if err == nil {
 			if result == common.JsonProviderUndefined {
@@ -566,7 +566,7 @@ func (v *ValueListNode) Contains(node ValueNode) bool {
 
 func (v *ValueListNode) SubSetOf(right *ValueListNode) bool {
 	for _, leftNode := range v.nodes {
-		if !common.UtilsSliceContains(right, leftNode) {
+		if !valueNodeSliceContains(right.nodes, leftNode) {
 			return false
 		}
 	}

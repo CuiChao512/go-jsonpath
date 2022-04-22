@@ -284,3 +284,11 @@ func (*NativeMappingProvider) MapMap(data interface{}, configuration *Configurat
 func DefaultConfiguration() *Configuration {
 	return &Configuration{jsonProvider: &NativeJsonProvider{}, mappingProvider: &NativeMappingProvider{}}
 }
+
+func CreateConfiguration(jsonProvider JsonProvider, options []Option, mappingProvider MappingProvider) *Configuration {
+	return &Configuration{
+		jsonProvider:    jsonProvider,
+		options:         options,
+		mappingProvider: mappingProvider,
+	}
+}

@@ -693,6 +693,76 @@ var (
 			Expected: false,
 		},
 	}
+
+	testMetaDataAnyOf = []testDataRow{
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a", "z"},
+			Operator: anyOf,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"z", "b", "a"},
+			Operator: anyOf,
+			Expected: true,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"x", "y", "z"},
+			Operator: anyOf,
+			Expected: false,
+		},
+	}
+
+	testMetaDataNoneOf = []testDataRow{
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"a", "z"},
+			Operator: noneOf,
+			Expected: false,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"z", "b", "a"},
+			Operator: noneOf,
+			Expected: false,
+		},
+		{
+			Key:      "string-arr",
+			Value:    []interface{}{"x", "y", "z"},
+			Operator: noneOf,
+			Expected: true,
+		},
+	}
+
+	testMetaDataExists = []testDataRow{
+		{
+			Key:      "string-key",
+			Value:    true,
+			Operator: exists,
+			Expected: true,
+		},
+		{
+			Key:      "string-key",
+			Value:    false,
+			Operator: exists,
+			Expected: false,
+		},
+		{
+			Key:      "missing-key",
+			Value:    true,
+			Operator: exists,
+			Expected: false,
+		},
+		{
+			Key:      "missing-key",
+			Value:    false,
+			Operator: exists,
+			Expected: true,
+		},
+	}
+
 	testMetaData = [][]testDataRow{
 		//testMetaDataEqual,
 		//testMetaDataNotEquals,
@@ -705,7 +775,10 @@ var (
 		//testMetaDataStringNin,
 		//testMetaDataAll,
 		//testMetaDataSize,
-		testMetaDataSubSetOf,
+		//testMetaDataSubSetOf,
+		//testMetaDataAnyOf,
+		//testMetaDataNoneOf,
+		testMetaDataExists,
 	}
 )
 
@@ -754,6 +827,13 @@ func TestFilterEvaluations(t *testing.T) {
 					criteria, err = criteria.Size(size)
 				case subSetOf:
 					criteria, err = criteria.SubSetOfSlice(row.Value)
+				case anyOf:
+					criteria, err = criteria.AnyOfSlice(row.Value)
+				case noneOf:
+					criteria, err = criteria.NoneOfSlice(row.Value)
+				case exists:
+					expected, _ := row.Value.(bool)
+					criteria, err = criteria.Exists(expected)
 				case regex:
 					compiledRegexp, err := regexp.Compile(row.Expression)
 					if err != nil {
