@@ -353,7 +353,7 @@ func (c *PathCompiler) compile() (common.Path, error) {
 		return nil, err
 	}
 
-	return pathPkg.CreateCompiledPath(root, root.GetPathFragment() == "$"), nil
+	return pathPkg.CreateCompiledPath(root, root.GetPathFragment() == "$")
 }
 
 func (c *PathCompiler) readPlaceholderToken(appender pathPkg.TokenAppender) (bool, error) {
@@ -652,7 +652,12 @@ func PathCompileByStringAndPredicateSlice(pathString string, filters []common.Pr
 		return nil, fail("Path must not end with a '.' or '..'")
 	}
 
-	filterStack := filters[:]
+	var filterStack []common.Predicate
+	if filters == nil {
+		filterStack = make([]common.Predicate, 0)
+	} else {
+		filterStack = filters[:]
+	}
 
 	return createPathCompiler(ci, &filterStack).compile()
 }

@@ -617,6 +617,10 @@ func getNextTokenSuppressError(token Token) Token {
 	return next
 }
 
+func (f *FunctionPathToken) SetParameters(parameters []*function.Parameter) {
+	f.functionParams = parameters
+}
+
 func (f *FunctionPathToken) cleanWildcardPathToken() {
 	if nil != f.functionParams && len(f.functionParams) > 0 {
 		path := f.functionParams[0].GetPath()
@@ -1257,7 +1261,7 @@ func (*ScanPathToken) GetPathFragment() string {
 }
 
 func CreateScanPathToken() *ScanPathToken {
-	return &ScanPathToken{}
+	return &ScanPathToken{defaultToken: &defaultToken{upstreamArrayIndex: -1}}
 }
 
 type ArrayIndexPathToken struct {

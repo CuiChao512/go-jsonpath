@@ -119,3 +119,13 @@ func compileJsonpath(jsonpath string, filters ...common.Predicate) (*Jsonpath, e
 	}
 	return CreateJsonpathByStringAndPredicates(jsonpath, filters)
 }
+
+func JsonpathParseString(json string) (DocumentContext, error) {
+	pc := createParseContextImpl()
+	return pc.parseString(json)
+}
+
+func JsonpathParseObject(json interface{}) (DocumentContext, error) {
+	pc := createParseContextImpl()
+	return pc.parseAny(json)
+}
