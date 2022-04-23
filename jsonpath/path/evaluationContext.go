@@ -107,6 +107,35 @@ func (e *EvaluationContextImpl) AddResult(pathString string, operation common.Pa
 	return nil
 }
 
+func (e *EvaluationContextImpl) GetPath() (interface{}, error) {
+	if e.resultIndex == 0 {
+		if e.suppressException {
+			return nil, nil
+		}
+		return nil, &common.PathNotFoundError{Message: "No results for path:" + e.path.String()}
+	}
+	return e.pathResult, nil
+}
+
+func (e *EvaluationContextImpl) GetPathList() ([]string, error) {
+	var res = make([]string, 0)
+	if e.resultIndex > 0 {
+		objects, err := e.configuration.JsonProvider().ToArray(e.pathResult)
+		if err != nil {
+			return nil, err
+		}
+		for _, o := range objects {
+			res = append(res, common.UtilsToString(o))
+		}
+	}
+	return res, nil
+}
+
+func (e *EvaluationContextImpl) UpdateOperations() []common.PathRef {
+	//TODO operation sort
+	return e.updateOperations
+}
+
 func CreateEvaluationContextImpl(path common.Path, rootDocument interface{}, configuration *common.Configuration, forUpdate bool) *EvaluationContextImpl {
 	e := &EvaluationContextImpl{}
 	e.forUpdate = forUpdate

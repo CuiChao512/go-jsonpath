@@ -637,6 +637,10 @@ func createPathCompiler(path *common.CharacterIndex, filterStack *[]common.Predi
 }
 
 func PathCompile(pathString string, filters ...common.Predicate) (common.Path, error) {
+	return PathCompileByStringAndPredicateSlice(pathString, filters)
+}
+
+func PathCompileByStringAndPredicateSlice(pathString string, filters []common.Predicate) (common.Path, error) {
 	ci := common.CreateCharacterIndex(pathString)
 
 	if ci.CharAt(0) != PATH_DOC_CONTEXT && ci.CharAt(0) != PATH_EVAL_CONTEXT {

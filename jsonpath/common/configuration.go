@@ -292,3 +292,12 @@ func CreateConfiguration(jsonProvider JsonProvider, options []Option, mappingPro
 		mappingProvider: mappingProvider,
 	}
 }
+
+func CreateConfigurationByJsonProviderOptionsMappingProviderEvaluationListeners(jsonProvider JsonProvider, options []Option, mappingProvider MappingProvider, evaluationListeners []EvaluationListener) *Configuration {
+	return &Configuration{
+		jsonProvider:        jsonProvider,
+		options:             options,
+		mappingProvider:     mappingProvider,
+		evaluationListeners: evaluationListeners,
+	}
+}

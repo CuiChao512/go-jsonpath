@@ -25,6 +25,9 @@ type EvaluationContext interface {
 	RootDocument() interface{}
 	GetValue() (interface{}, error)
 	GetValueUnwrap(unwrap bool) (interface{}, error)
+	GetPath() (interface{}, error)
+	GetPathList() ([]string, error)
+	UpdateOperations() []PathRef
 }
 
 type Predicate interface {

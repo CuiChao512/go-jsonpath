@@ -861,6 +861,7 @@ var (
 			Expected: false,
 		},
 	}
+
 	testMetaData = [][]testDataRow{
 		testMetaDataEqual,
 		testMetaDataNotEquals,
