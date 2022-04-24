@@ -54,10 +54,6 @@ func tokenAppendTailToken(dt Token, next Token) Token {
 	return next
 }
 
-func tokenSetUpstreamArrayIndex(dt Token, idx int) {
-	dt.SetUpstreamArrayIndex(idx)
-}
-
 func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, ctx *EvaluationContextImpl, properties []string) error {
 
 	if len(properties) == 1 {
@@ -208,8 +204,16 @@ func tokenHandleArrayIndex(dt Token, index int, currentPath string, model interf
 		effectiveIndex = index
 	}
 
-	evalHit := ctx.JsonProvider().GetArrayIndex(model, effectiveIndex)
-
+	evalHit, err := ctx.JsonProvider().GetArrayIndex(model, effectiveIndex)
+	if err != nil {
+		// ignore index out of bound error
+		switch err.(type) {
+		case *common.IndexOutOfBoundError:
+			return nil
+		default:
+			return err
+		}
+	}
 	if dt.isLeaf() {
 		if err := ctx.AddResult(evalPath, pathRef, evalHit); err != nil {
 			return err
@@ -375,7 +379,7 @@ func (r *RootPathToken) IsPathDefinite() bool {
 }
 
 func (r *RootPathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(r, idx)
+	r.defaultToken.upstreamArrayIndex = idx
 }
 
 func (r *RootPathToken) appendTailToken(next Token) Token {
@@ -542,7 +546,7 @@ func (f *FunctionPathToken) IsPathDefinite() bool {
 }
 
 func (f *FunctionPathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(f, idx)
+	f.defaultToken.upstreamArrayIndex = idx
 }
 
 func (f *FunctionPathToken) appendTailToken(next Token) Token {
@@ -749,7 +753,7 @@ func (p *PropertyPathToken) IsPathDefinite() bool {
 }
 
 func (p *PropertyPathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(p, idx)
+	p.defaultToken.upstreamArrayIndex = idx
 }
 
 func (p *PropertyPathToken) appendTailToken(next Token) Token {
@@ -921,7 +925,7 @@ func (w *WildcardPathToken) IsPathDefinite() bool {
 }
 
 func (w *WildcardPathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(w, idx)
+	w.defaultToken.upstreamArrayIndex = idx
 }
 
 func (w *WildcardPathToken) appendTailToken(next Token) Token {
@@ -1129,7 +1133,7 @@ func (s *ScanPathToken) IsPathDefinite() bool {
 }
 
 func (s *ScanPathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(s, idx)
+	s.defaultToken.upstreamArrayIndex = idx
 }
 
 func (s *ScanPathToken) appendTailToken(next Token) Token {
@@ -1225,7 +1229,7 @@ func (s *ScanPathToken) walkArray(pt Token, currentPath string, parent common.Pa
 	idx := 0
 	for _, evalModel := range models {
 		evalPath := currentPath + "[" + strconv.Itoa(idx) + "]"
-		err := s.walk(pt, evalPath, CreateArrayIndexPathRef(model, idx), evalModel, ctx, predicate)
+		err = s.walk(pt, evalPath, CreateArrayIndexPathRef(model, idx), evalModel, ctx, predicate)
 		if err != nil {
 			return err
 		}
@@ -1346,7 +1350,7 @@ func (a *ArrayIndexPathToken) IsPathDefinite() bool {
 }
 
 func (a *ArrayIndexPathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(a, idx)
+	a.defaultToken.upstreamArrayIndex = idx
 }
 
 func (a *ArrayIndexPathToken) appendTailToken(next Token) Token {
@@ -1359,15 +1363,15 @@ func (a *ArrayIndexPathToken) GetTokenCount() (int, error) {
 
 func (a *ArrayIndexPathToken) checkArrayModel(currentPath string, model interface{}, ctx *EvaluationContextImpl) (bool, error) {
 	if model == nil {
-		if !a.IsTokenDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
+		if !a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
 		} else {
 			return false, &common.PathNotFoundError{Message: "The path " + currentPath + " is null"}
 		}
 	}
 
-	if ctx.JsonProvider().IsArray(model) {
-		if a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
+	if !ctx.JsonProvider().IsArray(model) {
+		if !a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
 		} else {
 			return false, &common.PathNotFoundError{Message: fmt.Sprintf("Filter: %s can only be applied to arrays. Current context is: %s", a, model)}
@@ -1494,7 +1498,7 @@ func (a *ArraySlicePathToken) IsPathDefinite() bool {
 }
 
 func (a *ArraySlicePathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(a, idx)
+	a.defaultToken.upstreamArrayIndex = idx
 }
 
 func (a *ArraySlicePathToken) appendTailToken(next Token) Token {
@@ -1507,7 +1511,7 @@ func (a *ArraySlicePathToken) GetTokenCount() (int, error) {
 
 func (a *ArraySlicePathToken) checkArrayModel(currentPath string, model interface{}, ctx *EvaluationContextImpl) (bool, error) {
 	if model == nil {
-		if !a.IsTokenDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
+		if !a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
 		} else {
 			return false, &common.PathNotFoundError{Message: "The path " + currentPath + " is null"}
@@ -1515,7 +1519,7 @@ func (a *ArraySlicePathToken) checkArrayModel(currentPath string, model interfac
 	}
 
 	if ctx.JsonProvider().IsArray(model) {
-		if a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
+		if !a.IsUpstreamDefinite() || common.UtilsSliceContains(ctx.Options(), common.OPTION_SUPPRESS_EXCEPTIONS) {
 			return false, nil
 		} else {
 			return false, &common.PathNotFoundError{Message: fmt.Sprintf("Filter: %s can only be applied to arrays. Current context is: %s", a, model)}
@@ -1720,7 +1724,7 @@ func (p *PredicatePathToken) IsPathDefinite() bool {
 }
 
 func (p *PredicatePathToken) SetUpstreamArrayIndex(idx int) {
-	tokenSetUpstreamArrayIndex(p, idx)
+	p.defaultToken.upstreamArrayIndex = idx
 }
 
 func (p *PredicatePathToken) appendTailToken(next Token) Token {

@@ -87,29 +87,43 @@ func (c *PathCompiler) readContextToken() (*pathPkg.RootPathToken, error) {
 func (c *PathCompiler) readNextToken(appender pathPkg.TokenAppender) (bool, error) {
 	switch c.path.CurrentChar() {
 	case PATH_OPEN_SQUARE_BRACKET:
-		readResult, err := c.readBracketPropertyToken(appender)
 		errMsg := "Could not parse token starting at position " + strconv.Itoa(c.path.Position()) + ". Expected ?, ', 0-9, * "
-		if err != nil || !readResult {
+		readResult, err := c.readBracketPropertyToken(appender)
+		if err != nil {
 			return false, fail(errMsg)
 		}
-
+		if readResult {
+			return true, nil
+		}
 		readResult, err = c.readArrayToken(appender)
-		if err != nil || !readResult {
+		if err != nil {
 			return false, fail(errMsg)
+		}
+		if readResult {
+			return true, nil
 		}
 		readResult, err = c.readWildCardToken(appender)
-		if err != nil || !readResult {
+		if err != nil {
 			return false, fail(errMsg)
+		}
+		if readResult {
+			return true, nil
 		}
 		readResult, err = c.readFilterToken(appender)
-		if err != nil || !readResult {
+		if err != nil {
 			return false, fail(errMsg)
+		}
+		if readResult {
+			return true, nil
 		}
 		readResult, err = c.readPlaceholderToken(appender)
-		if err != nil || !readResult {
+		if err != nil {
 			return false, fail(errMsg)
 		}
-		return true, nil
+		if readResult {
+			return true, nil
+		}
+		return false, fail(errMsg)
 	case PATH_PERIOD:
 		readResult, err := c.readDotToken(appender)
 		if err != nil {

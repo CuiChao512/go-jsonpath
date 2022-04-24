@@ -156,7 +156,7 @@ func (ci *CharacterIndex) NextIndexOf(c rune) int {
 
 func (ci *CharacterIndex) NextIndexOfFromStartPosition(startPosition int, c rune) int {
 	readPosition := startPosition
-	for ci.IsOutOfBounds(readPosition) {
+	for !ci.IsOutOfBounds(readPosition) {
 		if ci.CharAt(readPosition) == c {
 			return readPosition
 		}

@@ -5,16 +5,16 @@ import (
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 )
 
-type parseContext interface {
+type ParseContext interface {
 	parseString(json string) (DocumentContext, error)
 	parseAny(json interface{}) (DocumentContext, error)
 }
 
-type parseContextImpl struct {
+type ParseContextImpl struct {
 	configuration *common.Configuration
 }
 
-func (pCtx *parseContextImpl) parseString(json string) (DocumentContext, error) {
+func (pCtx *ParseContextImpl) parseString(json string) (DocumentContext, error) {
 	if json == "" {
 		return nil, errors.New("json string can not be empty")
 	}
@@ -25,19 +25,19 @@ func (pCtx *parseContextImpl) parseString(json string) (DocumentContext, error) 
 	return CreateJsonContextByAny(obj, pCtx.configuration)
 }
 
-func (pCtx *parseContextImpl) parseAny(json interface{}) (DocumentContext, error) {
+func (pCtx *ParseContextImpl) parseAny(json interface{}) (DocumentContext, error) {
 	if json == nil {
 		return nil, errors.New("json object can not be nil")
 	}
 	return CreateJsonContextByAny(json, pCtx.configuration)
 }
 
-func createParseContextImpl() *parseContextImpl {
-	return createParseContextImplByConfiguration(common.DefaultConfiguration())
+func createParseContextImpl() *ParseContextImpl {
+	return CreateParseContextImplByConfiguration(common.DefaultConfiguration())
 }
 
-func createParseContextImplByConfiguration(configuration *common.Configuration) *parseContextImpl {
-	return &parseContextImpl{
+func CreateParseContextImplByConfiguration(configuration *common.Configuration) *ParseContextImpl {
+	return &ParseContextImpl{
 		configuration: configuration,
 	}
 }

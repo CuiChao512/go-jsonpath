@@ -71,3 +71,11 @@ type IllegalStateException struct {
 func (e *IllegalStateException) Error() string {
 	return e.Message
 }
+
+type IndexOutOfBoundError struct {
+	Message string
+}
+
+func (e *IndexOutOfBoundError) Error() string {
+	return e.Message
+}

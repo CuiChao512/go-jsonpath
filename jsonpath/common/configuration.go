@@ -50,7 +50,7 @@ var JsonProviderUndefined interface{} = Empty{}
 type JsonProvider interface {
 	IsArray(obj interface{}) bool
 	IsMap(obj interface{}) bool
-	GetArrayIndex(obj interface{}, idx int) interface{}
+	GetArrayIndex(obj interface{}, idx int) (interface{}, error)
 	GetMapValue(obj interface{}, key string) interface{}
 	SetArrayIndex(array interface{}, idx int, newValue interface{}) error
 	SetProperty(obj interface{}, key interface{}, value interface{}) error
@@ -76,22 +76,31 @@ type NativeJsonProvider struct {
 }
 
 func (*NativeJsonProvider) IsArray(obj interface{}) bool {
+	if obj == nil {
+		return false
+	}
 	return reflect.TypeOf(obj).Kind() == reflect.Slice
 }
 
 func (*NativeJsonProvider) IsMap(obj interface{}) bool {
+	if obj == nil {
+		return false
+	}
 	return reflect.TypeOf(obj).Kind() == reflect.Map
 }
 
-func (*NativeJsonProvider) GetArrayIndex(obj interface{}, idx int) interface{} {
+func (*NativeJsonProvider) GetArrayIndex(obj interface{}, idx int) (interface{}, error) {
 	l, ok := obj.([]interface{})
 	if !ok {
-		return nil
+		return nil, nil
 	}
-	return l[idx]
+	if idx >= len(l) {
+		return nil, &IndexOutOfBoundError{Message: "GetArrayIndex error"}
+	}
+	return l[idx], nil
 }
 
-func (d *NativeJsonProvider) GetArrayIndexByUnwrap(obj interface{}, idx int, unwrap bool) interface{} {
+func (d *NativeJsonProvider) GetArrayIndexByUnwrap(obj interface{}, idx int, unwrap bool) (interface{}, error) {
 	return d.GetArrayIndex(obj, idx)
 }
 

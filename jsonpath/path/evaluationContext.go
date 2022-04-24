@@ -65,7 +65,10 @@ func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) (interface{}, error)
 		} else {
 			var value interface{}
 			if length > 0 {
-				value = e.JsonProvider().GetArrayIndex(e.valueResult, length-1)
+				value, err = e.JsonProvider().GetArrayIndex(e.valueResult, length-1)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if value != nil && unwrap {

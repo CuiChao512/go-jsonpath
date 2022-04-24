@@ -52,11 +52,12 @@ func (jc *JsonContext) pathFromCache(pathString string, filters []common.Predica
 	}
 	jp := jsonPathCache[cacheKey]
 	if jp == nil {
-		jp, err := compileJsonpathByStringAndPredicateSlice(pathString, filters)
+		jsonpath, err := compileJsonpathByStringAndPredicateSlice(pathString, filters)
 		if err != nil {
 			return nil, err
 		}
-		jsonPathCache[cacheKey] = jp
+		jsonPathCache[cacheKey] = jsonpath
+		return jsonpath, nil
 	}
 	return jp, nil
 }

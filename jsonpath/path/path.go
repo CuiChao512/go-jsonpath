@@ -155,7 +155,10 @@ func (r *arrayIndexPathRef) Set(newVal interface{}, configuration *common.Config
 }
 
 func (r *arrayIndexPathRef) Convert(mapFunction common.MapFunction, configuration *common.Configuration) error {
-	currentValue := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	currentValue, err := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if err != nil {
+		return err
+	}
 	return configuration.JsonProvider().SetArrayIndex(&r.parent, r.index, mapFunction.Map(currentValue, configuration))
 }
 
@@ -164,7 +167,10 @@ func (r *arrayIndexPathRef) Delete(configuration *common.Configuration) error {
 }
 
 func (r *arrayIndexPathRef) Add(value interface{}, configuration *common.Configuration) error {
-	target := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	target, err := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if err != nil {
+		return err
+	}
 	if isTargetInvalid(target) {
 		return nil
 	}
@@ -176,7 +182,10 @@ func (r *arrayIndexPathRef) Add(value interface{}, configuration *common.Configu
 }
 
 func (r *arrayIndexPathRef) Put(key string, value interface{}, configuration *common.Configuration) error {
-	target := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	target, err := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if err != nil {
+		return err
+	}
 	if isTargetInvalid(target) {
 		return nil
 	}
@@ -188,7 +197,10 @@ func (r *arrayIndexPathRef) Put(key string, value interface{}, configuration *co
 }
 
 func (r *arrayIndexPathRef) RenameKey(oldKeyName string, newKeyName string, configuration *common.Configuration) error {
-	target := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	target, err := configuration.JsonProvider().GetArrayIndex(r.parent, r.index)
+	if err != nil {
+		return err
+	}
 	if isTargetInvalid(target) {
 		return nil
 	}

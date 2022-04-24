@@ -63,18 +63,20 @@ func (j *Jsonpath) readAnyByConfiguration(jsonObject interface{}, config *common
 		if err != nil {
 			return nil, err
 		}
-		pathList, err := evaluationContext.GetPathList()
-		if err != nil {
-			return nil, err
-		}
-		if optSuppressException && len(pathList) == 0 {
-			if optAlwaysReturnList {
-				return config.JsonProvider().CreateArray(), nil
-			} else {
-				if j.path.IsDefinite() {
-					return nil, nil
-				} else {
+		if optSuppressException {
+			pathList, err := evaluationContext.GetPathList()
+			if err != nil {
+				return nil, err
+			}
+			if len(pathList) == 0 {
+				if optAlwaysReturnList {
 					return config.JsonProvider().CreateArray(), nil
+				} else {
+					if j.path.IsDefinite() {
+						return nil, nil
+					} else {
+						return config.JsonProvider().CreateArray(), nil
+					}
 				}
 			}
 		}
