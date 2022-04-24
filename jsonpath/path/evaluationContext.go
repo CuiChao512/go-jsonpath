@@ -2,7 +2,6 @@ package path
 
 import (
 	"errors"
-	"fmt"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 )
 
@@ -58,7 +57,7 @@ func (e *EvaluationContextImpl) GetValueUnwrap(unwrap bool) (interface{}, error)
 			if e.suppressException {
 				return nil, nil
 			}
-			return nil, fmt.Errorf("no result:%s", &common.PathNotFoundError{Message: "No results for path: " + e.path.String()})
+			return nil, &common.PathNotFoundError{Message: "No results for path: " + e.path.String()}
 		}
 		if length, err := e.JsonProvider().Length(e.valueResult); err != nil {
 			return nil, err

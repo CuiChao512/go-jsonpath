@@ -124,10 +124,10 @@ func compileJsonpath(jsonpath string, filters ...common.Predicate) (*Jsonpath, e
 
 func JsonpathParseString(json string) (DocumentContext, error) {
 	pc := createParseContextImpl()
-	return pc.parseString(json)
+	return pc.ParseString(json)
 }
 
 func JsonpathParseObject(json interface{}) (DocumentContext, error) {
 	pc := createParseContextImpl()
-	return pc.parseAny(json)
+	return pc.ParseAny(json)
 }

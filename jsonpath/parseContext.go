@@ -6,15 +6,15 @@ import (
 )
 
 type ParseContext interface {
-	parseString(json string) (DocumentContext, error)
-	parseAny(json interface{}) (DocumentContext, error)
+	ParseString(json string) (DocumentContext, error)
+	ParseAny(json interface{}) (DocumentContext, error)
 }
 
 type ParseContextImpl struct {
 	configuration *common.Configuration
 }
 
-func (pCtx *ParseContextImpl) parseString(json string) (DocumentContext, error) {
+func (pCtx *ParseContextImpl) ParseString(json string) (DocumentContext, error) {
 	if json == "" {
 		return nil, errors.New("json string can not be empty")
 	}
@@ -25,7 +25,7 @@ func (pCtx *ParseContextImpl) parseString(json string) (DocumentContext, error) 
 	return CreateJsonContextByAny(obj, pCtx.configuration)
 }
 
-func (pCtx *ParseContextImpl) parseAny(json interface{}) (DocumentContext, error) {
+func (pCtx *ParseContextImpl) ParseAny(json interface{}) (DocumentContext, error) {
 	if json == nil {
 		return nil, errors.New("json object can not be nil")
 	}
