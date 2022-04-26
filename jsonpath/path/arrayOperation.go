@@ -35,7 +35,7 @@ func ParseArrayIndexOperation(operation string) (*ArrayIndexOperation, error) {
 
 	var tempIndexes []int
 	for _, token := range tokens {
-		i, err := strconv.Atoi(token)
+		i, err := strconv.Atoi(strings.TrimSpace(token))
 		if err != nil {
 			return nil, &common.InvalidPathError{Message: "Failed to parse token in ArrayIndexOperation: " + token}
 		}
