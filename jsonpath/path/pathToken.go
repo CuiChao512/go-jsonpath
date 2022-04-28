@@ -106,7 +106,7 @@ func (r *defaultToken) setUpstreamDefinite(upstreamDefinite bool) {
 
 func (r *defaultToken) IsUpstreamDefinite() bool {
 	if r.upstreamDefinite == 0 {
-		r.setUpstreamDefinite(r.isRoot() || r.prevToken().IsPathDefinite() && r.prevToken().IsUpstreamDefinite())
+		r.setUpstreamDefinite(r.isRoot() || r.prevToken().IsTokenDefinite() && r.prevToken().IsUpstreamDefinite())
 	}
 	return r.upstreamDefinite > 0
 }

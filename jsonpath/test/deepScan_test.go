@@ -85,28 +85,40 @@ var (
 			PathString: "$..[*].foo.bar",
 			Expected:   []interface{}{},
 		},
+		//{
+		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
+		//	PathString: "$..foo[?(@.bar)].bar",
+		//	Expected:   []interface{}{float64(4)},
+		//},
+		//{
+		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
+		//	PathString: "$..[*]foo[?(@.bar)].bar",
+		//	Expected:   []interface{}{float64(4)},
+		//},
+		//when_deep_scanning_require_properties_is_ignored_on_scan_target
+		{},
 	}
 	testMetaDataPathNotFoundError = [][]string{
-		//{
-		//	"{\"foo\": {\"bar\": null}}",
-		//	"$.foo.bar.[5]",
-		//},
+		{
+			"{\"foo\": {\"bar\": null}}",
+			"$.foo.bar.[5]",
+		},
 		{
 			"{\"foo\": {\"bar\": null}}",
 			"$.foo.bar.[5, 10]",
 		},
-		//{
-		//	"{\"foo\": {\"bar\": 4}}",
-		//	"$.foo.bar.[5]",
-		//},
-		//{
-		//	"{\"foo\": {\"bar\": 4}}",
-		//	"$.foo.bar.[5, 10]",
-		//},
-		//{
-		//	"{\"foo\": {\"bar\": 4}}",
-		//	"$.foo.bar.[5]",
-		//},
+		{
+			"{\"foo\": {\"bar\": 4}}",
+			"$.foo.bar.[5]",
+		},
+		{
+			"{\"foo\": {\"bar\": 4}}",
+			"$.foo.bar.[5, 10]",
+		},
+		{
+			"{\"foo\": {\"bar\": 4}}",
+			"$.foo.bar.[5]",
+		},
 	}
 )
 
@@ -138,7 +150,7 @@ func TestDeepScan(t *testing.T) {
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		result, err = documentCtx.Read(data[1])
+		_, err = documentCtx.Read(data[1])
 
 		if err == nil {
 			t.Errorf("path not found error ecpected")
