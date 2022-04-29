@@ -8,10 +8,19 @@ import (
 )
 
 type deepScanTestData struct {
+	Options    []common.Option
 	JsonString string
 	PathString string
 	Function   func(interface{}) interface{}
 	Expected   interface{}
+}
+
+var sizeOf = func(data interface{}) interface{} {
+	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Slice {
+		return val.Len()
+	}
+	return -1
 }
 
 var (
@@ -85,17 +94,30 @@ var (
 		//	PathString: "$..[*].foo.bar",
 		//	Expected:   []interface{}{},
 		//},
-		{
-			JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
-			PathString: "$..foo[?(@.bar)].bar",
-			Expected:   []interface{}{float64(4)},
-		},
-		{
-			JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
-			PathString: "$..[*]foo[?(@.bar)].bar",
-			Expected:   []interface{}{float64(4)},
-		},
+		//{
+		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
+		//	PathString: "$..foo[?(@.bar)].bar",
+		//	Expected:   []interface{}{float64(4)},
+		//},
+		//{
+		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
+		//	PathString: "$..[*]foo[?(@.bar)].bar",
+		//	Expected:   []interface{}{float64(4)},
+		//},
 		//when_deep_scanning_require_properties_is_ignored_on_scan_target
+		{
+			JsonString: "[{\"x\": {\"foo\": {\"x\": 4}, \"x\": null}, \"y\": {\"x\": 1}}, {\"x\": []}]",
+			PathString: "$..x",
+			Function:   sizeOf,
+			Expected:   5,
+		},
+		//{
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
+		//	PathString: "$..[*]foo[?(@.bar)].bar",
+		//	Function:   sizeOf,
+		//	Expected:   5,
+		//},
 	}
 	testMetaDataPathNotFoundError = [][]string{
 		//{
