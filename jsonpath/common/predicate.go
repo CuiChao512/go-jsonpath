@@ -35,7 +35,7 @@ func (pc *PredicateContextImpl) Evaluate(path2 Path) (interface{}, error) {
 			}
 		}
 	} else {
-		r, err := path2.Evaluate(pc.rootDocument, pc.rootDocument, pc.configuration)
+		r, err := path2.Evaluate(pc.contextDocument, pc.rootDocument, pc.configuration)
 		if err != nil {
 			return nil, err
 		}

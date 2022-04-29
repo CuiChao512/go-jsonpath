@@ -211,7 +211,7 @@ func (c *Compiler) readExpression() *RelationExpressionNode {
 		} else {
 			right = FALSE_NODE
 		}
-		return CreateRelationExpressionNode(left, RelationalOperator_EXISTS, right)
+		return CreateRelationExpressionNode(pathNode, RelationalOperator_EXISTS, right)
 	}
 }
 

@@ -1122,7 +1122,7 @@ func (a *ArraySlicePathToken) sliceFrom(currentPath string, parent common.PathRe
 		return nil
 	}
 	for i := from; i < length; i++ {
-		err := a.handleArrayIndex(i, currentPath, model, ctx)
+		err = a.handleArrayIndex(i, currentPath, model, ctx)
 		if err != nil {
 			return err
 		}

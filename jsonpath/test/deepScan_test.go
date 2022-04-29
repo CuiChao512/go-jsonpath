@@ -90,11 +90,11 @@ var (
 			PathString: "$..foo[?(@.bar)].bar",
 			Expected:   []interface{}{float64(4)},
 		},
-		//{
-		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
-		//	PathString: "$..[*]foo[?(@.bar)].bar",
-		//	Expected:   []interface{}{float64(4)},
-		//},
+		{
+			JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
+			PathString: "$..[*]foo[?(@.bar)].bar",
+			Expected:   []interface{}{float64(4)},
+		},
 		//when_deep_scanning_require_properties_is_ignored_on_scan_target
 	}
 	testMetaDataPathNotFoundError = [][]string{
