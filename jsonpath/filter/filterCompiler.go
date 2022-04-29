@@ -387,15 +387,14 @@ func (c *Compiler) readPath() (*PathNode, error) {
 			} else {
 				filter.SetPosition(closingSquareBracketIndex + 1)
 			}
+		}
+		closingFunctionBracket := filter.CurrentChar() == CLOSE_PARENTHESIS && c.currentCharIsClosingFunctionBracket(begin)
+		closingLogicalBracket := filter.CurrentChar() == CLOSE_PARENTHESIS && !closingFunctionBracket
 
-			closingFunctionBracket := filter.CurrentChar() == CLOSE_PARENTHESIS && c.currentCharIsClosingFunctionBracket(begin)
-			closingLogicalBracket := filter.CurrentChar() == CLOSE_PARENTHESIS && !closingFunctionBracket
-
-			if !filter.InBounds() || c.isRelationalOperatorChar(filter.CurrentChar()) || filter.CurrentChar() == SPACE || closingLogicalBracket {
-				break
-			} else {
-				filter.IncrementPosition(1)
-			}
+		if !filter.InBounds() || c.isRelationalOperatorChar(filter.CurrentChar()) || filter.CurrentChar() == SPACE || closingLogicalBracket {
+			break
+		} else {
+			filter.IncrementPosition(1)
 		}
 	}
 

@@ -180,15 +180,19 @@ func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, 
 		}
 		if dt.isLeaf() {
 			idx := "[" + common.UtilsToString(dt.getUpstreamArrayIndex()) + "]"
-			root, err := ctx.GetRoot()
-			if err != nil {
-				return err
-			}
 
-			if idx == "[-1]" || root.GetTail().prevToken().GetPathFragment() == idx {
-				if err = ctx.AddResult(evalPath, ref, propertyVal); err != nil {
+			if idx == "[-1]" {
+				if err := ctx.AddResult(evalPath, ref, propertyVal); err != nil {
 					return err
 				}
+			} else if root, err := ctx.GetRoot(); err == nil {
+				if root.GetTail().prevToken().GetPathFragment() == idx {
+					if err = ctx.AddResult(evalPath, ref, propertyVal); err != nil {
+						return err
+					}
+				}
+			} else if err != nil {
+				return err
 			}
 		} else {
 			next, _ := dt.nextToken()
@@ -345,13 +349,6 @@ func tokenInvoke(pathFunction function.PathFunction, currentPath string, parent 
 		return err
 	}
 	return ctx.AddResult(currentPath, parent, result)
-}
-
-func tokenNextToken(dt Token) (Token, error) {
-	if dt.isLeaf() {
-		return nil, &common.IllegalStateException{Message: "Current path token is a leaf"}
-	}
-	return dt.GetNext(), nil
 }
 
 //RootPathToken ----
