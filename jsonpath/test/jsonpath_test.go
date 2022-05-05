@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"math"
+	"reflect"
 	"strconv"
 )
 
@@ -86,4 +87,12 @@ var TestJsonBookStoreDocument = "{\n" +
 
 func createPredicateContext(check interface{}) common.PredicateContext {
 	return common.CreatePredicateContextImpl(check, check, common.DefaultConfiguration(), map[common.Path]interface{}{})
+}
+
+var sizeOf = func(data interface{}) interface{} {
+	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Slice {
+		return val.Len()
+	}
+	return -1
 }

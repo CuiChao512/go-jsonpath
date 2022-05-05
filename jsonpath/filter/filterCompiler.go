@@ -82,7 +82,7 @@ func (c *Compiler) readLogicalAND() (ExpressionNode, error) {
 		return nil, err
 	}
 	ops = append(ops, op)
-	filter := *c.filter
+	filter := c.filter
 	for {
 		savepoint := filter.Position()
 		if filter.HasSignificantSubSequence(LogicalOperator_AND) {
@@ -148,7 +148,9 @@ func (c *Compiler) readLogicalANDOperand() (ExpressionNode, error) {
 
 func (c *Compiler) readValueNode() (ValueNode, error) {
 	filter := c.filter
-	switch filter.SkipBlanks().CurrentChar() {
+	currentChar := filter.SkipBlanks().CurrentChar()
+	println("readValueNode currentChar:", string(currentChar))
+	switch currentChar {
 	case DOC_CONTEXT:
 		return c.readPath()
 	case EVAL_CONTEXT:
@@ -169,7 +171,9 @@ func (c *Compiler) readValueNode() (ValueNode, error) {
 }
 
 func (c *Compiler) readLiteral() (ValueNode, error) {
-	switch c.filter.SkipBlanks().CurrentChar() {
+	currentChar := c.filter.SkipBlanks().CurrentChar()
+	println("readLiteral: currentChar=", string(currentChar))
+	switch currentChar {
 	case SINGLE_QUOTE:
 		return c.readStringLiteral(SINGLE_QUOTE)
 	case DOUBLE_QUOTE:
@@ -189,6 +193,7 @@ func (c *Compiler) readLiteral() (ValueNode, error) {
 	case PATTERN:
 		return c.readPattern()
 	default:
+		println("readNumberLiteral")
 		return c.readNumberLiteral()
 	}
 }

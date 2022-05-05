@@ -38,7 +38,7 @@ func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 
 	begin := strings.Index(pattern, "/")
 	end := strings.LastIndex(pattern, "/")
-	purePattern := pattern[begin:end]
+	purePattern := pattern[begin+1 : end]
 	compiledPattern, err := regexp.Compile(purePattern)
 	if err != nil {
 		return nil, err

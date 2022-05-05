@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"github.com/CuiChao512/go-jsonpath/jsonpath"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"reflect"
@@ -13,14 +14,6 @@ type deepScanTestData struct {
 	PathString string
 	Function   func(interface{}) interface{}
 	Expected   interface{}
-}
-
-var sizeOf = func(data interface{}) interface{} {
-	val := reflect.ValueOf(data)
-	if val.Kind() == reflect.Slice {
-		return val.Len()
-	}
-	return -1
 }
 
 var (
@@ -159,6 +152,7 @@ func TestDeepScan(t *testing.T) {
 		}
 		if data.Function != nil {
 			result = data.Function(result)
+			fmt.Println("result after func:", result)
 		}
 		if !reflect.DeepEqual(result, data.Expected) {
 			t.Errorf("fail")

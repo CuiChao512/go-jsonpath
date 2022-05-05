@@ -200,7 +200,7 @@ func (ci *CharacterIndex) NextSignificantCharIs(c rune) bool {
 
 func (ci *CharacterIndex) NextSignificantCharIsFromStartPosition(startPosition int, c rune) bool {
 	readPosition := startPosition + 1
-	for ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE {
+	for !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE {
 		readPosition++
 	}
 	return !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == c
