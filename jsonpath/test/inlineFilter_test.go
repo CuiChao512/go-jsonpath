@@ -70,7 +70,7 @@ var (
 		//	PathString: "$.store.book[?('a' == 'a')].author",
 		//	Expected:   []interface{}{"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"},
 		//},
-		//no_path_ref_in_filter_hit_none
+		////no_path_ref_in_filter_hit_none
 		//{
 		//	PathString: "$.store.book[?('a' == 'b')].author",
 		//	Expected:   []interface{}{},
@@ -98,16 +98,26 @@ var (
 		//	PathString: "$.store.book[?(/reference/ =~ @.category)].author",
 		//	Expected:   []interface{}{"Nigel Rees"},
 		//},
-		//patterns_can_be_evaluated_with_ignore_case
-		{
-			PathString: "$.store.book[?(@.category =~ /REFERENCE/)].author",
-			Expected:   []interface{}{},
-		},
-		{
-			PathString: "$.store.book[?(@.category =~ /REFERENCE/i)].author",
-			Expected:   []interface{}{"Nigel Rees"},
-		},
-		//
+		////patterns_can_be_evaluated_with_ignore_case
+		//{
+		//	PathString: "$.store.book[?(@.category =~ /REFERENCE/)].author",
+		//	Expected:   []interface{}{},
+		//},
+		//{
+		//	PathString: "$.store.book[?(@.category =~ /REFERENCE/i)].author",
+		//	Expected:   []interface{}{"Nigel Rees"},
+		//},
+		////negate_exists_check
+		//{
+		//	PathString: "$.store.book[?(@.isbn)].author",
+		//	Expected:   []interface{}{"Herman Melville", "J. R. R. Tolkien"},
+		//},
+		//{
+		//	PathString: "$.store.book[?(!@.isbn)].author",
+		//	Expected:   []interface{}{"Nigel Rees", "Evelyn Waugh"},
+		//},
+		//negate_exists_check_primitive
+
 	}
 )
 

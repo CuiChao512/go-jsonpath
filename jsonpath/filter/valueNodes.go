@@ -39,7 +39,18 @@ func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 	begin := strings.Index(pattern, "/")
 	end := strings.LastIndex(pattern, "/")
 	purePattern := pattern[begin+1 : end]
-	compiledPattern, err := regexp.Compile(purePattern)
+	flags := pattern[end+1:]
+	var newFlagsRunes []rune
+	for _, r := range []rune(flags) {
+		if r == 'i' || r == 'm' || r == 's' || r == 'U' {
+			newFlagsRunes = append(newFlagsRunes, r)
+		}
+	}
+	patternString := purePattern
+	if len(newFlagsRunes) > 0 {
+		patternString = "(?" + string(newFlagsRunes) + ")" + purePattern
+	}
+	compiledPattern, err := regexp.Compile(patternString)
 	if err != nil {
 		return nil, err
 	}

@@ -284,16 +284,18 @@ func (c *Compiler) readJsonLiteral() (*JsonNode, error) {
 	return CreateJsonNodeByString(json), err
 }
 
-func parsePatternFlags(c [1]rune) int {
-	//TODO: PatternFlag.parseFlags
+func parsePatternFlags(flag rune) int {
+	if flag == 'i' || flag == 'm' || flag == 's' || flag == 'U' {
+		return 1
+	}
 	return 0
 }
 
 func (c *Compiler) endOfFlags(position int) int {
 	endIndex := position
-	var currentChar [1]rune
+	var currentChar rune
 	for c.filter.InBoundsByPosition(endIndex) {
-		currentChar[0] = c.filter.CharAt(endIndex)
+		currentChar = c.filter.CharAt(endIndex)
 		if parsePatternFlags(currentChar) > 0 {
 			endIndex++
 			continue
