@@ -8,6 +8,7 @@ import (
 )
 
 type inlineTestMetaData struct {
+	JsonString string
 	PathString string
 	Function   func(interface{}) interface{}
 	Expected   interface{}
@@ -116,14 +117,162 @@ var (
 		//	PathString: "$.store.book[?(!@.isbn)].author",
 		//	Expected:   []interface{}{"Nigel Rees", "Evelyn Waugh"},
 		//},
-		//negate_exists_check_primitive
-
+		////equality_check_does_not_break_evaluation
+		//{
+		//	JsonString: "[{\"value\":\"5\"}]",
+		//	PathString: "$[?(@.value=='5')]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":5}]",
+		//	PathString: "$[?(@.value==5)]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":\"5.1.26\"}]",
+		//	PathString: "$[?(@.value=='5.1.26')]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":\"5\"}]",
+		//	PathString: "$[?(@.value=='5.1.26')]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":5}]",
+		//	PathString: "$[?(@.value=='5.1.26')]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":5.1}]",
+		//	PathString: "$[?(@.value=='5.1.26')]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":\"5.1.26\"}]",
+		//	PathString: "$[?(@.value=='5')]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":\"5.1.26\"}]",
+		//	PathString: "$[?(@.value==5)]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":\"5.1.26\"}]",
+		//	PathString: "$[?(@.value==5.1)]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		////lt_check_does_not_break_evaluation
+		//{
+		//	JsonString: "[{\"value\":\"5\"}]",
+		//	PathString: "$[?(@.value<'7')]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":\"7\"}]",
+		//	PathString: "$[?(@.value<'5')]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":5}]",
+		//	PathString: "$[?(@.value<7)]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":7}]",
+		//	PathString: "$[?(@.value<5)]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":5}]",
+		//	PathString: "$[?(@.value<7.1)]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":7}]",
+		//	PathString: "$[?(@.value<5.1)]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		//{
+		//	JsonString: "[{\"value\":5.1}]",
+		//	PathString: "$[?(@.value<7)]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//{
+		//	JsonString: "[{\"value\":7.1}]",
+		//	PathString: "$[?(@.value<5)]",
+		//	Function:   sizeOf,
+		//	Expected:   0,
+		//},
+		////escaped_literals
+		//{
+		//	JsonString: "[\"'foo\"]",
+		//	PathString: "$[?(@ == '\\'foo')]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		////escaped_literals2
+		//{
+		//	JsonString: "[\"\\\\'foo\"]",
+		//	PathString: "$[?(@ == \"\\\\'foo\")]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		////escape_pattern
+		//{
+		//	JsonString: "[\"x\"]",
+		//	PathString: "$[?(@ =~ /\\/|x/)]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		////escape_pattern_after_literal
+		//{
+		//	JsonString: "[\"x\"]",
+		//	PathString: "$[?(@ == \"abc\" || @ =~ /\\/|x/)]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		////escape_pattern_before_literal
+		//{
+		//	JsonString: "[\"x\"]",
+		//	PathString: "$[?(@ =~ /\\/|x/ || @ == \"abc\")]",
+		//	Function:   sizeOf,
+		//	Expected:   1,
+		//},
+		//filter_evaluation_does_not_break_path_evaluation
+		{
+			JsonString: "[{\"s\": \"fo\", \"expected_size\": \"m\"}, {\"s\": \"lo\", \"expected_size\": 2}]",
+			PathString: "$[?(@.s size @.expected_size)]",
+			Function:   sizeOf,
+			Expected:   1,
+		},
 	}
 )
 
 func Test_inline_filters(t *testing.T) {
 	for _, testData := range inlineTestMetaDataTable {
-		if document, err := jsonpath.CreateParseContextImplByConfiguration(common.DefaultConfiguration()).ParseString(TestJsonDocument); err == nil {
+		json := TestJsonDocument
+		if testData.JsonString != "" {
+			json = testData.JsonString
+		}
+		if document, err := jsonpath.CreateParseContextImplByConfiguration(common.DefaultConfiguration()).ParseString(json); err == nil {
 			if result, err := document.Read(testData.PathString); err == nil {
 				if testData.Function != nil {
 					result = testData.Function(result)
@@ -139,4 +288,44 @@ func Test_inline_filters(t *testing.T) {
 		}
 
 	}
+}
+
+func Test_negate_exists_check_primitive(t *testing.T) {
+	ints := []interface{}{0, 1, nil, 2, 3}
+	parsed, err := jsonpath.JsonpathParseObject(ints)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	hits, err := parsed.Read("$[?(@)]")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if !reflect.DeepEqual(hits, []interface{}{0, 1, nil, 2, 3}) {
+		t.Errorf("fail")
+	}
+
+	parsed, err = jsonpath.JsonpathParseObject(ints)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	hits, err = parsed.Read("$[?(@ != null)]")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if !reflect.DeepEqual(hits, []interface{}{0, 1, 2, 3}) {
+		t.Errorf("fail")
+	}
+
+	parsed, err = jsonpath.JsonpathParseObject(ints)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	hits, err = parsed.Read("$[?(!@)]")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	if !reflect.DeepEqual(hits, []interface{}{}) {
+		t.Errorf("fail")
+	}
+
 }

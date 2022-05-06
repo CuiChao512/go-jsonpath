@@ -304,8 +304,8 @@ func (n *NumberNode) Equals(o interface{}) bool {
 		}
 	case *StringNode:
 		v, _ := o.(*StringNode)
-		that, _ := v.AsNumberNode()
-		if that.number == nil {
+		that, err := v.AsNumberNode()
+		if err != nil || that.number == nil {
 			return false
 		} else {
 			return n.number.Equals(*that.number)
