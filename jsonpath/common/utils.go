@@ -13,9 +13,12 @@ func UtilsJoin(delimiter string, warp string, values interface{}) string {
 	if s.Kind() == reflect.Slice {
 		stringBuilder := new(strings.Builder)
 		for i := 0; i < s.Len(); i++ {
-			stringBuilder.WriteString(delimiter)
+			if i > 0 {
+				stringBuilder.WriteString(delimiter)
+			}
 			stringBuilder.WriteString(warp)
 			stringBuilder.WriteString(UtilsToString(s.Index(i).Interface()))
+			stringBuilder.WriteString(warp)
 		}
 		return stringBuilder.String()
 	} else {
