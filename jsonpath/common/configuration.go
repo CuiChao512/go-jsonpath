@@ -41,6 +41,13 @@ func (c *Configuration) GetEvaluationListeners() []EvaluationListener {
 	return c.evaluationListeners
 }
 
+func (c *Configuration) AddOptions(options ...Option) *Configuration {
+	for _, o := range options {
+		c.options = append(c.options, o)
+	}
+	return c
+}
+
 type Empty struct {
 	empty bool
 }

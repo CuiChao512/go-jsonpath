@@ -695,7 +695,7 @@ const (
 )
 
 func CreateEvaluator(operator string) Evaluator {
-	return evaluators[operator]
+	return evaluators[strings.ToUpper(operator)]
 }
 
 type ExpressionNode interface {

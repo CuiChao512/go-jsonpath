@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/CuiChao512/go-jsonpath/jsonpath"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"math"
 	"reflect"
@@ -87,6 +88,10 @@ var TestJsonBookStoreDocument = "{\n" +
 
 func createPredicateContext(check interface{}) common.PredicateContext {
 	return common.CreatePredicateContextImpl(check, check, common.DefaultConfiguration(), map[common.Path]interface{}{})
+}
+
+func getParseContextUsingDefaultConf() *jsonpath.ParseContextImpl {
+	return jsonpath.CreateParseContextImplByConfiguration(common.DefaultConfiguration())
 }
 
 var sizeOf = func(data interface{}) interface{} {

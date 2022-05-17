@@ -233,8 +233,8 @@ func tokenHandleObjectProperty(dt Token, currentPath string, model interface{}, 
 					continue
 				}
 			}
-			var m interface{} = merged
-			if err = ctx.JsonProvider().SetProperty(&m, property, propertyVal); err != nil {
+			var m interface{} = &merged
+			if err = ctx.JsonProvider().SetProperty(m, property, propertyVal); err != nil {
 				return err
 			}
 		}
