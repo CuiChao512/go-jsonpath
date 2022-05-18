@@ -152,7 +152,7 @@ func TestDeepScan(t *testing.T) {
 		}
 		if data.Function != nil {
 			result = data.Function(result)
-			fmt.Println("result after func:", result)
+			fmt.Printf("result after func: %d \n", result)
 		}
 		if !reflect.DeepEqual(result, data.Expected) {
 			t.Errorf("fail")

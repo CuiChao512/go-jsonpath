@@ -211,7 +211,7 @@ func (ci *CharacterIndex) NextSignificantChar() rune {
 }
 func (ci *CharacterIndex) NextSignificantCharFromStartPosition(startPosition int) rune {
 	readPosition := startPosition + 1
-	for !ci.IsOutOfBounds(readPosition) && ci.CharAt(startPosition) == SPACE {
+	for !ci.IsOutOfBounds(readPosition) && ci.CharAt(readPosition) == SPACE {
 		readPosition++
 	}
 	if !ci.IsOutOfBounds(readPosition) {

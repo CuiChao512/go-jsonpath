@@ -256,9 +256,7 @@ func (c *PathCompiler) readPropertyOrFunctionToken(appender pathPkg.TokenAppende
 }
 
 func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Parameter, error) {
-	paramType := function.JSON
-
-	paramTypeUpdated := false
+	paramType := function.NULL
 
 	// Parenthesis starts at 1 since we're marking the start of a function call, the close paren will denote the
 	// last parameter boundary
@@ -275,7 +273,7 @@ func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Par
 		path.IncrementPosition(1)
 
 		// we're at the start of the stream, and don't know what type of parameter we have
-		if !paramTypeUpdated {
+		if paramType == function.NULL {
 			if c.isWhitespace(char) {
 				continue
 			}
@@ -285,7 +283,6 @@ func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Par
 			} else if c.isPathContext(char) {
 				paramType = function.PATH // read until we reach a terminating comma and we've reset grouping to zero
 			}
-			paramTypeUpdated = true
 		}
 
 		switch char {
@@ -320,13 +317,14 @@ func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Par
 			if 0 > groupParen || priorChar == '(' {
 				parameter += string(char)
 			}
+			fallthrough
 		case COMMA:
 			// In this state we've reach the end of a function parameter and we can pass along the parameter string
 			// to the parser
 			if 0 == groupQuote && 0 == groupBrace && 0 == groupBracket && ((0 == groupParen && PATH_CLOSE_PARENTHESIS == char) || 1 == groupParen) {
 				endOfStream = 0 == groupParen
 
-				if paramTypeUpdated {
+				if paramType != function.NULL {
 					var param *function.Parameter = nil
 					switch paramType {
 					case function.JSON:
@@ -341,16 +339,16 @@ func (c *PathCompiler) parseFunctionParameters(funcName string) ([]*function.Par
 						}
 						param = function.CreatePathParameter(compiledPath)
 					}
-					if paramTypeUpdated {
+					if param != nil {
 						parameters = append(parameters, param)
 					}
 					parameter = ""
-					paramTypeUpdated = false
+					paramType = function.NULL
 				}
 			}
 		}
 
-		if !paramTypeUpdated && !(char == COMMA && 0 == groupBrace && 0 == groupBracket && 1 == groupParen) {
+		if paramType != function.NULL && !(char == COMMA && 0 == groupBrace && 0 == groupBracket && 1 == groupParen) {
 			parameter += string(char)
 		}
 		priorChar = char

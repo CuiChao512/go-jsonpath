@@ -1183,7 +1183,14 @@ func (a *ArraySlicePathToken) sliceTo(currentPath string, parent common.PathRef,
 }
 
 func (a *ArraySlicePathToken) GetPathFragment() string {
-	return common.UtilsToString(a.operation)
+	o := a.operation
+	if o.operationType == SLICE_FROM {
+		return "[" + common.UtilsToString(o.from) + ":]"
+	} else if o.operationType == SLICE_TO {
+		return "[:" + common.UtilsToString(o.to) + "]"
+	} else {
+		return "[" + common.UtilsToString(o.from) + ":" + common.UtilsToString(o.to) + "]"
+	}
 }
 
 func (*ArraySlicePathToken) IsTokenDefinite() bool {

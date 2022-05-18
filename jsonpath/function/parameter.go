@@ -7,6 +7,7 @@ import (
 type ParamType int32
 
 const (
+	NULL ParamType = -1
 	JSON ParamType = 0
 	PATH ParamType = 1
 )
