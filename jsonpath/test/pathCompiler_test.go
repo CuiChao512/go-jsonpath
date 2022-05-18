@@ -3,6 +3,7 @@ package test
 import (
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/filter"
+	"reflect"
 	"testing"
 )
 
@@ -196,6 +197,153 @@ func Test_a_root_path_can_be_compiled(t *testing.T) {
 			pathToString := path.String()
 			if pathToString != pathToStringTestData.ToStringExpect {
 				t.Errorf("path %s 's compiled path to string should be %s, actual is %s", pathToStringTestData.PathString, pathToStringTestData.ToStringExpect, pathToString)
+			}
+		}
+	}
+}
+
+type falsePredicate struct{}
+
+func (*falsePredicate) Apply(ctx common.PredicateContext) (bool, error) {
+	return false, nil
+}
+
+func (*falsePredicate) String() string {
+	return ""
+}
+
+func Test_a_placeholder_criteria_can_be_parsed(t *testing.T) {
+	p := &falsePredicate{}
+	if path, err := filter.PathCompile("$[?]", p); err != nil {
+		t.Errorf(err.Error())
+	} else {
+		pathToString := path.String()
+		if pathToString != "$[?]" {
+			t.Errorf("path %s 's compiled path to string should be %s, actual is %s", "$[?]", "$[?]", pathToString)
+		}
+	}
+	if path, err := filter.PathCompile("$[?,?]", p, p); err != nil {
+		t.Errorf(err.Error())
+	} else {
+		pathToString := path.String()
+		if pathToString != "$[?,?]" {
+			t.Errorf("path %s 's compiled path to string should be %s, actual is %s", "$[?,?]", "$[?,?]", pathToString)
+		}
+	}
+	if path, err := filter.PathCompile("$[?,?,?]", p, p, p); err != nil {
+		t.Errorf(err.Error())
+	} else {
+		pathToString := path.String()
+		if pathToString != "$[?,?,?]" {
+			t.Errorf("path %s 's compiled path to string should be %s, actual is %s", "$[?,?,?]", "$[?,?,?]", pathToString)
+		}
+	}
+}
+
+type issuePredicateTestData struct {
+	Json       string
+	PathString string
+	Expected   interface{}
+}
+
+var issuePredicateTestDataSlice = []issuePredicateTestData{
+	//issue_predicate_can_have_escaped_backslash_in_prop
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"message\": \"it\\\\\",\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?(@.message == 'it\\\\')].message",
+		Expected:   []interface{}{"it\\"},
+	},
+	//issue_predicate_can_have_bracket_in_regex
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"message\": \"(it\",\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?(@.message =~ /\\(it/)].message",
+		Expected:   []interface{}{"(it"},
+	},
+	//issue_predicate_can_have_and_in_regex
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"message\": \"it\",\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?(@.message =~ /&&|it/)].message",
+		Expected:   []interface{}{"it"},
+	},
+	//issue_predicate_can_have_and_in_prop
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"message\": \"&& it\",\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?(@.message == '&& it')].message",
+		Expected:   []interface{}{"&& it"},
+	},
+	//issue_predicate_brackets_must_change_priorities
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?(@.message && (@.id == 1 || @.id == 2))].id",
+		Expected:   []interface{}{},
+	},
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?((@.id == 2 || @.id == 1) && @.message)].id",
+		Expected:   []interface{}{},
+	},
+	//issue_predicate_or_has_lower_priority_than_and
+	{
+		Json:       "{\n    \"logs\": [\n        {\n            \"id\": 2\n        }\n    ]\n}",
+		PathString: "$.logs[?(@.x && @.y || @.id)]",
+		Expected:   []interface{}{map[string]interface{}{"id": float64(2)}},
+	},
+	//issue_predicate_can_have_double_quotes
+	{
+		Json:       `{"logs": [{ "message": "\"it\""}]}`,
+		PathString: "$.logs[?(@.message == '\"it\"')].message",
+		Expected:   []interface{}{"\"it\""},
+	},
+	//issue_predicate_can_have_single_quotes
+	{
+		Json: `{
+					"logs": [
+						{
+							"message": "'it'"
+						}
+					]
+				}`,
+		PathString: "$.logs[?(@.message == \"'it'\")].message",
+		Expected:   []interface{}{"'it'"},
+	},
+	//issue_predicate_can_have_single_quotes_escaped
+	{
+		Json: `{
+		    "logs": [
+		        {
+		            "message": "'it'"
+		        }
+		    ]
+		}`,
+		PathString: "$.logs[?(@.message == '\\'it\\'')].message",
+		Expected:   []interface{}{"'it'"},
+	},
+	//issue_predicate_can_have_square_bracket_in_prop
+	{
+		Json: `{
+                    "logs": [
+                        {
+                            "message": "] it",
+                            "id": 2
+                        }
+                    ]
+                }`,
+		PathString: "$.logs[?(@.message == '] it')].message",
+		Expected:   []interface{}{"] it"},
+	},
+}
+
+func Test_issue_predicate_can_have_escaped_backslash_in_prop(t *testing.T) {
+	for _, testData := range issuePredicateTestDataSlice {
+		if documentContext, err := getParseContextUsingDefaultConf().ParseString(testData.Json); err != nil {
+			t.Errorf(err.Error())
+		} else {
+			if result, err1 := documentContext.Read(testData.PathString); err1 != nil {
+				t.Errorf(err.Error())
+			} else {
+				if !reflect.DeepEqual(result, testData.Expected) {
+					t.Errorf("failed")
+				}
 			}
 		}
 	}
