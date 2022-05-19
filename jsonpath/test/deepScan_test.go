@@ -16,6 +16,12 @@ type deepScanTestData struct {
 	Expected   interface{}
 }
 
+type pathNotFoundErrorTestData struct {
+	Options    []common.Option
+	JsonString string
+	PathString string
+}
+
 var (
 	deepScanTestMetaDates = []deepScanTestData{
 		//when_deep_scanning_non_array_subscription_is_ignored
@@ -99,40 +105,46 @@ var (
 		//},
 		//when_deep_scanning_require_properties_is_ignored_on_scan_target
 		{
+			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
 			JsonString: "[{\"x\": {\"foo\": {\"x\": 4}, \"x\": null}, \"y\": {\"x\": 1}}, {\"x\": []}]",
 			PathString: "$..x",
 			Function:   sizeOf,
 			Expected:   5,
 		},
-		//{
-		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
-		//	JsonString: "{\"x\": {\"foo\": {\"bar\": 4}}, \"y\": {\"foo\": 1}}",
-		//	PathString: "$..[*]foo[?(@.bar)].bar",
-		//	Function:   sizeOf,
-		//	Expected:   5,
-		//},
+		{
+			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+			JsonString: "{\"foo\": {\"bar\": 4}}",
+			PathString: "$..foo.bar",
+			Expected:   []interface{}{float64(4)},
+		},
 	}
-	testMetaDataPathNotFoundError = [][]string{
-		//{
-		//	"{\"foo\": {\"bar\": null}}",
-		//	"$.foo.bar.[5]",
-		//},
-		//{
-		//	"{\"foo\": {\"bar\": null}}",
-		//	"$.foo.bar.[5, 10]",
-		//},
-		//{
-		//	"{\"foo\": {\"bar\": 4}}",
-		//	"$.foo.bar.[5]",
-		//},
-		//{
-		//	"{\"foo\": {\"bar\": 4}}",
-		//	"$.foo.bar.[5, 10]",
-		//},
-		//{
-		//	"{\"foo\": {\"bar\": 4}}",
-		//	"$.foo.bar.[5]",
-		//},
+
+	testMetaDataPathNotFoundError = []pathNotFoundErrorTestData{
+		{
+			JsonString: "{\"foo\": {\"bar\": null}}",
+			PathString: "$.foo.bar.[5]",
+		},
+		{
+			JsonString: "{\"foo\": {\"bar\": null}}",
+			PathString: "$.foo.bar.[5, 10]",
+		},
+		{
+			JsonString: "{\"foo\": {\"bar\": 4}}",
+			PathString: "$.foo.bar.[5]",
+		},
+		{
+			JsonString: "{\"foo\": {\"bar\": 4}}",
+			PathString: "$.foo.bar.[5, 10]",
+		},
+		{
+			JsonString: "{\"foo\": {\"bar\": 4}}",
+			PathString: "$.foo.bar.[5]",
+		},
+		{
+			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+			JsonString: "{\"foo\": {\"baz\": 4}}",
+			PathString: "$..foo.bar",
+		},
 	}
 )
 
@@ -142,7 +154,16 @@ func TestDeepScan(t *testing.T) {
 	var result interface{}
 
 	for _, data := range deepScanTestMetaDates {
-		documentCtx, err = jsonpath.JsonpathParseString(data.JsonString)
+		if data.Options != nil && len(data.Options) > 0 {
+			configuration := common.DefaultConfiguration()
+			for _, op := range data.Options {
+				configuration.AddOptions(op)
+			}
+			documentCtx, err = jsonpath.CreateParseContextImplByConfiguration(configuration).ParseString(data.JsonString)
+		} else {
+			documentCtx, err = jsonpath.JsonpathParseString(data.JsonString)
+
+		}
 		if err != nil {
 			t.Errorf(err.Error())
 		}
@@ -158,17 +179,28 @@ func TestDeepScan(t *testing.T) {
 			t.Errorf("fail")
 		}
 	}
+}
 
+func Test_deepScan_error(t *testing.T) {
+	var documentCtx jsonpath.DocumentContext
+	var err error
 	//errors
 	for _, data := range testMetaDataPathNotFoundError {
-		documentCtx, err = jsonpath.CreateParseContextImplByConfiguration(common.DefaultConfiguration()).ParseString(data[0])
+		configuration := common.DefaultConfiguration()
+		if data.Options != nil && len(data.Options) > 0 {
+			for _, op := range data.Options {
+				configuration.AddOptions(op)
+			}
+		}
+
+		documentCtx, err = jsonpath.CreateParseContextImplByConfiguration(configuration).ParseString(data.JsonString)
 		if err != nil {
 			t.Errorf(err.Error())
 		}
-		_, err = documentCtx.Read(data[1])
+		_, err = documentCtx.Read(data.PathString)
 
 		if err == nil {
-			t.Errorf("path not found error ecpected")
+			t.Errorf("path not found error expected")
 		} else {
 			switch err.(type) {
 			case *common.PathNotFoundError:

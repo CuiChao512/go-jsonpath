@@ -42,11 +42,8 @@ func UtilsStringSliceContainsAll(strings1 []string, strings2 []string) bool {
 	if strings1 == nil || strings2 == nil {
 		return false
 	}
-	if len(strings1) != len(strings2) {
-		return false
-	}
-	for _, str1 := range strings1 {
-		if !UtilsSliceContains(strings2, str1) {
+	for _, str2 := range strings2 {
+		if !UtilsSliceContains(strings1, str2) {
 			return false
 		}
 	}

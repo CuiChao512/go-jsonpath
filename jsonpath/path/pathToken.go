@@ -816,7 +816,8 @@ func (p *propertyPathTokenPredicate) matches(model interface{}) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return common.UtilsStringSliceContainsAll(propertyKeys, p.propertyPathToken.GetProperties()), nil
+	tokenProperties := p.propertyPathToken.GetProperties()
+	return common.UtilsStringSliceContainsAll(propertyKeys, tokenProperties), nil
 }
 
 func createPropertyPathTokenPredicate(target *PropertyPathToken, ctx *EvaluationContextImpl) *propertyPathTokenPredicate {
