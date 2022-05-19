@@ -10,6 +10,7 @@ import (
 
 type deepScanTestData struct {
 	Options    []common.Option
+	JsonObject interface{}
 	JsonString string
 	PathString string
 	Function   func(interface{}) interface{}
@@ -103,19 +104,57 @@ var (
 		//	PathString: "$..[*]foo[?(@.bar)].bar",
 		//	Expected:   []interface{}{float64(4)},
 		//},
-		//when_deep_scanning_require_properties_is_ignored_on_scan_target
+		////when_deep_scanning_require_properties_is_ignored_on_scan_target
+		//{
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	JsonString: "[{\"x\": {\"foo\": {\"x\": 4}, \"x\": null}, \"y\": {\"x\": 1}}, {\"x\": []}]",
+		//	PathString: "$..x",
+		//	Function:   sizeOf,
+		//	Expected:   5,
+		//},
+		//{
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	JsonString: "{\"foo\": {\"bar\": 4}}",
+		//	PathString: "$..foo.bar",
+		//	Expected:   []interface{}{float64(4)},
+		//},
+		////when_deep_scanning_leaf_multi_props_work
+		//{
+		//	JsonString: "[{\"a\": \"a-val\", \"b\": \"b-val\", \"c\": \"c-val\"}, [1, 5], {\"a\": \"a-val\"}]",
+		//	PathString: "$..['a', 'c']",
+		//	Expected: []interface{}{map[string]interface{}{
+		//		"a": "a-val",
+		//		"c": "c-val",
+		//	}},
+		//},
+		//{
+		//	Options:    []common.Option{common.OPTION_DEFAULT_PATH_LEAF_TO_NULL},
+		//	JsonString: "[{\"a\": \"a-val\", \"b\": \"b-val\", \"c\": \"c-val\"}, [1, 5], {\"a\": \"a-val\"}]",
+		//	PathString: "$..['a', 'c']",
+		//	Expected: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "a-val",
+		//			"c": "c-val",
+		//		},
+		//		map[string]interface{}{
+		//			"a": "a-val",
+		//			"c": nil,
+		//		},
+		//	},
+		//},
+		//require_single_property_ok
 		{
+			JsonObject: []interface{}{
+				map[string]interface{}{
+					"a": "a0",
+				},
+				map[string]interface{}{
+					"a": "a1",
+				},
+			},
 			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
-			JsonString: "[{\"x\": {\"foo\": {\"x\": 4}, \"x\": null}, \"y\": {\"x\": 1}}, {\"x\": []}]",
-			PathString: "$..x",
-			Function:   sizeOf,
-			Expected:   5,
-		},
-		{
-			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
-			JsonString: "{\"foo\": {\"bar\": 4}}",
-			PathString: "$..foo.bar",
-			Expected:   []interface{}{float64(4)},
+			PathString: "$..a",
+			Expected:   []interface{}{"a0", "a1"},
 		},
 	}
 
@@ -140,6 +179,13 @@ var (
 			JsonString: "{\"foo\": {\"bar\": 4}}",
 			PathString: "$.foo.bar.[5]",
 		},
+		//when_deep_scanning_require_properties_is_ignored_on_scan_target
+		{
+			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+			JsonString: "{\"foo\": {\"baz\": 4}}",
+			PathString: "$..foo.bar",
+		},
+		//when_deep_scanning_require_properties_is_ignored_on_scan_target_but_not_on_children
 		{
 			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
 			JsonString: "{\"foo\": {\"baz\": 4}}",
@@ -159,10 +205,17 @@ func TestDeepScan(t *testing.T) {
 			for _, op := range data.Options {
 				configuration.AddOptions(op)
 			}
-			documentCtx, err = jsonpath.CreateParseContextImplByConfiguration(configuration).ParseString(data.JsonString)
+			if data.JsonObject != nil {
+				documentCtx, err = jsonpath.CreateParseContextImplByConfiguration(configuration).ParseAny(data.JsonObject)
+			} else {
+				documentCtx, err = jsonpath.CreateParseContextImplByConfiguration(configuration).ParseString(data.JsonString)
+			}
 		} else {
-			documentCtx, err = jsonpath.JsonpathParseString(data.JsonString)
-
+			if data.JsonObject != nil {
+				documentCtx, err = jsonpath.JsonpathParseObject(data.JsonObject)
+			} else {
+				documentCtx, err = jsonpath.JsonpathParseString(data.JsonString)
+			}
 		}
 		if err != nil {
 			t.Errorf(err.Error())
