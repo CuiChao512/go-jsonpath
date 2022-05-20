@@ -147,3 +147,50 @@ func (s *Sum) Next(value interface{}) {
 func (s *Sum) GetValue() interface{} {
 	return s.sum
 }
+
+type Length struct {
+}
+
+func (*Length) Next(value interface{}) {}
+
+func (*Length) GetValue() interface{} { return nil }
+
+func (a *Length) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
+	count := 0
+	if ctx.Configuration().JsonProvider().IsArray(model) {
+
+		objects, err := ctx.Configuration().JsonProvider().ToArray(model)
+		if err != nil {
+			return nil, err
+		}
+		for _, obj := range objects {
+			isNumber := false
+			switch obj.(type) {
+			case int:
+				isNumber = true
+			case float64:
+				isNumber = true
+			case float32:
+				isNumber = true
+			}
+			if isNumber {
+				count++
+				a.Next(obj)
+			}
+		}
+	}
+	if parameters != nil {
+		values, err := ParametersToList(common.TYPE_NUMBER, ctx, *parameters)
+		if err != nil {
+			return nil, err
+		}
+		for _, value := range values {
+			count++
+			a.Next(value)
+		}
+	}
+	if count != 0 {
+		return a.GetValue(), nil
+	}
+	return nil, &common.JsonPathError{Message: "Aggregation function attempted to calculate value using empty array"}
+}

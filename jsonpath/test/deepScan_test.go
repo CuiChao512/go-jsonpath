@@ -142,19 +142,214 @@ var (
 		//		},
 		//	},
 		//},
-		//require_single_property_ok
+		////require_single_property_ok
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "a0",
+		//		},
+		//		map[string]interface{}{
+		//			"a": "a1",
+		//		},
+		//	},
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	PathString: "$..a",
+		//	Expected:   []interface{}{"a0", "a1"},
+		//},
+		////require_single_property
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "a0",
+		//		},
+		//		map[string]interface{}{
+		//			"b": "b2",
+		//		},
+		//	},
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	PathString: "$..a",
+		//	Expected:   []interface{}{"a0"},
+		//},
+		////require_multi_property_all_match
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"b": "bb",
+		//		},
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"b": "bb",
+		//		},
+		//	},
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	PathString: "$..['a', 'b']",
+		//	Expected: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"b": "bb",
+		//		},
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"b": "bb",
+		//		},
+		//	},
+		//},
+		////require_multi_property_some_match
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"b": "bb",
+		//		},
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"d": "dd",
+		//		},
+		//	},
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	PathString: "$..['a', 'b']",
+		//	Expected: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//			"b": "bb",
+		//		},
+		//	},
+		//},
+		////scan_for_single_property
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//		},
+		//		map[string]interface{}{
+		//			"b": "bb",
+		//		},
+		//		map[string]interface{}{
+		//			"b": map[string]interface{}{
+		//				"b": "bb",
+		//			},
+		//			"ab": map[string]interface{}{
+		//				"a": map[string]interface{}{
+		//					"a": "aa",
+		//				},
+		//				"b": map[string]interface{}{
+		//					"b": "bb",
+		//				},
+		//			},
+		//		},
+		//	},
+		//	PathString: "$..['a']",
+		//	Expected: []interface{}{
+		//		"aa",
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//		},
+		//		"aa",
+		//	},
+		//},
+		////scan_for_property_path
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//		},
+		//		map[string]interface{}{
+		//			"x": "xx",
+		//		},
+		//		map[string]interface{}{
+		//			"a": map[string]interface{}{
+		//				"x": "xx",
+		//			},
+		//		},
+		//		map[string]interface{}{
+		//			"z": map[string]interface{}{
+		//				"a": map[string]interface{}{
+		//					"x": "xx",
+		//				},
+		//			},
+		//		},
+		//	},
+		//	PathString: "$..['a'].x",
+		//	Expected: []interface{}{
+		//		"xx",
+		//		"xx",
+		//	},
+		//},
+		////scan_for_property_path_missing_required_property
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"a": "aa",
+		//		},
+		//		map[string]interface{}{
+		//			"x": "xx",
+		//		},
+		//		map[string]interface{}{
+		//			"a": map[string]interface{}{
+		//				"x": "xx",
+		//			},
+		//		},
+		//		map[string]interface{}{
+		//			"z": map[string]interface{}{
+		//				"a": map[string]interface{}{
+		//					"x": "xx",
+		//				},
+		//			},
+		//		},
+		//	},
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	PathString: "$..['a'].x",
+		//	Expected: []interface{}{
+		//		"xx",
+		//		"xx",
+		//	},
+		//},
+		////scans_can_be_filtered
+		//{
+		//	JsonObject: []interface{}{
+		//		map[string]interface{}{
+		//			"mammal": true,
+		//			"color": map[string]interface{}{
+		//				"val": "brown",
+		//			},
+		//		},
+		//		map[string]interface{}{
+		//			"mammal": true,
+		//			"color": map[string]interface{}{
+		//				"val": "white",
+		//			},
+		//		},
+		//		map[string]interface{}{
+		//			"mammal": false,
+		//		},
+		//	},
+		//	Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
+		//	PathString: "$..[?(@.mammal == true)].color",
+		//	Expected: []interface{}{
+		//		map[string]interface{}{
+		//			"val": "brown",
+		//		},
+		//		map[string]interface{}{
+		//			"val": "white",
+		//		},
+		//	},
+		//},
+		//scan_with_a_function_filter
 		{
-			JsonObject: []interface{}{
+			JsonString: TestJsonDocument,
+			PathString: "$..*[?(@.length() > 5)]",
+			Expected: []interface{}{
 				map[string]interface{}{
-					"a": "a0",
-				},
-				map[string]interface{}{
-					"a": "a1",
+					"foo":           "baz",
+					"escape":        "Esc\\b\\f\\n\\r\\t\\n\\t\\u002A",
+					"color":         "red",
+					"display-price": 19.95,
+					"foo:bar":       "fooBar",
+					"dot.notation":  "new",
+					"dash-notation": "dashes",
 				},
 			},
-			Options:    []common.Option{common.OPTION_REQUIRE_PROPERTIES},
-			PathString: "$..a",
-			Expected:   []interface{}{"a0", "a1"},
 		},
 	}
 
