@@ -35,7 +35,7 @@ type TokenBase interface {
 	setUpstreamDefinite(upstreamDefinite bool)
 	IsUpstreamDefinite() bool
 	getUpstreamArrayIndex() int
-	Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error
+	Invoke(pathFunction PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error
 	SetUpstreamArrayIndex(idx int)
 }
 
@@ -115,7 +115,7 @@ func (r *defaultToken) getUpstreamArrayIndex() int {
 	return r.upstreamArrayIndex
 }
 
-func (r *defaultToken) Invoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func (r *defaultToken) Invoke(pathFunction PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	return tokenInvoke(pathFunction, currentPath, parent, model, ctx)
 }
 
@@ -343,7 +343,7 @@ func tokenString(dt Token) string {
 	}
 }
 
-func tokenInvoke(pathFunction function.PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
+func tokenInvoke(pathFunction PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
 	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, nil)
 	if err != nil {
 		return err
@@ -483,7 +483,7 @@ func (f *FunctionPathToken) GetPathFragment() string {
 }
 
 func (f *FunctionPathToken) Evaluate(currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
-	pathFunction, err := function.GetFunctionByName(f.functionName)
+	pathFunction, err := GetFunctionByName(f.functionName)
 	if err != nil {
 		return err
 	}
@@ -491,7 +491,7 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent common.PathRef, 
 	if err != nil {
 		return err
 	}
-	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, &f.functionParams)
+	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, f.functionParams)
 	if err != nil {
 		return err
 	}

@@ -17,10 +17,10 @@ func (*KeySetFunction) Invoke(currentPath string, parent common.PathRef, model i
 type Append struct {
 }
 
-func (*Append) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters *[]*Parameter) (interface{}, error) {
+func (*Append) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*Parameter) (interface{}, error) {
 	jsonProvider := ctx.Configuration().JsonProvider()
-	if parameters != nil && len(*parameters) > 0 {
-		for _, param := range *parameters {
+	if parameters != nil && len(parameters) > 0 {
+		for _, param := range parameters {
 			if jsonProvider.IsArray(model) {
 				l, err := jsonProvider.Length(model)
 				if err != nil {

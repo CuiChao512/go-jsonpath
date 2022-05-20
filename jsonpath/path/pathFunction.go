@@ -1,14 +1,15 @@
-package function
+package path
 
 import (
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
+	"github.com/CuiChao512/go-jsonpath/jsonpath/function"
 )
 
 type PathFunction interface {
-	Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters *[]*Parameter) (interface{}, error)
+	Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error)
 }
 
-var functions map[string]PathFunction
+var functions = map[string]PathFunction{}
 
 func init() {
 	functions["avg"] = &Average{}
@@ -19,7 +20,7 @@ func init() {
 	//functions["concat"] = &Concat{}
 	functions["length"] = &Length{}
 	//functions["size"] = &Size{}
-	functions["append"] = &Append{}
+	functions["append"] = &function.Append{}
 	//functions["keys"] = &Keys{}
 }
 
