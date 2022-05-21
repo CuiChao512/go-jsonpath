@@ -45,6 +45,7 @@ const (
 	typeOf   relationOperator = 16
 	notEmpty relationOperator = 17
 	empty    relationOperator = 18
+	contains relationOperator = 19
 )
 
 type testDataRow struct {
