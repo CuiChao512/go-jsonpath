@@ -418,8 +418,8 @@ func (n *StringNode) String() string {
 	if n.useSingleQuote {
 		quote = "'"
 	}
-	//TODO: string escape
-	return quote + n.str + quote
+
+	return quote + common.UtilsStringEscape(n.str, true) + quote
 }
 
 func (n *StringNode) Equals(o interface{}) bool {

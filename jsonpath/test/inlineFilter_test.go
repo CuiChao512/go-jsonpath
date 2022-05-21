@@ -267,7 +267,7 @@ var (
 )
 
 func Test_inline_filters(t *testing.T) {
-	for _, testData := range inlineTestMetaDataTable {
+	for i, testData := range inlineTestMetaDataTable {
 		json := TestJsonDocument
 		if testData.JsonString != "" {
 			json = testData.JsonString
@@ -278,13 +278,13 @@ func Test_inline_filters(t *testing.T) {
 					result = testData.Function(result)
 				}
 				if !reflect.DeepEqual(result, testData.Expected) {
-					t.Errorf("fail")
+					t.Errorf("case No.%d failed message:%s", i, err.Error())
 				}
 			} else {
-				t.Errorf(err.Error())
+				t.Errorf("case No.%d failed message:%s", i, err.Error())
 			}
 		} else {
-			t.Errorf(err.Error())
+			t.Errorf("case No.%d failed message:%s", i, err.Error())
 		}
 
 	}

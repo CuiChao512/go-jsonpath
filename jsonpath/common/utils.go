@@ -161,6 +161,78 @@ func UtilsNumberToFloat64Force(v interface{}) float64 {
 	return f
 }
 
+func UtilsStringEscape(str string, escapeSingleQuote bool) string {
+	if str == "" {
+		return ""
+	}
+
+	writer := new(strings.Builder)
+	for _, ch := range []rune(str) {
+		if ch > 0xfff {
+			writer.WriteString("\\u" + strconv.FormatInt(int64(ch), 16))
+		} else if ch > 0xff {
+			writer.WriteString("\\u0" + strconv.FormatInt(int64(ch), 16))
+		} else if ch > 0x7f {
+			writer.WriteString("\\u00" + strconv.FormatInt(int64(ch), 16))
+		} else if ch < 32 {
+			switch ch {
+			case '\b':
+				writer.WriteRune('\\')
+				writer.WriteRune('b')
+				break
+			case '\n':
+				writer.WriteRune('\\')
+				writer.WriteRune('n')
+				break
+			case '\t':
+				writer.WriteRune('\\')
+				writer.WriteRune('t')
+				break
+			case '\f':
+				writer.WriteRune('\\')
+				writer.WriteRune('f')
+				break
+			case '\r':
+				writer.WriteRune('\\')
+				writer.WriteRune('r')
+				break
+			default:
+				if ch > 0xf {
+					writer.WriteString("\\u00" + strconv.FormatInt(int64(ch), 16))
+				} else {
+					writer.WriteString("\\u000" + strconv.FormatInt(int64(ch), 16))
+				}
+				break
+			}
+		} else {
+			switch ch {
+			case '\'':
+				if escapeSingleQuote {
+					writer.WriteRune('\\')
+				}
+				writer.WriteRune('\'')
+				break
+			case '"':
+				writer.WriteRune('\\')
+				writer.WriteRune('"')
+				break
+			case '\\':
+				writer.WriteRune('\\')
+				writer.WriteRune('\\')
+				break
+			case '/':
+				writer.WriteRune('\\')
+				writer.WriteRune('/')
+				break
+			default:
+				writer.WriteRune(ch)
+				break
+			}
+		}
+	}
+	return writer.String()
+}
+
 func UtilsStringUnescape(str string) (string, error) {
 	if str == "" {
 		return "", nil

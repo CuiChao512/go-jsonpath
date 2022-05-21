@@ -248,7 +248,7 @@ func (c *Compiler) readRelationalOperator() (string, error) {
 		}
 	}
 	operator := filter.SubSequence(begin, filter.Position())
-	if evaluators[operator] == nil {
+	if evaluators[strings.ToUpper(operator)] == nil {
 		return "", &common.InvalidPathError{Message: "Filter operator " + operator + " is not supported!"}
 	}
 	return operator, nil
