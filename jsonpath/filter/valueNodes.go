@@ -31,6 +31,7 @@ type PatternNode struct {
 	*defaultOffsetDateTimeNode
 	*defaultJsonNode
 	pattern         string
+	flags           string
 	compiledPattern *regexp.Regexp
 }
 
@@ -54,7 +55,7 @@ func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PatternNode{pattern: purePattern, compiledPattern: compiledPattern}, nil
+	return &PatternNode{pattern: purePattern, flags: flags, compiledPattern: compiledPattern}, nil
 }
 
 func CreatePatternNodeByRegexp(pattern *regexp.Regexp) *PatternNode {
@@ -79,7 +80,7 @@ func (pn *PatternNode) AsPatternNode() (*PatternNode, error) {
 
 func (pn *PatternNode) String() string {
 	if !strings.HasPrefix(pn.pattern, "/") {
-		return "/" + pn.pattern + "/"
+		return "/" + pn.pattern + "/" + pn.flags
 	} else {
 		return pn.pattern
 	}

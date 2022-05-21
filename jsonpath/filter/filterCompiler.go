@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -214,7 +215,7 @@ func (c *Compiler) readExpression() (*RelationExpressionNode, error) {
 
 	if err0 == nil && err1 == nil {
 		right, err2 := c.readValueNode()
-		if err2 == nil {
+		if err2 == nil || reflect.ValueOf(err2).IsNil() {
 			return CreateRelationExpressionNode(left, operator, right), nil
 		}
 	}
