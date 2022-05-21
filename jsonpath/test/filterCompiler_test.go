@@ -13,7 +13,6 @@ type validFilterTestData struct {
 
 var validFilterTestDataSlice = []validFilterTestData{
 	{FilterString: "[?(@)]", FilterToStringExpected: "[?(@)]"},
-	{FilterString: "[?(@)]", FilterToStringExpected: "[?(@)]"},
 	{FilterString: "[?(@.firstname)]", FilterToStringExpected: "[?(@['firstname'])]"},
 	{FilterString: "[?($.firstname)]", FilterToStringExpected: "[?($['firstname'])]"},
 	{FilterString: "[?(@['firstname'])]", FilterToStringExpected: "[?(@['firstname'])]"},
@@ -81,21 +80,22 @@ func Test_valid_filters_compile(t *testing.T) {
 }
 
 var invalidFilterTestDataSlice = []string{
-	//"[?(@.foo == x)]",
-	//"[?(@))]",
+	"[?(@.foo == x)]",
+	"[?(@))]",
 	"[?(@ FOO 1)]",
 	"[?(@ || )]",
-	//"[?(@ == 'foo )]",
-	//"[?(@ == 1' )]",
-	//"[?(@.foo bar == 1)]",
-	//"[?(@.i == 5 @.i == 8)]",
+	"[?(@ == 'foo )]",
+	"[?(@ == 1' )]",
+	"[?(@.foo bar == 1)]",
+	"[?(@.i == 5 @.i == 8)]",
 	"[?(!5)]",
 	"[?(!'foo')]",
 }
 
 func Test_invalid_filter(t *testing.T) {
 	for _, testFilterString := range invalidFilterTestDataSlice {
-		if _, err := filter.Compile(testFilterString); err == nil {
+		if fc, err := filter.Compile(testFilterString); err == nil {
+			println("filterCompiled:" + fc.String())
 			t.Errorf("shuould throw invalid path error")
 		} else {
 			switch err.(type) {

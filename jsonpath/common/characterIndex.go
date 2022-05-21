@@ -222,7 +222,8 @@ func (ci *CharacterIndex) NextSignificantCharFromStartPosition(startPosition int
 }
 
 func (ci *CharacterIndex) ReadSignificantChar(c rune) error {
-	if ci.SkipBlanks().CurrentChar() != c {
+	currentChar := ci.SkipBlanks().CurrentChar()
+	if currentChar != c {
 		return &InvalidPathError{Message: fmt.Sprintf("Expected character: %c", c)}
 	}
 	ci.IncrementPosition(1)

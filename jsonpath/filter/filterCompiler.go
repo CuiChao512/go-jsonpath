@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -143,7 +144,7 @@ func (c *Compiler) readLogicalANDOperand() (ExpressionNode, error) {
 		return op, nil
 	}
 
-	return c.readExpression(), nil
+	return c.readExpression()
 }
 
 func (c *Compiler) readValueNode() (ValueNode, error) {
@@ -198,29 +199,41 @@ func (c *Compiler) readLiteral() (ValueNode, error) {
 	}
 }
 
-func (c *Compiler) readExpression() *RelationExpressionNode {
+func (c *Compiler) readExpression() (*RelationExpressionNode, error) {
 	left, err0 := c.readValueNode()
+	if err0 != nil {
+		switch err0.(type) {
+		case *common.InvalidPathError:
+		default:
+			return nil, err0
+		}
+	}
 	filter := c.filter
 	savepoint := filter.Position()
-	operator := c.readRelationalOperator()
-	right, err1 := c.readValueNode()
+	operator, err1 := c.readRelationalOperator()
+
 	if err0 == nil && err1 == nil {
-		return CreateRelationExpressionNode(left, operator, right)
-	} else {
-		filter.SetPosition(savepoint)
-		pathNode, _ := left.AsPathNode()
-		pathNode = pathNode.AsExistsCheck(pathNode.ShouldExists())
-		var right *BooleanNode
-		if pathNode.ShouldExists() {
-			right = TRUE_NODE
-		} else {
-			right = FALSE_NODE
+		right, err2 := c.readValueNode()
+		if err2 == nil {
+			return CreateRelationExpressionNode(left, operator, right), nil
 		}
-		return CreateRelationExpressionNode(pathNode, RelationalOperator_EXISTS, right)
 	}
+	filter.SetPosition(savepoint)
+	pathNode, err3 := left.AsPathNode()
+	if err3 != nil {
+		return nil, err3
+	}
+	pathNode = pathNode.AsExistsCheck(pathNode.ShouldExists())
+	var right *BooleanNode
+	if pathNode.ShouldExists() {
+		right = TRUE_NODE
+	} else {
+		right = FALSE_NODE
+	}
+	return CreateRelationExpressionNode(pathNode, RelationalOperator_EXISTS, right), nil
 }
 
-func (c *Compiler) readRelationalOperator() string {
+func (c *Compiler) readRelationalOperator() (string, error) {
 	filter := c.filter
 	begin := filter.SkipBlanks().Position()
 
@@ -233,7 +246,11 @@ func (c *Compiler) readRelationalOperator() string {
 			filter.IncrementPosition(1)
 		}
 	}
-	return filter.SubSequence(begin, filter.Position())
+	operator := filter.SubSequence(begin, filter.Position())
+	if evaluators[operator] == nil {
+		return "", &common.InvalidPathError{Message: "Filter operator " + operator + " is not supported!"}
+	}
+	return operator, nil
 }
 
 func (c *Compiler) readNullLiteral() (*NullNode, error) {
@@ -443,7 +460,13 @@ func (*Compiler) isRelationalOperatorChar(c rune) bool {
 func (c *Compiler) Compile() (common.Predicate, error) {
 	result, err := c.readLogicalOR()
 	if err != nil {
-		return nil, err
+		switch err.(type) {
+		case *common.InvalidPathError:
+			return nil, err
+		default:
+			return nil, &common.InvalidPathError{Message: "Failed to parse filter: " + c.filter.String() +
+				", error on position: " + strconv.Itoa(c.filter.Position()) + ", char: " + string(c.filter.CurrentChar())}
+		}
 	}
 	filter := c.filter
 	filter.SkipBlanks()
