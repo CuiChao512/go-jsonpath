@@ -11,30 +11,17 @@ type Filter interface {
 	And(other common.Predicate) Filter
 }
 
-type FilterImpl struct {
-}
-
-func (filter *FilterImpl) String() string {
-	return ""
-}
-
-func (filter *FilterImpl) Apply(ctx common.PredicateContext) (bool, error) {
-	return false, nil
-}
-
-func (filter *FilterImpl) And(other common.Predicate) Filter {
-	return nil
-}
-
-func (filter *FilterImpl) Or(other common.Predicate) Filter {
-	return nil
-}
-
 type SingleFilter struct {
-	*FilterImpl
 	predicate common.Predicate
 }
 
+func (filter *SingleFilter) And(other common.Predicate) Filter {
+	return createAndFilter(filter, other)
+}
+
+func (filter *SingleFilter) Or(other common.Predicate) Filter {
+	return createOrFilter(filter, other)
+}
 func (filter *SingleFilter) Apply(ctx common.PredicateContext) (bool, error) {
 	return filter.predicate.Apply(ctx)
 }
@@ -60,7 +47,6 @@ func createAndFilter(left common.Predicate, right common.Predicate) *AndFilter {
 }
 
 type AndFilter struct {
-	FilterImpl
 	predicates []common.Predicate
 }
 
@@ -77,6 +63,14 @@ func (filter *AndFilter) Apply(ctx common.PredicateContext) (bool, error) {
 	return true, nil
 }
 
+func (filter *AndFilter) And(other common.Predicate) Filter {
+	return createAndFilter(filter, other)
+}
+
+func (filter *AndFilter) Or(other common.Predicate) Filter {
+	return createOrFilter(filter, other)
+}
+
 func (filter *AndFilter) String() string {
 	lenPredicates := len(filter.predicates)
 	sb := new(strings.Builder)
@@ -88,8 +82,8 @@ func (filter *AndFilter) String() string {
 			pString = pString[3 : len(pString)-2]
 		}
 		sb.WriteString(pString)
-		if i < lenPredicates {
-			sb.WriteString("&&")
+		if i < lenPredicates-1 {
+			sb.WriteString(" && ")
 		}
 	}
 	sb.WriteString(")]")
@@ -97,7 +91,6 @@ func (filter *AndFilter) String() string {
 }
 
 type OrFilter struct {
-	*FilterImpl
 	left  common.Predicate
 	right common.Predicate
 }
@@ -113,6 +106,10 @@ func (o *OrFilter) Apply(ctx common.PredicateContext) (bool, error) {
 	}
 	r, err := o.right.Apply(ctx)
 	return l || r, err
+}
+
+func (o *OrFilter) Or(other common.Predicate) Filter {
+	return createOrFilter(o, other)
 }
 
 func (o *OrFilter) String() string {

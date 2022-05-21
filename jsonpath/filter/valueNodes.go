@@ -58,8 +58,20 @@ func CreatePatternNodeByString(pattern string) (*PatternNode, error) {
 	return &PatternNode{pattern: purePattern, flags: flags, compiledPattern: compiledPattern}, nil
 }
 
+var regexStringPattern = regexp.MustCompile("(\\(\\?.*\\))")
+
 func CreatePatternNodeByRegexp(pattern *regexp.Regexp) *PatternNode {
-	return &PatternNode{pattern: pattern.String(), compiledPattern: pattern}
+
+	patternString := pattern.String()
+
+	matched := regexStringPattern.FindString(patternString)
+	matchedLen := len(matched)
+	flags := ""
+	if matchedLen > 0 {
+		patternString = patternString[matchedLen:]
+		flags = matched[2 : matchedLen-1]
+	}
+	return &PatternNode{pattern: patternString, flags: flags, compiledPattern: pattern}
 }
 
 func (pn *PatternNode) GetCompiledPattern() *regexp.Regexp {

@@ -5,6 +5,7 @@ import (
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/filter"
 	"reflect"
+	"regexp"
 	"testing"
 )
 
@@ -159,7 +160,7 @@ var canBeSerializedTestDataSlice = []canBeSerializedTestData{
 		Value:       false,
 		ParseString: "[?(!@['a'])]",
 	},
-	//a_type_filter_can_be_serialized --
+	//TODO: a_type_filter_can_be_serialized
 	//a_matches_filter_can_be_serialized --
 	//a_not_empty_filter_can_be_serialized
 	{
@@ -257,5 +258,153 @@ func Test_filter_parse(t *testing.T) {
 			t.Errorf(err.Error())
 		}
 	}
+}
 
+func Test_a_matches_filter_can_be_serialized(t *testing.T) {
+	x, err0 := jsonpath.WhereString("x")
+	if err0 == nil {
+		x, err0 = x.Eq(1000)
+		c, err := jsonpath.WhereString("a")
+		if err == nil {
+			c = c.Matches(x)
+			f := jsonpath.CreateSingleFilter(c)
+			fString := f.String()
+
+			parsedString := "[?(@['a'] MATCHES [?(@['x'] == 1000)])]"
+			if fString != parsedString {
+				t.Errorf("failed")
+			}
+		} else {
+			t.Errorf(err.Error())
+		}
+	} else {
+		t.Errorf(err0.Error())
+	}
+}
+
+func Test_and_filter_can_be_serialized(t *testing.T) {
+	c, err := jsonpath.WhereString("a")
+	if err == nil {
+		c, err = c.Eq(1)
+		if err == nil {
+			c, err = c.And("b")
+			if err == nil {
+				c, err = c.Eq(2)
+				if err == nil {
+					f := jsonpath.CreateSingleFilter(c)
+					fString := f.String()
+					parsed, err1 := filter.Compile("[?(@['a'] == 1 && @['b'] == 2)]")
+					if err1 == nil {
+						parsedString := parsed.String()
+						if fString != parsedString {
+							t.Errorf("failed")
+						}
+					} else {
+						t.Errorf(err1.Error())
+					}
+				} else {
+					t.Errorf(err.Error())
+				}
+			} else {
+				t.Errorf(err.Error())
+			}
+		} else {
+			t.Errorf(err.Error())
+		}
+	} else {
+		t.Errorf(err.Error())
+	}
+}
+
+func Test_a_regex_filter_can_be_serialized(t *testing.T) {
+	c, err := jsonpath.WhereString("a")
+	if err == nil {
+		c, err = c.Regex(regexp.MustCompile("(?i).*?"))
+		if err == nil {
+			f := jsonpath.CreateSingleFilter(c)
+			fString := f.String()
+			parsedString := "[?(@['a'] =~ /.*?/i)]"
+
+			if fString != parsedString {
+				t.Errorf("failed")
+			}
+		} else {
+			t.Errorf(err.Error())
+		}
+	} else {
+		t.Errorf(err.Error())
+	}
+}
+
+func Test_a_doc_ref_filter_can_be_serialized(t *testing.T) {
+	parsed, err := filter.Compile("[?(@.display-price <= $.max-price)]")
+	if err == nil {
+		parsedString := parsed.String()
+		if parsedString != "[?(@['display-price'] <= $['max-price'])]" {
+			t.Errorf("failed")
+		}
+	} else {
+		t.Errorf(err.Error())
+	}
+}
+
+func Test_and_combined_filters_can_be_serialized(t *testing.T) {
+	b, err0 := jsonpath.WhereString("b")
+	if err0 == nil {
+		b, err0 = b.Eq(2)
+		a, err := jsonpath.WhereString("a")
+		if err == nil {
+			a, err = a.Eq(1)
+			if err == nil {
+				f := jsonpath.CreateSingleFilter(a)
+				c := f.And(b)
+				cString := c.String()
+				parsed, err1 := filter.Compile("[?(@['a'] == 1 && @['b'] == 2)]")
+				if err1 == nil {
+					parsedString := parsed.String()
+					if cString != parsedString {
+						t.Errorf("failed")
+					}
+				} else {
+					t.Errorf(err1.Error())
+				}
+			} else {
+				t.Errorf(err.Error())
+			}
+		} else {
+			t.Errorf(err.Error())
+		}
+	} else {
+		t.Errorf(err0.Error())
+	}
+}
+func Test_or_combined_filters_can_be_serialized(t *testing.T) {
+	b, err0 := jsonpath.WhereString("b")
+	if err0 == nil {
+		b, err0 = b.Eq(2)
+		a, err := jsonpath.WhereString("a")
+		if err == nil {
+			a, err = a.Eq(1)
+			if err == nil {
+				f := jsonpath.CreateSingleFilter(a)
+				c := f.Or(b)
+				cString := c.String()
+				parsed, err1 := filter.Compile("[?(@['a'] == 1 || @['b'] == 2)]")
+				if err1 == nil {
+					parsedString := parsed.String()
+					if cString != parsedString {
+						t.Errorf("failed")
+					}
+				} else {
+					t.Errorf(err1.Error())
+				}
+			} else {
+				t.Errorf(err.Error())
+			}
+		} else {
+			t.Errorf(err.Error())
+		}
+	} else {
+		t.Errorf(err0.Error())
+	}
 }
