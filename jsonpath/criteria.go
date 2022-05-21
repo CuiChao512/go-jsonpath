@@ -29,7 +29,7 @@ func (c *Criteria) Apply(ctx common.PredicateContext) (bool, error) {
 }
 
 func (c *Criteria) String() string {
-	return common.UtilsJoin("&&", "", c.toRelationalExpressionNodes())
+	return common.UtilsJoin(" && ", "", c.toRelationalExpressionNodes())
 }
 
 func (c *Criteria) toRelationalExpressionNodes() []*filter.RelationExpressionNode {
@@ -58,13 +58,13 @@ func (c *Criteria) And(key string) (*Criteria, error) {
 		return nil, err
 	}
 	criteria := &Criteria{}
-	valueNode, err := filter.CreateValueNode(key)
+	valueNode, err := filter.CreateValueNode(prefixPath(key))
 	if err != nil {
 		return nil, err
 	}
 	criteria.left = valueNode
 	criteria.criteriaChain = c.criteriaChain
-	criteria.criteriaChain = append(c.criteriaChain, c)
+	criteria.criteriaChain = append(criteria.criteriaChain, criteria)
 	return criteria, nil
 }
 
