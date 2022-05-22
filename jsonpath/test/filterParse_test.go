@@ -264,9 +264,10 @@ func Test_a_matches_filter_can_be_serialized(t *testing.T) {
 	x, err0 := jsonpath.WhereString("x")
 	if err0 == nil {
 		x, err0 = x.Eq(1000)
+		fx := jsonpath.CreateSingleFilter(x)
 		c, err := jsonpath.WhereString("a")
 		if err == nil {
-			c = c.Matches(x)
+			c = c.Matches(fx)
 			f := jsonpath.CreateSingleFilter(c)
 			fString := f.String()
 
