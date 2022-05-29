@@ -292,7 +292,7 @@ func Test_inline_filters(t *testing.T) {
 
 func Test_negate_exists_check_primitive(t *testing.T) {
 	ints := []interface{}{0, 1, nil, 2, 3}
-	parsed, err := jsonpath.JsonpathParseObject(ints)
+	parsed, err := jsonpath.ParseObject(ints)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -304,7 +304,7 @@ func Test_negate_exists_check_primitive(t *testing.T) {
 		t.Errorf("fail")
 	}
 
-	parsed, err = jsonpath.JsonpathParseObject(ints)
+	parsed, err = jsonpath.ParseObject(ints)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -316,7 +316,7 @@ func Test_negate_exists_check_primitive(t *testing.T) {
 		t.Errorf("fail")
 	}
 
-	parsed, err = jsonpath.JsonpathParseObject(ints)
+	parsed, err = jsonpath.ParseObject(ints)
 	if err != nil {
 		t.Errorf(err.Error())
 	}

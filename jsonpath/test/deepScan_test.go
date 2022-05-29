@@ -423,9 +423,9 @@ func TestDeepScan(t *testing.T) {
 			}
 		} else {
 			if data.JsonObject != nil {
-				documentCtx, err = jsonpath.JsonpathParseObject(data.JsonObject)
+				documentCtx, err = jsonpath.ParseObject(data.JsonObject)
 			} else {
-				documentCtx, err = jsonpath.JsonpathParseString(data.JsonString)
+				documentCtx, err = jsonpath.ParseString(data.JsonString)
 			}
 		}
 		if err != nil {

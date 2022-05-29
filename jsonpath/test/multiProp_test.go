@@ -125,7 +125,7 @@ var multiPropsTestMetaDatas = []multiPropsTestMetaData{
 
 func Test_multi_props_cases(t *testing.T) {
 	for _, testData := range multiPropsTestMetaDatas {
-		if documentContext, err := jsonpath.JsonpathParseString(testData.ModelString); err != nil {
+		if documentContext, err := jsonpath.ParseString(testData.ModelString); err != nil {
 			t.Errorf(err.Error())
 		} else {
 			if result, err1 := documentContext.Read(testData.PathString); err1 != nil {
