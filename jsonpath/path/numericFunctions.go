@@ -6,14 +6,10 @@ import (
 	"math"
 )
 
-type abstractAggregation struct {
+type defaultInvoker struct {
 }
 
-func (*abstractAggregation) Next(value interface{}) {}
-
-func (*abstractAggregation) GetValue() interface{} { return nil }
-
-func (a *abstractAggregation) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
+func (a *defaultInvoker) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
 	count := 0
 	if ctx.Configuration().JsonProvider().IsArray(model) {
 
@@ -33,7 +29,7 @@ func (a *abstractAggregation) Invoke(currentPath string, parent common.PathRef, 
 			}
 			if isNumber {
 				count++
-				a.Next(obj)
+				nextAndGet.Next(obj)
 			}
 		}
 	}
@@ -44,11 +40,11 @@ func (a *abstractAggregation) Invoke(currentPath string, parent common.PathRef, 
 		}
 		for _, value := range values {
 			count++
-			a.Next(value)
+			nextAndGet.Next(value)
 		}
 	}
 	if count != 0 {
-		return a.GetValue(), nil
+		return nextAndGet.GetValue(), nil
 	}
 	return nil, &common.JsonPathError{Message: "Aggregation function attempted to calculate value using empty array"}
 }
@@ -56,7 +52,7 @@ func (a *abstractAggregation) Invoke(currentPath string, parent common.PathRef, 
 // Average function
 
 type Average struct {
-	*abstractAggregation
+	*defaultInvoker
 	summation float64
 	count     int
 }
@@ -76,7 +72,7 @@ func (a *Average) GetValue() interface{} {
 
 //Max function
 type Max struct {
-	*abstractAggregation
+	*defaultInvoker
 	max float64
 }
 
@@ -97,7 +93,7 @@ func CreateMaxFunction() *Max {
 
 // Min function
 type Min struct {
-	*abstractAggregation
+	*defaultInvoker
 	min float64
 }
 
@@ -137,6 +133,7 @@ func (s *StandardDeviation) GetValue() interface{} {
 
 // Sum function
 type Sum struct {
+	*defaultInvoker
 	sum float64
 }
 
@@ -156,7 +153,7 @@ func (*Length) Next(value interface{}) {}
 
 func (*Length) GetValue() interface{} { return nil }
 
-func (a *Length) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
+func (a *Length) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
 	if parameters != nil && len(parameters) > 0 {
 
 		// Set the tail of the first parameter, when its not a function path parameter (which wouldn't make sense

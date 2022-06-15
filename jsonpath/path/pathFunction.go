@@ -6,7 +6,17 @@ import (
 )
 
 type PathFunction interface {
-	Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error)
+	PathFunctionNextAndGet
+	PathFunctionInvoker
+}
+
+type PathFunctionNextAndGet interface {
+	Next(value interface{})
+	GetValue() interface{}
+}
+
+type PathFunctionInvoker interface {
+	Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error)
 }
 
 var functions = map[string]PathFunction{}
@@ -14,13 +24,13 @@ var functions = map[string]PathFunction{}
 func init() {
 	functions["avg"] = &Average{}
 	//functions["stddev"] = &StandardDeviation{}
-	//functions["sum"] = &Sum{}
+	functions["sum"] = &Sum{}
 	functions["min"] = &Min{}
 	functions["max"] = &Max{}
 	//functions["concat"] = &Concat{}
 	functions["length"] = &Length{}
 	//functions["size"] = &Size{}
-	functions["append"] = &function.Append{}
+	functions["append"] = &Append{}
 	//functions["keys"] = &Keys{}
 }
 

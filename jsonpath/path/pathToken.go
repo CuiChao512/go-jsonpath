@@ -344,7 +344,7 @@ func tokenString(dt Token) string {
 }
 
 func tokenInvoke(pathFunction PathFunction, currentPath string, parent common.PathRef, model interface{}, ctx *EvaluationContextImpl) error {
-	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, nil)
+	result, err := pathFunction.Invoke(pathFunction, currentPath, parent, model, ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -491,7 +491,7 @@ func (f *FunctionPathToken) Evaluate(currentPath string, parent common.PathRef, 
 	if err != nil {
 		return err
 	}
-	result, err := pathFunction.Invoke(currentPath, parent, model, ctx, f.functionParams)
+	result, err := pathFunction.Invoke(pathFunction, currentPath, parent, model, ctx, f.functionParams)
 	if err != nil {
 		return err
 	}
