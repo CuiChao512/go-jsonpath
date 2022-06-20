@@ -19,25 +19,32 @@ type PathFunctionInvoker interface {
 	Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error)
 }
 
-var functions = map[string]PathFunction{}
-
-func init() {
-	functions["avg"] = &Average{}
-	//functions["stddev"] = &StandardDeviation{}
-	functions["sum"] = &Sum{}
-	functions["min"] = &Min{}
-	functions["max"] = &Max{}
-	//functions["concat"] = &Concat{}
-	functions["length"] = &Length{}
-	//functions["size"] = &Size{}
-	functions["append"] = &Append{}
-	//functions["keys"] = &Keys{}
-}
-
 func GetFunctionByName(name string) (PathFunction, error) {
-	f := functions[name]
-	if f == nil {
+	var f PathFunction
+	switch name {
+	case "avg":
+		f = &Average{}
+	case "stddev":
+		f = &StandardDeviation{}
+	case "sum":
+		f = &Sum{}
+	case "min":
+		f = CreateMinFunction()
+	case "max":
+		f = CreateMaxFunction()
+	case "concat":
+		f = &Concatenate{}
+	case "length":
+		f = &Length{}
+	//case "size":
+	//	f = &Size{}
+	case "append":
+		f = &Append{}
+	//case "keys":
+	//	f = &Keys{}
+	default:
 		return nil, &common.InvalidPathError{Message: "Function with name: " + name + " does not exist."}
 	}
+
 	return f, nil
 }

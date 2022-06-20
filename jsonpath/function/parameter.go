@@ -69,39 +69,39 @@ func CreatePathParameter(p common.Path) *Parameter {
 }
 
 func ParametersToList(typeName common.Type, ctx common.EvaluationContext, parameters []*Parameter) ([]interface{}, error) {
-	var values *[]interface{}
+	var values []interface{}
 	for _, param := range parameters {
 		value, err := param.GetValue()
 		if err != nil {
 			return nil, err
 		}
-		err = parameterConsume(typeName, ctx, values, value)
+		values, err = parameterConsume(typeName, ctx, values, value)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return *values, nil
+	return values, nil
 }
 
-func parameterConsume(expectedType common.Type, ctx common.EvaluationContext, collection *[]interface{}, value interface{}) error {
+func parameterConsume(expectedType common.Type, ctx common.EvaluationContext, collection []interface{}, value interface{}) ([]interface{}, error) {
 	if ctx.Configuration().JsonProvider().IsArray(value) {
 		array, err := ctx.Configuration().JsonProvider().ToArray(value)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, o := range array {
 			if expectedType == common.TYPE_NUMBER {
-				*collection = append(*collection, o)
+				collection = append(collection, o)
 			} else {
-				*collection = append(*collection, common.UtilsToString(o))
+				collection = append(collection, common.UtilsToString(o))
 			}
 		}
 	} else {
 		if expectedType == common.TYPE_NUMBER {
-			*collection = append(*collection, value)
+			collection = append(collection, value)
 		} else {
-			*collection = append(*collection, common.UtilsToString(value))
+			collection = append(collection, common.UtilsToString(value))
 		}
 	}
-	return nil
+	return collection, nil
 }

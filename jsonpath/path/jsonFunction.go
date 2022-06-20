@@ -34,7 +34,7 @@ func (*Append) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, par
 				if err != nil {
 					return nil, err
 				}
-				err = jsonProvider.SetArrayIndex(model, l, val)
+				err = jsonProvider.SetArrayIndex(&model, l, val)
 				if err != nil {
 					return nil, err
 				}

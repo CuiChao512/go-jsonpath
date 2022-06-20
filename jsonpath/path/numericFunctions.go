@@ -4,6 +4,7 @@ import (
 	"github.com/CuiChao512/go-jsonpath/jsonpath/common"
 	"github.com/CuiChao512/go-jsonpath/jsonpath/function"
 	"math"
+	"strings"
 )
 
 type defaultInvoker struct {
@@ -114,6 +115,7 @@ func CreateMinFunction() *Min {
 
 // StandardDeviation ---
 type StandardDeviation struct {
+	*defaultInvoker
 	sumSq float64
 	sum   float64
 	count int64
@@ -193,4 +195,32 @@ func (a *Length) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, p
 		return ctx.Configuration().JsonProvider().Length(model)
 	}
 	return nil, nil
+}
+
+type Concatenate struct {
+}
+
+func (*Concatenate) Next(value interface{}) {}
+
+func (*Concatenate) GetValue() interface{} { return nil }
+
+func (a *Concatenate) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
+	result := &strings.Builder{}
+	if ctx.Configuration().JsonProvider().IsArray(model) {
+		objects, _ := ctx.Configuration().JsonProvider().ToArray(model)
+		for _, obj := range objects {
+			if str, ok := obj.(string); ok {
+				result.WriteString(str)
+			}
+		}
+	}
+	if parameters != nil {
+		parametersList, err := function.ParametersToList(common.TYPE_STRING, ctx, parameters)
+		if err == nil {
+			for _, value := range parametersList {
+				result.WriteString(common.UtilsToString(value))
+			}
+		}
+	}
+	return result.String(), nil
 }
