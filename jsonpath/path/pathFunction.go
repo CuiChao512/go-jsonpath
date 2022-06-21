@@ -36,12 +36,12 @@ func GetFunctionByName(name string) (PathFunction, error) {
 		f = &Concatenate{}
 	case "length":
 		f = &Length{}
-	//case "size":
-	//	f = &Size{}
+	case "size":
+		f = &Length{}
 	case "append":
 		f = &Append{}
-	//case "keys":
-	//	f = &Keys{}
+	case "keys":
+		f = &KeySetFunction{}
 	default:
 		return nil, &common.InvalidPathError{Message: "Function with name: " + name + " does not exist."}
 	}

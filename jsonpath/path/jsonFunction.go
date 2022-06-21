@@ -8,7 +8,9 @@ import (
 type KeySetFunction struct {
 }
 
-func (*KeySetFunction) Invoke(currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters *[]*function.Parameter) (interface{}, error) {
+func (*KeySetFunction) Next(value interface{}) {}
+func (*KeySetFunction) GetValue() interface{}  { return nil }
+func (*KeySetFunction) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
 	if ctx.Configuration().JsonProvider().IsMap(model) {
 		return ctx.Configuration().JsonProvider().GetPropertyKeys(model)
 	}
@@ -23,23 +25,23 @@ func (*Append) GetValue() interface{}  { return nil }
 
 func (*Append) Invoke(nextAndGet PathFunctionNextAndGet, currentPath string, parent common.PathRef, model interface{}, ctx common.EvaluationContext, parameters []*function.Parameter) (interface{}, error) {
 	jsonProvider := ctx.Configuration().JsonProvider()
-	if parameters != nil && len(parameters) > 0 {
-		for _, param := range parameters {
-			if jsonProvider.IsArray(model) {
-				l, err := jsonProvider.Length(model)
-				if err != nil {
-					return nil, err
-				}
+	var array []interface{}
+	if jsonProvider.IsArray(model) {
+		ok := false
+		array, ok = model.([]interface{})
+		if ok && parameters != nil && len(parameters) > 0 {
+			for _, param := range parameters {
+				l := len(array)
 				val, err := param.GetValue()
 				if err != nil {
 					return nil, err
 				}
-				err = jsonProvider.SetArrayIndex(&model, l, val)
+				err = jsonProvider.SetArrayIndex(&array, l, val)
 				if err != nil {
 					return nil, err
 				}
 			}
 		}
 	}
-	return model, nil
+	return array, nil
 }

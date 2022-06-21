@@ -114,11 +114,11 @@ func (d *NativeJsonProvider) GetArrayIndexByUnwrap(obj interface{}, idx int, unw
 func (d *NativeJsonProvider) SetArrayIndex(array interface{}, index int, newValue interface{}) error {
 	l, ok := array.(*[]interface{})
 	if !ok {
-		return errors.New("unsupported operation")
+		return errors.New("unsupported operation, slice expected")
 	}
 
 	if !d.IsArray(*l) {
-		return errors.New("unsupported operation")
+		return errors.New("unsupported operation, slice expected")
 	} else {
 		if index == len(*l) {
 			*l = append(*l, newValue)
